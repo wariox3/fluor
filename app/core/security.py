@@ -5,7 +5,10 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from app.core.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["argon2"],
+    deprecated="auto"
+)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
@@ -33,6 +36,7 @@ def decode_token(token: str):
     
 def get_current_user(token: str = Depends(oauth2_scheme)):
     payload = decode_token(token)
+    print(payload)
     return payload   
 
 def require_admin(user=Depends(get_current_user)):

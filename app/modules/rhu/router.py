@@ -1,5 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
 from .routes import empleado
+from app.core.security import get_current_user
 
 router = APIRouter(
     prefix="/rhu",
@@ -8,6 +9,6 @@ router = APIRouter(
 
 router.include_router(
     empleado.router,
-    prefix="/empleado",
-    tags=["Empleado"]
+    prefix="/empleados",
+    tags=["Empleados"]
 )

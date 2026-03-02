@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Date, Numeric
-from app.core.database import Base
+from app.core.tenant_database import Base
 
 class Guia(Base):
     __tablename__ = "tte_guia"

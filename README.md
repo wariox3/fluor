@@ -1,2 +1,14 @@
 Lanzar 
 uvicorn app.main:app --reload
+
+# .env
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=70143086
+
+DB_MASTER_HOST=localhost
+DB_MASTER_PORT=3306
+DB_MASTER_USER=root
+DB_MASTER_PASSWORD=70143086
+DB_MASTER_NAME=bdfluor
