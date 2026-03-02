@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from typing import List
 from app.core.tenant_database import get_tenant_db
-from app.core.security import get_current_user
 from app.modules.rhu.models.empleado import Empleado
 from app.modules.rhu.schemas.empleado import EmpleadoResponse
 
