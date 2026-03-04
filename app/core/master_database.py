@@ -3,13 +3,14 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from decouple import config
 
 DB_HOST = config("DB_MASTER_HOST")
+DB_PORT = config("DB_MASTER_PORT", default="3306")
 DB_USER = config("DB_MASTER_USER")
 DB_PASSWORD = config("DB_MASTER_PASSWORD")
 DB_NAME = config("DB_MASTER_NAME")
 
 DATABASE_URL = (
     f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}"
-    f"@{DB_HOST}/{DB_NAME}"
+    f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 )
 
 engine = create_engine(
