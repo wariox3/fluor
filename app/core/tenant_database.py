@@ -8,6 +8,7 @@ from sqlalchemy.orm import declarative_base
 Base = declarative_base()
 
 DB_HOST = config("DB_HOST")
+DB_PORT = config("DB_PORT", default="3306")
 DB_USER = config("DB_USER")
 DB_PASSWORD = config("DB_PASSWORD")
 
@@ -15,7 +16,7 @@ DB_PASSWORD = config("DB_PASSWORD")
 def get_tenant_engine(database_name: str):
     DATABASE_URL = (
         f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}"
-        f"@{DB_HOST}/{database_name}"
+        f"@{DB_HOST}:{DB_PORT}/{database_name}"
     )
 
     return create_engine(
