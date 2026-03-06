@@ -6,6 +6,15 @@ class LoginRequest(BaseModel):
     password: str
     client_type: Literal["web", "api", "integration"]
 
+class UserInfo(BaseModel):
+    id: int
+    email: str
+   
+class LoginResponse(BaseModel):
+    access_token: str | None = None
+    token_type: str | None = None
+    user: UserInfo
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -24,3 +33,4 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True    
+        
