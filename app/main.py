@@ -10,12 +10,8 @@ from app.modules.auth.router import router as auth_router
 
 app = FastAPI(title="ERP API")
 
-app.include_router(rhu_router)
-app.include_router(tte_router)
-app.include_router(auth_router)
-
 origins = [
-    "localhost:4200",
+    "http://localhost:4200",
     "https://semanticaapi.com.co",
 ]
 
@@ -30,3 +26,8 @@ app.add_middleware(
         "X-API-Key"
     ],
 )
+
+app.include_router(rhu_router)
+app.include_router(tte_router)
+app.include_router(auth_router)
+
