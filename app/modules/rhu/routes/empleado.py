@@ -8,5 +8,5 @@ from app.modules.rhu.schemas.empleado import EmpleadoResponse
 router = APIRouter()
 
 @router.get("/", response_model=List[EmpleadoResponse])
-def listar_empleados(db: Session = Depends(get_tenant_db)):
+def lista(db: Session = Depends(get_tenant_db)):
     return db.query(Empleado).all()

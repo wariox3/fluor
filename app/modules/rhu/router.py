@@ -8,6 +8,6 @@ router = APIRouter(
 
 router.include_router(
     empleado.router,
-    prefix="/empleados",
+    prefix="/empleado",
     tags=["Empleados"]
 )
