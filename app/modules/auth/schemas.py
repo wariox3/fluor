@@ -1,9 +1,10 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Literal, Optional
 
 class LoginRequest(BaseModel):
     email: str
     password: str
+    client_type: Literal["web", "api", "integration"]
 
 class TokenResponse(BaseModel):
     access_token: str

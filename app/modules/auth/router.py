@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Response
 from sqlalchemy.orm import Session
 from app.core.security import verify_password, create_access_token
 from app.modules.auth.schemas import LoginRequest, TokenResponse
@@ -10,7 +10,7 @@ from app.core.security import hash_password, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-@router.post("/login", response_model=TokenResponse)
+'''@router.post("/login", response_model=TokenResponse)
 def login(data: LoginRequest, db: Session = Depends(get_master_db)):
 
     user = db.query(User).filter(User.email == data.email).first()
@@ -29,7 +29,45 @@ def login(data: LoginRequest, db: Session = Depends(get_master_db)):
     print(user.id, user.empresa_id, user.role)
     access_token = create_access_token(token_data)
 
-    return {"access_token": access_token}
+    return {"access_token": access_token}'''
+
+
+@router.post("/login", response_model=TokenResponse | None)
+def login(data: LoginRequest, response: Response, db: Session = Depends(get_master_db)):
+    
+    user = db.query(User).filter(User.email == data.email).first()
+    if not user or not verify_password(data.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciales inválidas"
+        )
+
+    token_data = {
+        "sub": str(user.id),
+        "empresa_id": user.empresa_id,
+        "role": user.role
+    }
+
+    access_token = create_access_token(token_data)
+
+    # modo web
+    if data.client_type == "web":
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+            max_age=3600
+        )
+        return None
+
+    # modo api / integraciones
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
+
 
 @router.post("/register", response_model=UserResponse)
 def create_user(data: UserCreate, db: Session = Depends(get_master_db)):
