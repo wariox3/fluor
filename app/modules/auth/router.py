@@ -60,7 +60,12 @@ def login(data: LoginRequest, response: Response, db: Session = Depends(get_mast
             samesite="lax",
             max_age=3600
         )
-        return None
+        return {
+            "user": {
+                "id": user.id,
+                "email": user.email
+            }
+        }
 
     # modo api / integraciones
     return {
