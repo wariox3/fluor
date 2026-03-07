@@ -13,6 +13,8 @@ app = FastAPI(title="ERP API")
 origins = [
     "http://localhost:4200",
     "https://semanticaapi.com.co",
+    "http://empleado.co",
+    "https://empleado.co",
 ]
 
 app.add_middleware(
