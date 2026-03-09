@@ -34,3 +34,6 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True    
         
+class ApiKeyCreate(BaseModel):
+    name: str
+    empresa_id: str        

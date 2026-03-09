@@ -1,10 +1,12 @@
+from dns import name
 from fastapi import APIRouter, HTTPException, status, Depends, Response
 from sqlalchemy.orm import Session
 from app.core.security import verify_password, create_access_token
-from app.modules.auth.schemas import LoginRequest, LoginResponse, TokenResponse
+from app.modules.auth.schemas import ApiKeyCreate, LoginRequest, LoginResponse, TokenResponse
 from app.core.master_database import get_master_db
+from app.core.security import generate_api_key, hash_api_key
 
-from app.modules.auth.models import User
+from app.modules.auth.models import User, ApiKey
 from app.modules.auth.schemas import UserCreate, UserResponse
 from app.core.security import hash_password, get_current_user
 
@@ -68,7 +70,7 @@ def create_user(data: UserCreate, db: Session = Depends(get_master_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Usuario o email ya existe"
         )
-    print(len(data.password))
+        
     new_user = User(
         email=data.email,
         password_hash=hash_password(data.password),
@@ -81,3 +83,21 @@ def create_user(data: UserCreate, db: Session = Depends(get_master_db)):
     db.refresh(new_user)
 
     return new_user
+
+
+@router.post("/api-key")
+def create_api_key(data: ApiKeyCreate, db: Session = Depends(get_master_db)):
+    prefix, api_key = generate_api_key()
+    key = ApiKey(
+        name=data.name,
+        empresa_id=data.empresa_id,
+        prefix=prefix,
+        key_hash=hash_api_key(api_key)
+    )
+
+    db.add(key)
+    db.commit()
+
+    return {
+        "api_key": api_key
+    }

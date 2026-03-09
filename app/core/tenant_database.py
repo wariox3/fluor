@@ -4,26 +4,39 @@ from decouple import config
 from fastapi import Depends, HTTPException, status
 from app.core.security import get_current_user
 from sqlalchemy.orm import declarative_base
+from threading import Lock
 
 Base = declarative_base()
+tenant_engines = {}
+tenant_lock = Lock()
 
 DB_HOST = config("DB_HOST")
 DB_PORT = config("DB_PORT", default="3306")
 DB_USER = config("DB_USER")
 DB_PASSWORD = config("DB_PASSWORD")
 
-
 def get_tenant_engine(database_name: str):
-    DATABASE_URL = (
-        f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}"
-        f"@{DB_HOST}:{DB_PORT}/{database_name}"
-    )
+    if database_name in tenant_engines:
+        return tenant_engines[database_name]
 
-    return create_engine(
-        DATABASE_URL,
-        pool_pre_ping=True,
-        pool_recycle=3600
-    )
+    with tenant_lock:
+        if database_name in tenant_engines:
+            return tenant_engines[database_name]
+
+        DATABASE_URL = (
+            f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}"
+            f"@{DB_HOST}:{DB_PORT}/{database_name}"
+        )
+
+        engine = create_engine(
+            DATABASE_URL,
+            pool_pre_ping=True,
+            pool_recycle=3600,
+            pool_size=10,
+            max_overflow=20
+        )
+        tenant_engines[database_name] = engine
+        return engine
 
 
 def get_tenant_db(current_user=Depends(get_current_user)):

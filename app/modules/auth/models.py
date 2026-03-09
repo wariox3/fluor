@@ -2,7 +2,9 @@
 from sqlalchemy import (
     Column,
     Integer,
-    String
+    String,
+    Boolean,
+    DateTime
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -17,3 +19,14 @@ class User(Base):
     role = Column(String(50), nullable=False, default="users")
     empresa_id = Column(String(100), nullable=False)
     #empresa_id = Column(Integer, ForeignKey("empresa.id"), nullable=False)
+
+class ApiKey(Base):
+    __tablename__ = "api_keys"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100))
+    key_hash = Column(String(255), unique=True, index=True)
+    empresa_id = Column(String(100), nullable=False)
+    prefix = Column(String(20))
+    is_active = Column(Boolean, default=True)
+    #created_at = Column(DateTime)  
