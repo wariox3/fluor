@@ -4,10 +4,9 @@ from .routes import user
 from .routes import api_key
 
 router = APIRouter(
-    prefix="/auth",
-    tags=["seguridad"]
+    prefix="/auth"
 )
 
-router.include_router(seguridad.router,prefix="/seguridad", tags=["Seguridad"])
-router.include_router(user.router,prefix="/user", tags=["User"])
-router.include_router(api_key.router,prefix="/api-key", tags=["API Key"])
+router.include_router(seguridad.router,prefix="/seguridad", tags=["Seguridad / Acceso"])
+router.include_router(user.router,prefix="/user", tags=["Seguridad / User"])
+router.include_router(api_key.router,prefix="/api-key", tags=["Seguridad / API Key"])

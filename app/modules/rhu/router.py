@@ -2,12 +2,7 @@ from fastapi import APIRouter
 from .routes import empleado
 
 router = APIRouter(
-    prefix="/rhu",
-    tags=["Recurso Humano"]
+    prefix="/rhu"
 )
 
-router.include_router(
-    empleado.router,
-    prefix="/empleado",
-    tags=["Empleados"]
-)
+router.include_router(empleado.router, prefix="/empleado", tags=["Recurso Humano / Empleado"])

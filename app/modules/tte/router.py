@@ -2,8 +2,7 @@ from fastapi import APIRouter
 from .routes import guia
 
 router = APIRouter(
-    prefix="/tte",
-    tags=["Transporte y Logística"]
+    prefix="/tte"
 )
 
-router.include_router(guia.router,prefix="/guia",tags=["Guía"])
+router.include_router(guia.router,prefix="/guia",tags=["Transporte y Logística / Guía"])
