@@ -1,9 +1,25 @@
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel
+from typing import List, Optional, Annotated
+
+from pydantic import BaseModel, Field
 
 class GuiaBase(BaseModel):
     documento_cliente: str
+
+class GuiaCreateRequest(BaseModel):
+    codigo_guia_pk: int    
+    codigo_guia_tipo_fk: str
+    codigo_operacion_ingreso_fk: str
+    codigo_tercero_fk: int
+    unidades: float
+    peso_real: float
+    peso_volumen: float
+    vr_flete: float
+    vr_manejo: float
+    vr_declara: float
+
+class GuiasMasivoRequest(BaseModel):
+    guias: Annotated[List[int], Field(min_length=1, max_length=1000)] 
 
 class GuiaResponse(GuiaBase):
     codigo_guia_pk: int
@@ -35,3 +51,5 @@ class GuiaEstadoResponse(GuiaBase):
 
     class Config:
         from_attributes = True
+
+       

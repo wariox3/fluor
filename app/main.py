@@ -1,6 +1,7 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
-# Importar modulos para rateli limit
+# Importar modulos para rate limit
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
@@ -13,6 +14,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.logging import setup_logging
 from app.core.middleware import ErrorHandlingMiddleware
 
+from app.core.master_database import Base as MasterBase, engine as master_engine
+from app.modules.auth.models import *  # noqa: F401,F403 — registra modelos en MasterBase
+
 from app.modules.rhu.models import *
 from app.modules.tte.models import *
 
@@ -23,7 +27,13 @@ from app.modules.auth.router import router as auth_router
 
 setup_logging()
 
-app = FastAPI(title="ERP API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):    
+    MasterBase.metadata.create_all(bind=master_engine)
+    yield
+
+
+app = FastAPI(title="Semantica ERP API", lifespan=lifespan)
 
 app.middleware("http")(ErrorHandlingMiddleware())
 
@@ -35,7 +45,6 @@ app.add_middleware(SlowAPIMiddleware)
 origins = [
     "http://localhost:4200",
     "https://semanticaapi.com.co",
-    "http://empleado.co",
     "https://empleado.co",
 ]
 
@@ -43,12 +52,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=[
-        "Authorization",
-        "Content-Type",
-        "X-API-Key"
-    ],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Content-Type", "Authorization", "Accept", "X-API-Key"]
 )
 
 app.include_router(rhu_router)

@@ -2,8 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 class EmpleadoBase(BaseModel):
-    nombre_corto: str
-    correo: str  
+    nombre_corto: str  
     correo: Optional[str]  
 
 class EmpleadoResponse(EmpleadoBase):

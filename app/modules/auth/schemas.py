@@ -1,6 +1,8 @@
 from pydantic import BaseModel, EmailStr
 from typing import Literal, Optional
 
+from app.modules.auth.models import UserRole
+
 class LoginRequest(BaseModel):
     email: str
     password: str
@@ -22,18 +24,18 @@ class TokenResponse(BaseModel):
 class UserCreate(BaseModel):    
     email: EmailStr
     password: str
-    empresa_id: str
-    role: Optional[str] = "user"
+    tenant_id: int | None = None
+    role: UserRole = UserRole.user
 
 class UserResponse(BaseModel):
     id: int
     email: str
     role: str
-    empresa_id: str
+    tenant_id: int | None = None
 
     class Config:
         from_attributes = True    
         
 class ApiKeyCreate(BaseModel):
     name: str
-    empresa_id: str        
+    tenant_id: int        

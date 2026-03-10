@@ -39,13 +39,12 @@ def get_tenant_engine(database_name: str):
         return engine
 
 
-def get_tenant_db(current_user=Depends(get_current_user)):
-    database_name = current_user.get("empresa_id")
-
+def get_tenant_db(current_user=Depends(get_current_user)):    
+    database_name = current_user.get("tenant_schema")
     if not database_name:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Usuario no tiene empresa asignada"
+            detail="Usuario no tiene tenant asignado"
         )
 
     engine = get_tenant_engine(database_name)
