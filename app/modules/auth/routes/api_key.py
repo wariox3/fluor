@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from app.core.rate_limit import limiter
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
@@ -31,13 +31,12 @@ def nuevo(request: Request, data: ApiKeyCreate, db: Session = Depends(get_master
     }
 
 @router.get("/lista", response_model=List[ApiKeyResponse])
-def lista(page: int = 1, size: int = 50, db: Session = Depends(get_master_db)):
+def lista(page: int = 1, size: int = 50, tenant_id: Optional[str] = None, db: Session = Depends(get_master_db)):
     offset = (page - 1) * size
-    api_keys = (
-        db.query(ApiKey)
-        .offset(offset)
-        .limit(size)
-        .all()
-    )
+    query = db.query(ApiKey)    
+    if tenant_id:
+        query = query.filter(ApiKey.tenant_id == tenant_id)    
+    api_keys = query.offset(offset).limit(size).all()
+    return api_keys
 
     return api_keys
