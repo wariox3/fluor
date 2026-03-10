@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Literal, Optional
+from typing import Literal
 
 from app.modules.auth.models import UserRole
 
@@ -36,8 +36,4 @@ class UserResponse(BaseModel):
     tenant_id: int | None = None
 
     class Config:
-        from_attributes = True    
-        
-class ApiKeyCreate(BaseModel):
-    name: str
-    tenant_id: int        
+        from_attributes = True           

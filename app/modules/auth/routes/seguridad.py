@@ -2,7 +2,7 @@ from app.core.rate_limit import limiter
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from sqlalchemy.orm import Session
 from app.core.security import verify_password, create_access_token
-from app.modules.auth.schemas import LoginRequest, LoginResponse
+from app.modules.auth.schemas.user import LoginRequest, LoginResponse
 from app.core.master_database import get_master_db
 
 from app.modules.auth.models import User

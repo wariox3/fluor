@@ -109,6 +109,14 @@ def require_admin(user: dict = Depends(get_current_user_from_token)):
         )
     return user
 
+def require_admin_control(user: dict = Depends(get_current_user_from_token)):
+    if user.get("role") != "admin" and user.get("role") != "control":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos de administrador o control"
+        )
+    return user
+
 def generate_api_key():
     raw_prefix = secrets.token_hex(4)
     prefix = f"erp_{raw_prefix}"    

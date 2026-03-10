@@ -5,7 +5,7 @@ from app.core.security import require_admin
 from app.core.master_database import get_master_db
 
 from app.modules.auth.models import User
-from app.modules.auth.schemas import UserCreate, UserResponse
+from app.modules.auth.schemas.user import UserCreate, UserResponse
 from app.core.security import hash_password
 
 router = APIRouter()
