@@ -1,8 +1,8 @@
 from app.core.rate_limit import limiter
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from sqlalchemy.orm import Session
-from app.core.security import verify_password, create_access_token, create_refresh_token, decode_refresh_token
-from app.modules.auth.schemas.user import LoginRequest, LoginResponse
+from app.core.security import verify_password, create_access_token, create_refresh_token, decode_refresh_token, get_current_user_from_token
+from app.modules.auth.schemas.user import LoginRequest, LoginResponse, UserInfo
 from app.core.master_database import get_master_db
 
 from app.modules.auth.models import User
@@ -96,6 +96,18 @@ def refresh(request: Request, response: Response):
         max_age=3600
     )
     return {"message": "Token renovado"}
+
+@router.get("/me", response_model=UserInfo)
+def me(current_user: dict = Depends(get_current_user_from_token), db: Session = Depends(get_master_db)):
+    user = db.query(User).filter(User.id == int(current_user["sub"])).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+    return UserInfo(
+        id=user.id,
+        email=user.email,
+        tenant_id=user.tenant_id,
+        role=user.role,
+    )
 
 @router.post("/logout")
 def logout(request: Request, response: Response):
