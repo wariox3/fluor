@@ -9,7 +9,7 @@ from app.modules.tte.schemas.guia import GuiaCreateRequest, GuiaResponse, GuiaEs
 router = APIRouter()
 
 @router.post("/nuevo", response_model=GuiaEstadoResponse)
-def nueva_guia(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db)):
+def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db)):
     guia = Guia(
         codigo_guia_pk=payload.codigo_guia_pk,        
         codigo_guia_tipo_fk=payload.codigo_guia_tipo_fk,
