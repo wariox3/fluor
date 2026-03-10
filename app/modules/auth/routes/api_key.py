@@ -38,5 +38,3 @@ def lista(page: int = 1, size: int = 50, tenant_id: Optional[str] = None, db: Se
         query = query.filter(ApiKey.tenant_id == tenant_id)    
     api_keys = query.offset(offset).limit(size).all()
     return api_keys
-
-    return api_keys
