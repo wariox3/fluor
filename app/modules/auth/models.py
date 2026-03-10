@@ -8,6 +8,7 @@ class UserRole(str, enum.Enum):
     admin = "admin"
     user = "user"
     viewer = "viewer"
+    control = "control"
 
 class Tenant(Base):
     __tablename__ = "tenant"

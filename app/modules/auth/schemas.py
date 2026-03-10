@@ -11,6 +11,8 @@ class LoginRequest(BaseModel):
 class UserInfo(BaseModel):
     id: int
     email: str
+    tenant_id: int | None = None
+    role: UserRole | None = None
    
 class LoginResponse(BaseModel):
     access_token: str | None = None
