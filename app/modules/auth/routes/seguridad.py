@@ -1,7 +1,7 @@
 from app.core.rate_limit import limiter
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from sqlalchemy.orm import Session
-from app.core.security import verify_password, create_access_token
+from app.core.security import verify_password, create_access_token, create_refresh_token, decode_refresh_token
 from app.modules.auth.schemas.user import LoginRequest, LoginResponse
 from app.core.master_database import get_master_db
 
@@ -38,6 +38,7 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
 
     # modo web
     if data.client_type == "web":
+        refresh_token = create_refresh_token(token_data)
         response.set_cookie(
             key="access_token",
             value=access_token,
@@ -45,6 +46,15 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
             secure=True,
             samesite="Strict",
             max_age=3600
+        )
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            secure=True,
+            samesite="Strict",
+            path="/auth/refresh",
+            max_age=7 * 24 * 3600
         )
         return {
             "user": user_data
@@ -57,14 +67,49 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
         "user": user_data
     }
 
+@router.post("/refresh")
+@limiter.limit("10/minute")
+def refresh(request: Request, response: Response):
+    token = request.cookies.get("refresh_token")
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token no encontrado"
+        )
+
+    payload = decode_refresh_token(token)
+
+    token_data = {
+        "sub": payload["sub"],
+        "tenant_id": payload.get("tenant_id"),
+        "tenant_schema": payload.get("tenant_schema"),
+        "role": payload.get("role"),
+    }
+
+    new_access_token = create_access_token(token_data)
+    response.set_cookie(
+        key="access_token",
+        value=new_access_token,
+        httponly=True,
+        secure=True,
+        samesite="Strict",
+        max_age=3600
+    )
+    return {"message": "Token renovado"}
+
 @router.post("/logout")
 def logout(request: Request, response: Response):
-    if request.cookies.get("access_token"):
-        response.delete_cookie(
-            key="access_token",
-            httponly=True,
-            secure=True,
-            samesite="lax"
-        )
-        return {"message": "Sesión cerrada"}
+    response.delete_cookie(
+        key="access_token",
+        httponly=True,
+        secure=True,
+        samesite="Strict"
+    )
+    response.delete_cookie(
+        key="refresh_token",
+        httponly=True,
+        secure=True,
+        samesite="Strict",
+        path="/auth/refresh"
+    )
     return {"message": "Sesión cerrada"}
