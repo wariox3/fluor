@@ -42,7 +42,7 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
             key="access_token",
             value=access_token,
             httponly=True,
-            secure=True,
+            secure=False,
             samesite="lax",
             max_age=3600
         )
