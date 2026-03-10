@@ -11,6 +11,7 @@ class ApiKeyResponse(BaseModel):
     id: int
     name: str
     tenant_id: int | None = None
+    prefix: str
 
     class Config:
         from_attributes = True          
