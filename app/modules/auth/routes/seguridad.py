@@ -53,7 +53,7 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
             httponly=True,
             secure=True,
             samesite="Strict",
-            path="/auth/refresh",
+            path="/",
             max_age=7 * 24 * 3600
         )
         return {
@@ -110,6 +110,6 @@ def logout(request: Request, response: Response):
         httponly=True,
         secure=True,
         samesite="Strict",
-        path="/auth/refresh"
+        path="/"
     )
     return {"message": "Sesión cerrada"}
