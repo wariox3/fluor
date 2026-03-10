@@ -43,7 +43,7 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
             value=access_token,
             httponly=True,
             secure=False,
-            samesite="lax",
+            samesite="Strict",
             max_age=3600
         )
         return {
