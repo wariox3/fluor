@@ -1,6 +1,6 @@
 from typing import List, Optional
 from app.core.rate_limit import limiter
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from app.core.security import require_admin_control
 from app.modules.auth.schemas.api_key import ApiKeyCreate, ApiKeyResponse
@@ -38,3 +38,14 @@ def lista(page: int = 1, size: int = 50, tenant_id: Optional[str] = None, db: Se
         query = query.filter(ApiKey.tenant_id == tenant_id)    
     api_keys = query.offset(offset).limit(size).all()
     return api_keys
+
+@router.delete("/eliminar/{api_key_id}")
+@limiter.limit("5/minute")
+def eliminar(request: Request, api_key_id: int, db: Session = Depends(get_master_db), _: dict = Depends(require_admin_control)):
+    key = db.query(ApiKey).filter(ApiKey.id == api_key_id).first()
+    if not key:
+        raise HTTPException(status_code=404, detail="API Key no encontrada")
+
+    db.delete(key)
+    db.commit()
+    return {"message": "API Key eliminada correctamente"}
