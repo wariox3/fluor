@@ -56,7 +56,7 @@ def registrar(request: Request, data: RegisterRequest, db: Session = Depends(get
     db.commit()
     db.refresh(new_user)
 
-    verification_link = f"{APP_URL}/auth/verificar?token={token}"
+    verification_link = f"{APP_URL}/auth/verify-email?token={token}"
     # TODO: enviar verification_link por correo a new_user.email
 
     return RegisterResponse(user=UserResponse.model_validate(new_user), verification_link=verification_link)
