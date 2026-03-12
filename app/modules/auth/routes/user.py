@@ -1,5 +1,5 @@
 from app.core.rate_limit import limiter
-from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
+from fastapi import APIRouter, HTTPException, status, Depends, Request
 from sqlalchemy.orm import Session
 from app.core.security import require_admin
 from app.core.master_database import get_master_db
@@ -62,7 +62,7 @@ def registrar(request: Request, data: RegisterRequest, db: Session = Depends(get
     return RegisterResponse(user=UserResponse.model_validate(new_user), verification_link=verification_link)
 
 
-@router.post("/verificar")
+@router.get("/verificar")
 @limiter.limit("10/minute")
 def verificar(request: Request, token: str, db: Session = Depends(get_master_db)):
     user = db.query(User).filter(User.verification_token == token).first()
