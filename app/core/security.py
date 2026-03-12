@@ -1,5 +1,5 @@
 from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
-from app.modules.auth.models import ApiKey
+from app.modules.auth.models.api_key import ApiKey
 from app.core.master_database import get_master_db
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta, timezone

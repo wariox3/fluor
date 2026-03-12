@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from app.modules.auth.models import ApiKey         
+from app.modules.auth.models.api_key import ApiKey         
 class ApiKeyCreate(BaseModel):
     name: str
     tenant_id: int   

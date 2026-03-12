@@ -6,7 +6,7 @@ from app.core.security import require_admin_control
 from app.modules.auth.schemas.api_key import ApiKeyCreate, ApiKeyResponse
 from app.core.master_database import get_master_db
 from app.core.security import generate_api_key, hash_api_key
-from app.modules.auth.models import ApiKey
+from app.modules.auth.models.api_key import ApiKey
 
 router = APIRouter()
 
