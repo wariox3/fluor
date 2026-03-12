@@ -16,6 +16,7 @@ class FicheroResponse(BaseModel):
     comprimido: bool
     tamano: float
     usuario: str
+    directorio_base: str
     error_carga: bool
 
 

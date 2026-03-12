@@ -3,25 +3,40 @@ from sqlalchemy import select
 from sqlalchemy.orm import Query, Session
 from typing import List
 from app.core.tenant_database import get_tenant_db
+from app.core.security import get_current_user
+from app.core.config import DEFAULT_EMPRESA_ID
 from app.modules.tte.models.guia import Guia
 from app.modules.tte.schemas.guia import GuiaCreateRequest, GuiaResponse, GuiaEstadoResponse, GuiasMasivoRequest
 
 router = APIRouter()
 
-@router.post("/nuevo", response_model=GuiaEstadoResponse)
-def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db)):
+@router.post("/nuevo", response_model=GuiaCreateRequest)
+def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    
     guia = Guia(
         codigo_guia_pk=payload.codigo_guia_pk,        
         codigo_guia_tipo_fk=payload.codigo_guia_tipo_fk,
         codigo_operacion_ingreso_fk=payload.codigo_operacion_ingreso_fk,
         codigo_operacion_cargo_fk=payload.codigo_operacion_ingreso_fk,  # Regla de negocio: cargo e ingreso inician con la misma operación; se diferencian en un proceso posterior
         codigo_tercero_fk=payload.codigo_tercero_fk,
+        codigo_adquiriente_fk=payload.codigo_adquiriente_fk,
+        codigo_empaque_fk=payload.codigo_empaque_fk,
+        codigo_producto_fk=payload.codigo_producto_fk,
+        codigo_servicio_fk=payload.codigo_servicio_fk,
+        codigo_ciudad_origen_fk=payload.codigo_ciudad_origen_fk,
+        codigo_ciudad_destino_fk=payload.codigo_ciudad_destino_fk,
+        documento_cliente=payload.documento_cliente,
+        remitente=payload.remitente,
+        nombre_destinatario=payload.nombre_destinatario,
+        direccion_destinatario=payload.direccion_destinatario,
+        telefono_destinatario=payload.telefono_destinatario,
         unidades=payload.unidades,
         peso_real=payload.peso_real,
         peso_volumen=payload.peso_volumen,
         vr_flete=payload.vr_flete,
         vr_manejo=payload.vr_manejo,
-        vr_declara=payload.vr_declara,        
+        vr_declara=payload.vr_declara,
+        codigo_empresa_fk=DEFAULT_EMPRESA_ID,
     )
 
     db.add(guia)
@@ -31,7 +46,7 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db)):
     return guia
 
 @router.get("/lista", response_model=List[GuiaResponse])
-def lista(page: int = 1, size: int = 50, db: Session = Depends(get_tenant_db)):
+def lista(page: int = 1, size: int = 50, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     offset = (page - 1) * size
     guias = (
         db.query(Guia)
@@ -43,7 +58,7 @@ def lista(page: int = 1, size: int = 50, db: Session = Depends(get_tenant_db)):
     return guias
 
 @router.get("/estado/{guia}", response_model=GuiaEstadoResponse)
-def estado(guia: int, db: Session = Depends(get_tenant_db)):
+def estado(guia: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     guia = db.query(Guia).filter(Guia.codigo_guia_pk == guia).first()
 
     if not guia:
@@ -52,7 +67,7 @@ def estado(guia: int, db: Session = Depends(get_tenant_db)):
     return guia
 
 @router.post("/estado-masivo", response_model=List[GuiaEstadoResponse])
-def estado_masivo(payload: GuiasMasivoRequest, db: Session = Depends(get_tenant_db)):
+def estado_masivo(payload: GuiasMasivoRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     resultados = db.query(Guia).filter(Guia.codigo_guia_pk.in_(payload.guias)).all()
 
     if not resultados:
@@ -61,7 +76,7 @@ def estado_masivo(payload: GuiasMasivoRequest, db: Session = Depends(get_tenant_
     return resultados
 
 @router.get("/estado-documento/{codigo_tercero}/{documento_cliente}", response_model=GuiaEstadoResponse)
-def estado_documento(codigo_tercero: int, documento_cliente: str, db: Session = Depends(get_tenant_db)):
+def estado_documento(codigo_tercero: int, documento_cliente: str, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
 
     stmt = (
         select(Guia)

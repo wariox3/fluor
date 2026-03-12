@@ -1,3 +1,4 @@
+import re
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from decouple import config
@@ -5,6 +6,8 @@ from fastapi import Depends, HTTPException, status
 from app.core.security import get_current_user
 from sqlalchemy.orm import declarative_base
 from threading import Lock
+
+VALID_DB_NAME = re.compile(r"^[a-zA-Z0-9_]+$")
 
 Base = declarative_base()
 tenant_engines = {}
@@ -16,6 +19,12 @@ DB_USER = config("DB_USER")
 DB_PASSWORD = config("DB_PASSWORD")
 
 def get_tenant_engine(database_name: str):
+    if not VALID_DB_NAME.match(database_name):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Nombre de base de datos no válido"
+        )
+
     if database_name in tenant_engines:
         return tenant_engines[database_name]
 

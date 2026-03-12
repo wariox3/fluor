@@ -11,6 +11,17 @@ class GuiaCreateRequest(BaseModel):
     codigo_guia_tipo_fk: str
     codigo_operacion_ingreso_fk: str
     codigo_tercero_fk: int
+    codigo_adquiriente_fk: int
+    codigo_empaque_fk: str
+    codigo_producto_fk: str
+    codigo_servicio_fk: str
+    codigo_ciudad_origen_fk: str
+    codigo_ciudad_destino_fk: str
+    documento_cliente: Optional[str] = None
+    remitente: str
+    nombre_destinatario: str
+    direccion_destinatario: str
+    telefono_destinatario: str
     unidades: float
     peso_real: float
     peso_volumen: float

@@ -20,4 +20,5 @@ class Fichero(Base):
     comprimido = Column(Boolean, default=False)
     tamano = Column(Float)
     usuario = Column(String(25))
+    directorio_base = Column(String(150))
     error_carga = Column(Boolean, default=False)
