@@ -13,3 +13,5 @@ B2_BUCKET_NAME = config("B2_BUCKET_NAME", default="")
 
 DEFAULT_EMPRESA_ID = 1
 
+APP_URL = config("APP_URL", default="http://localhost:4200")
+

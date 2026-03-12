@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import (Column, Enum, ForeignKey, Integer, String)
+from sqlalchemy import (Boolean, Column, Enum, ForeignKey, Integer, String)
 from sqlalchemy.orm import relationship
 from app.core.master_database import Base
 from app.modules.auth.models.tenant import Tenant
@@ -22,6 +22,8 @@ class User(Base):
     nombres = Column(String(150), nullable=True)
     apellidos = Column(String(150), nullable=True)
     numero_identificacion = Column(String(50), nullable=True)
+    is_verified = Column(Boolean, nullable=False, default=False)
+    verification_token = Column(String(64), nullable=True, unique=True, index=True)
 
     tenant = relationship(Tenant, back_populates="users")
 

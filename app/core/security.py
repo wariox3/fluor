@@ -138,6 +138,9 @@ def require_admin_control(user: dict = Depends(get_current_user_from_token)):
         )
     return user
 
+def generate_verification_token() -> str:
+    return secrets.token_urlsafe(48)
+
 def generate_api_key():
     raw_prefix = secrets.token_hex(4)
     prefix = f"erp_{raw_prefix}"    

@@ -44,6 +44,11 @@ class UserResponse(BaseModel):
     nombres: str | None = None
     apellidos: str | None = None
     numero_identificacion: str | None = None
+    is_verified: bool = False
 
     class Config:
-        from_attributes = True           
+        from_attributes = True
+
+class RegisterResponse(BaseModel):
+    user: UserResponse
+    verification_link: str
