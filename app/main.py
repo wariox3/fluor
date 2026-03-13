@@ -23,6 +23,7 @@ from app.modules.tte.models import *
 from app.modules.rhu.router import router as rhu_router
 from app.modules.tte.router import router as tte_router
 from app.modules.gen.router import router as gen_router
+from app.modules.fin.router import router as fin_router
 from app.modules.doc.router import router as doc_router
 from app.modules.auth.router import router as auth_router
 
@@ -61,5 +62,6 @@ app.add_middleware(
 app.include_router(rhu_router)
 app.include_router(tte_router)
 app.include_router(gen_router)
+app.include_router(fin_router)
 app.include_router(doc_router)
 app.include_router(auth_router)
