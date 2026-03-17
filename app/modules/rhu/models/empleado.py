@@ -6,4 +6,5 @@ class Empleado(Base):
 
     codigo_empleado_pk = Column(Integer, primary_key=True, index=True)
     nombre_corto = Column(String(100), nullable=False)    
+    numero_identificacion = Column(String(20))
     correo = Column(String(100))
