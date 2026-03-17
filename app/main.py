@@ -27,6 +27,7 @@ from app.modules.fin.router import router as fin_router
 from app.modules.doc.router import router as doc_router
 from app.modules.tur.router import router as tur_router
 from app.modules.crm.router import router as crm_router
+from app.modules.car.router import router as car_router
 from app.modules.auth.router import router as auth_router
 
 setup_logging()
@@ -71,4 +72,5 @@ app.include_router(fin_router)
 app.include_router(doc_router)
 app.include_router(tur_router)
 app.include_router(crm_router)
+app.include_router(car_router)
 app.include_router(auth_router)
