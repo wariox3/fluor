@@ -13,6 +13,7 @@ class UserInfo(BaseModel):
     email: str
     tenant_id: int | None = None
     role: UserRole | None = None
+    empleado_id: int | None = None
    
 class LoginResponse(BaseModel):
     access_token: str | None = None
@@ -28,6 +29,7 @@ class UserCreate(BaseModel):
     password: str
     tenant_id: int | None = None
     role: UserRole = UserRole.user
+    empleado_id: int | None = None
 
 class RegisterRequest(BaseModel):
     email: EmailStr
@@ -45,6 +47,7 @@ class UserResponse(BaseModel):
     apellidos: str | None = None
     numero_identificacion: str | None = None
     is_verified: bool = False
+    empleado_id: int | None = None
 
     class Config:
         from_attributes = True

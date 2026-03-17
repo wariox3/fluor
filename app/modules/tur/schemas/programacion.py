@@ -17,6 +17,12 @@ class ProgramacionListResponse(BaseModel):
 
 class ProgramacionItem(BaseModel):
     codigo_programacion_pk: int
+    puesto_nombre: Optional[str]
+    puesto_direccion: Optional[str]
+    coordinador_nombre: Optional[str]
+    programador_nombre: Optional[str]
+    codigo_modalidad_fk: Optional[str]
+    tercero_nombre_corto: Optional[str]
     dia_1: str
     dia_2: str
     dia_3: str

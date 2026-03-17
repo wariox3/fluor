@@ -24,6 +24,7 @@ class User(Base):
     numero_identificacion = Column(String(50), nullable=True)
     is_verified = Column(Boolean, nullable=False, default=False)
     verification_token = Column(String(64), nullable=True, unique=True, index=True)
+    empleado_id = Column(Integer, nullable=True)
 
     tenant = relationship(Tenant, back_populates="users")
 

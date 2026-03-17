@@ -22,7 +22,8 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
         "sub": str(user.id),
         "tenant_id": user.tenant_id,
         "tenant_schema": user.tenant.schema if user.tenant else None,
-        "role": user.role
+        "role": user.role,
+        "empleado_id": user.empleado_id
     }
 
     access_token = create_access_token(token_data)
@@ -32,7 +33,8 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
         "email": user.email,
         "tenant_id": user.tenant_id,
         "tenant_schema": user.tenant.schema if user.tenant else None,
-        "role": user.role
+        "role": user.role,
+        "empleado_id": user.empleado_id
     }
 
     # modo web
