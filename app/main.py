@@ -49,8 +49,11 @@ app.add_middleware(SlowAPIMiddleware)
 origins = [
     "http://localhost:4200",
     "https://semanticaapi.com.co",
+    "https://www.semanticaapi.com.co",
     "https://api.semanticaapi.com.co",
+    "https://www.api.semanticaapi.com.co",
     "https://empleado.co",
+    "https://www.empleado.co",
 ]
 
 app.add_middleware(
