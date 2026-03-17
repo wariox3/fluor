@@ -108,6 +108,7 @@ def me(current_user: dict = Depends(get_current_user_from_token), db: Session = 
         email=user.email,
         tenant_id=user.tenant_id,
         role=user.role,
+        empleado_id=user.empleado_id
     )
 
 @router.post("/logout")
