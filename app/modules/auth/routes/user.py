@@ -128,7 +128,10 @@ def verificar(request: Request, token: str, db: Session = Depends(get_master_db)
 
 @router.post("/asociar")
 @limiter.limit("10/minute")
-def asociar(request: Request, data: AsociarRequest, db: Session = Depends(get_master_db), _: dict = Depends(get_current_user),):
+def asociar(request: Request, data: AsociarRequest, db: Session = Depends(get_master_db), current_user: dict = Depends(get_current_user),):
+    if int(current_user.get("sub")) != data.usuario_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Estas tratando de cambiar informacion de otro usuario")
+
     user = db.query(User).filter(User.id == data.usuario_id).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario no encontrado")
