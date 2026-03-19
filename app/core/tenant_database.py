@@ -1,9 +1,10 @@
 import re
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 from decouple import config
 from fastapi import Depends, HTTPException, status
 from app.core.security import get_current_user
+from app.core.master_database import get_master_db
 from sqlalchemy.orm import declarative_base
 from threading import Lock
 
@@ -48,21 +49,18 @@ def get_tenant_engine(database_name: str):
         return engine
 
 
-def get_tenant_db(current_user=Depends(get_current_user)):    
-    database_name = current_user.get("tenant_schema")
-    if not database_name:
+def get_tenant_db(current_user: dict = Depends(get_current_user), master_db: Session = Depends(get_master_db),):
+    from app.modules.auth.models.user import User
+
+    user = master_db.query(User).filter(User.id == int(current_user.get("sub"))).first()
+    if not user or not user.tenant or not user.tenant.schema:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Usuario no tiene tenant asignado"
         )
 
-    engine = get_tenant_engine(database_name)
-    SessionLocal = sessionmaker(
-        autocommit=False,
-        autoflush=False,
-        bind=engine
-    )
-
+    engine = get_tenant_engine(user.tenant.schema)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     db = SessionLocal()
 
     try:
