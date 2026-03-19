@@ -11,7 +11,7 @@ router = APIRouter()
 
 
 @router.get("/lista", response_model=PagoListResponse)
-def lista(page: int = 1, size: int = 50, empleado_id: Optional[str] = None, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+def lista(page: int = 1, size: int = 50, empleado_id: Optional[int] = None, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     query = db.query(Pago)
     if empleado_id:
         query = query.filter(Pago.codigo_empleado_fk == empleado_id)

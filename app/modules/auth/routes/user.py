@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.security import require_admin
 from app.core.master_database import get_master_db
 from app.modules.auth.models.user import User, UserRole
-from app.modules.auth.schemas.user import UserCreate, UserResponse, RegisterRequest, RegisterResponse
+from app.modules.auth.schemas.user import UserCreate, UserResponse, RegisterRequest, RegisterResponse, RecuperarClaveRequest, RestablecerClaveRequest
 from app.core.security import hash_password, generate_verification_token
 from app.core.config import APP_URL
 from app.core.zinc import Zinc
@@ -73,6 +73,41 @@ def registrar(request: Request, data: RegisterRequest, db: Session = Depends(get
         logger.warning(f"No se pudo enviar correo de verificación a {new_user.email}: {e}")
 
     return RegisterResponse(user=UserResponse.model_validate(new_user), verification_link=verification_link)
+
+
+@router.post("/recuperar-clave")
+@limiter.limit("3/minute")
+def recuperar_clave(request: Request, data: RecuperarClaveRequest, db: Session = Depends(get_master_db)):
+    user = db.query(User).filter(User.email == data.email).first()
+    if user:
+        token = generate_verification_token()
+        user.reset_password_token = token
+        db.commit()
+        reset_link = f"{APP_URL}/auth/restablecer-clave?token={token}"
+        html_content = f"""
+            <h1>Recuperación de clave</h1>
+            <p>Recibimos una solicitud para restablecer la clave de tu cuenta.</p>
+            <p>Haz clic en el siguiente enlace para crear una nueva clave:</p>
+            <a href='{reset_link}'>Restablecer clave</a>
+            <p>Si no solicitaste esto, ignora este correo.</p>
+        """
+        try:
+            Zinc().correo(user.email, "Recuperación de clave", html_content)
+        except Exception as e:
+            logger.warning(f"No se pudo enviar correo de recuperación a {user.email}: {e}")
+    return {"detail": "Si el correo existe, recibirás las instrucciones para recuperar tu clave"}
+
+
+@router.post("/restablecer-clave")
+@limiter.limit("5/minute")
+def restablecer_clave(request: Request, data: RestablecerClaveRequest, db: Session = Depends(get_master_db)):
+    user = db.query(User).filter(User.reset_password_token == data.token).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token inválido o expirado")
+    user.password_hash = hash_password(data.nueva_clave)
+    user.reset_password_token = None
+    db.commit()
+    return {"detail": "Clave restablecida correctamente"}
 
 
 @router.get("/verificar")

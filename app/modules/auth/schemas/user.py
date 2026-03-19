@@ -55,3 +55,10 @@ class UserResponse(BaseModel):
 class RegisterResponse(BaseModel):
     user: UserResponse
     verification_link: str
+
+class RecuperarClaveRequest(BaseModel):
+    email: EmailStr
+
+class RestablecerClaveRequest(BaseModel):
+    token: str
+    nueva_clave: str
