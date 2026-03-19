@@ -26,22 +26,6 @@ def lista(page: int = 1, size: int = 50, empleado_id: Optional[int] = None, db: 
     return PagoListResponse(total=total, page=page, size=size, items=pagos)
 
 
-@router.get("/pdf")
-def lista_pdf(empleado_id: Optional[int] = None, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user),):
-    query = db.query(Pago)
-    if empleado_id:
-        query = query.filter(Pago.codigo_empleado_fk == empleado_id)
-    pagos = query.order_by(Pago.fecha_desde.desc()).all()
-
-    pdf_bytes = pago_pdf.generar(pagos, empleado_id)
-
-    return StreamingResponse(
-        BytesIO(pdf_bytes),
-        media_type="application/pdf",
-        headers={"Content-Disposition": "inline; filename=pagos.pdf"},
-    )
-
-
 @router.get("/{pago_id}/imprimir")
 def imprimir(pago_id: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     pago = db.query(Pago).filter(Pago.codigo_pago_pk == pago_id).first()
