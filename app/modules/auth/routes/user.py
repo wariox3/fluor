@@ -10,6 +10,7 @@ from app.modules.auth.schemas.user import UserCreate, UserResponse, RegisterRequ
 from app.core.security import hash_password, generate_verification_token
 from app.core.config import APP_URL
 from app.core.zinc import Zinc
+from app.core.turnstile import verify_turnstile
 from app.core.tenant_database import get_tenant_engine
 from app.modules.rhu.models.empleado import Empleado
 
@@ -42,6 +43,8 @@ def nuevo(request: Request, data: UserCreate, db: Session = Depends(get_master_d
 @router.post("/registrar", response_model=RegisterResponse)
 @limiter.limit("3/minute")
 def registrar(request: Request, data: RegisterRequest, db: Session = Depends(get_master_db)):
+    verify_turnstile(data.turnstile_token)
+
     existing_user = db.query(User).filter(User.email == data.email).first()
     if existing_user:
         raise HTTPException(
@@ -81,6 +84,8 @@ def registrar(request: Request, data: RegisterRequest, db: Session = Depends(get
 @router.post("/recuperar-clave")
 @limiter.limit("3/minute")
 def recuperar_clave(request: Request, data: RecuperarClaveRequest, db: Session = Depends(get_master_db)):
+    verify_turnstile(data.turnstile_token)
+
     user = db.query(User).filter(User.email == data.email).first()
     if user:
         token = generate_verification_token()
@@ -104,6 +109,8 @@ def recuperar_clave(request: Request, data: RecuperarClaveRequest, db: Session =
 @router.post("/restablecer-clave")
 @limiter.limit("5/minute")
 def restablecer_clave(request: Request, data: RestablecerClaveRequest, db: Session = Depends(get_master_db)):
+    verify_turnstile(data.turnstile_token)
+
     user = db.query(User).filter(User.reset_password_token == data.token).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token inválido o expirado")

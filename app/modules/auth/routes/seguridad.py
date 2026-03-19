@@ -2,6 +2,7 @@ from app.core.rate_limit import limiter
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from sqlalchemy.orm import Session
 from app.core.security import verify_password, create_access_token, create_refresh_token, decode_refresh_token, get_current_user_from_token
+from app.core.turnstile import verify_turnstile
 from app.modules.auth.schemas.user import LoginRequest, LoginResponse, UserInfo
 from app.core.master_database import get_master_db
 from app.modules.auth.models.user import User
@@ -11,6 +12,9 @@ router = APIRouter()
 @router.post("/login", response_model=LoginResponse, response_model_exclude_none=True)
 @limiter.limit("5/minute")
 def login(request: Request, data: LoginRequest, response: Response, db: Session = Depends(get_master_db)):    
+    if data.client_type not in ("integration", "api"):
+        verify_turnstile(data.turnstile_token)
+
     user = db.query(User).filter(User.email == data.email).first()
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(

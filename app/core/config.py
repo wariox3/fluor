@@ -17,3 +17,6 @@ APP_URL = config("APP_URL", default="http://localhost:4200")
 
 ZINC_URL = config("ZINC_URL", default="http://zinc.semantica.com.co")
 
+TURNSTILE_SECRET_KEY = config("TURNSTILE_SECRET_KEY", default="")
+TURNSTILE_ENABLED = config("TURNSTILE_ENABLED", default=True, cast=bool)
+

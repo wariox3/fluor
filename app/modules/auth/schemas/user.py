@@ -7,6 +7,7 @@ class LoginRequest(BaseModel):
     email: str
     password: str
     client_type: Literal["web", "api", "integration"]
+    turnstile_token: str | None = None
 
 class UserInfo(BaseModel):
     id: int
@@ -37,6 +38,7 @@ class RegisterRequest(BaseModel):
     nombres: str
     apellidos: str
     numero_identificacion: str
+    turnstile_token: str
 
 class UserResponse(BaseModel):
     id: int
@@ -58,10 +60,12 @@ class RegisterResponse(BaseModel):
 
 class RecuperarClaveRequest(BaseModel):
     email: EmailStr
+    turnstile_token: str
 
 class RestablecerClaveRequest(BaseModel):
     token: str
     nueva_clave: str
+    turnstile_token: str
 
 class AsociarRequest(BaseModel):
     usuario_id: int
