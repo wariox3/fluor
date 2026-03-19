@@ -1,0 +1,228 @@
+from io import BytesIO
+from datetime import datetime
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.units import cm
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+
+# ── Página ─────────────────────────────────────────────────────────────────────
+_MARGIN = 1.5 * cm
+_W = letter[0] - 2 * _MARGIN   # ~18.59 cm ancho útil
+
+# ── Colores ────────────────────────────────────────────────────────────────────
+_AZUL    = colors.HexColor("#1a3c5e")
+_GRIS_BG = colors.HexColor("#dce6f0")
+_BORDE   = colors.HexColor("#999999")
+
+# ── Estilos ────────────────────────────────────────────────────────────────────
+_S = {
+    "ts":       ParagraphStyle("ts",      fontSize=7,  textColor=colors.grey, alignment=TA_RIGHT),
+    "title":    ParagraphStyle("title",   fontSize=11, fontName="Helvetica-Bold", alignment=TA_CENTER, spaceAfter=2),
+    "co_info":  ParagraphStyle("co_info", fontSize=8,  leading=13),
+    "lbl":      ParagraphStyle("lbl",     fontSize=7,  fontName="Helvetica-Bold"),
+    "val":      ParagraphStyle("val",     fontSize=7),
+    "th":       ParagraphStyle("th",      fontSize=7,  fontName="Helvetica-Bold", textColor=colors.white, alignment=TA_CENTER),
+    "td":       ParagraphStyle("td",      fontSize=7),
+    "td_r":     ParagraphStyle("td_r",    fontSize=7,  alignment=TA_RIGHT),
+    "td_c":     ParagraphStyle("td_c",    fontSize=7,  alignment=TA_CENTER),
+    "tot_lbl":  ParagraphStyle("tl",      fontSize=8,  fontName="Helvetica-Bold", alignment=TA_RIGHT),
+    "tot_val":  ParagraphStyle("tv",      fontSize=8,  alignment=TA_RIGHT),
+    "neto_lbl": ParagraphStyle("nl",      fontSize=9,  fontName="Helvetica-Bold", alignment=TA_RIGHT),
+    "neto_val": ParagraphStyle("nv",      fontSize=9,  fontName="Helvetica-Bold", alignment=TA_RIGHT),
+}
+
+def _p(text, style="val") -> Paragraph:
+    return Paragraph(str(text), _S[style])
+
+def _fmt(v) -> str:
+    return f"{v:,.0f}" if v is not None else "0"
+
+def _fecha(d) -> str:
+    return d.strftime("%Y-%m-%d") if d else ""
+
+
+# ── Datos simulados (reemplazar con queries reales cuando estén disponibles) ───
+_EMPRESA = {
+    "nombre":    "EMPRESA DEMO S.A.S",
+    "nit":       "900000000-0",
+    "direccion": "CL 10 # 5 - 20 CENTRO",
+    "telefono":  "6000000",
+}
+
+
+def _estilo_info_grid() -> TableStyle:
+    return TableStyle([
+        # Fondo gris en columnas de etiqueta (0, 2, 4)
+        ("BACKGROUND",    (0, 0), (0, -1), _GRIS_BG),
+        ("BACKGROUND",    (2, 0), (2, -1), _GRIS_BG),
+        ("BACKGROUND",    (4, 0), (4, -1), _GRIS_BG),
+        ("FONTNAME",      (0, 0), (0, -1), "Helvetica-Bold"),
+        ("FONTNAME",      (2, 0), (2, -1), "Helvetica-Bold"),
+        ("FONTNAME",      (4, 0), (4, -1), "Helvetica-Bold"),
+        ("FONTSIZE",      (0, 0), (-1, -1), 7),
+        ("GRID",          (0, 0), (-1, -1), 0.3, _BORDE),
+        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING",    (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 4),
+    ])
+
+
+def generar(pago, empleado) -> bytes:
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        leftMargin=_MARGIN, rightMargin=_MARGIN,
+        topMargin=_MARGIN,  bottomMargin=_MARGIN,
+    )
+    story = []
+
+    # ── Timestamp ──────────────────────────────────────────────────────────────
+    story.append(_p(
+        f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} [Semantica | ERP]", "ts"
+    ))
+
+    # ── Título ─────────────────────────────────────────────────────────────────
+    story.append(_p("COMPROBANTE DE PAGO DE NÓMINA", "title"))
+    story.append(Spacer(1, 0.15 * cm))
+
+    # ── Cabecera: logo + datos empresa ─────────────────────────────────────────
+    logo_box = Table([[""]], colWidths=[3.2 * cm], rowHeights=[2.8 * cm])
+    logo_box.setStyle(TableStyle([
+        ("BOX",    (0, 0), (-1, -1), 0.5, _BORDE),
+        ("ALIGN",  (0, 0), (-1, -1), "CENTER"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+    ]))
+
+    e = _EMPRESA
+    empresa_info = _p(
+        f"<b>EMPRESA:</b> {e['nombre']}<br/>"
+        f"<b>NIT:</b> {e['nit']}<br/>"
+        f"<b>DIRECCIÓN:</b> {e['direccion']}<br/>"
+        f"<b>TELÉFONO:</b> {e['telefono']}",
+        "co_info"
+    )
+
+    header = Table([[logo_box, empresa_info]], colWidths=[3.5 * cm, _W - 3.5 * cm])
+    header.setStyle(TableStyle([
+        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING",   (1, 0), (1, 0), 8),
+        ("TOPPADDING",    (0, 0), (-1, -1), 2),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+    ]))
+    story.append(header)
+    story.append(Spacer(1, 0.3 * cm))
+
+    # ── Grid de datos del empleado ─────────────────────────────────────────────
+    nombre = getattr(empleado, "nombre_corto", "N/A") if empleado else "N/A"
+    nro_id = getattr(empleado, "numero_identificacion", "N/A") if empleado else "N/A"
+
+    # Campos simulados
+    numero   = str(pago.codigo_pago_pk)
+    periodo  = "MENSUAL"
+    cuenta   = "N/A"
+    banco    = "N/A"
+    cargo    = "N/A"
+    pension  = "N/A"
+    grupo    = "N/A"
+    salud    = "N/A"
+    puesto   = "N/A"
+    cliente  = "N/A"
+    zona     = "N/A"
+    salario  = _fmt(pago.vr_salario_contrato)
+
+    # Anchos: etiqueta | valor | etiqueta | valor | etiqueta | valor
+    cw = [2.2*cm, 4.0*cm, 2.6*cm, 3.0*cm, 2.5*cm, 4.29*cm]
+
+    L = lambda t: _p(t, "lbl")
+    V = lambda t: _p(t, "val")
+
+    grid_data = [
+        [L("NÚMERO:"),      V(numero),  L("PERIODO:"),        V(periodo),                    L("CUENTA:"),   V(cuenta)  ],
+        [L("EMPLEADO:"),    V(nombre),  L("IDENTIFICACIÓN:"), V(nro_id),                     L("BANCO:"),    V(banco)   ],
+        [L("CARGO:"),       V(cargo),   L("DESDE:"),          V(_fecha(pago.fecha_desde)),   L("PENSIÓN:"),  V(pension) ],
+        [L("GRUPO"),        V(grupo),   L("HASTA:"),          V(_fecha(pago.fecha_hasta)),   L("SALUD:"),    V(salud)   ],
+        [L("PUESTO:"),      V(puesto),  L("CLIENTE:"),        V(cliente),                    L("ZONA:"),     V(zona)    ],
+        [V(""),             V(""),      V(""),                V(""),                         L("SALARIO:"),  _p(salario, "td_r")],
+        [L("COMENTARIO:"),  V(""),      V(""),                V(""),                         V(""),          V("")       ],
+    ]
+
+    grid = Table(grid_data, colWidths=cw)
+    grid_style = _estilo_info_grid()
+    grid_style.add("SPAN", (1, 6), (5, 6))   # valor comentario ocupa cols 1-5
+    grid_style.add("SPAN", (0, 5), (3, 5))   # celda vacía antes de SALARIO
+    grid_style.add("BACKGROUND", (0, 5), (3, 5), colors.white)
+    grid_style.add("FONTNAME", (0, 5), (3, 5), "Helvetica")
+    grid.setStyle(grid_style)
+    story.append(grid)
+    story.append(Spacer(1, 0.3 * cm))
+
+    # ── Tabla de conceptos ─────────────────────────────────────────────────────
+    ccw = [0.8*cm, 5.3*cm, 3.0*cm, 1.5*cm, 1.2*cm, 1.0*cm, 2.8*cm, 2.99*cm]
+
+    conceptos_header = [
+        _p("COD", "th"), _p("CONCEPTO", "th"), _p("DETALLE", "th"),
+        _p("HORAS", "th"), _p("DÍAS", "th"), _p("%", "th"),
+        _p("DEVENGADO", "th"), _p("DEDUCCIÓN", "th"),
+    ]
+
+    # Conceptos simulados derivados de los totales
+    eps_d     = round((pago.vr_deduccion or 0) * 0.5)
+    pension_d = (pago.vr_deduccion or 0) - eps_d
+    sal_d     = pago.vr_salario_contrato or 0
+
+    def concepto(cod, nombre, det="", hrs="", dias="", pct="", dev=0, ded=0):
+        return [
+            _p(str(cod), "td_c"), _p(nombre, "td"),      _p(det, "td"),
+            _p(str(hrs), "td_c"), _p(str(dias), "td_c"), _p(str(pct), "td_c"),
+            _p(_fmt(dev), "td_r"), _p(_fmt(ded), "td_r"),
+        ]
+
+    conceptos_data = [
+        conceptos_header,
+        concepto(1,   "SALARIO ORDINARIO",  dias=30, pct=100, dev=sal_d),
+        concepto(84,  "DEDUCCIÓN EPS",      pct=4,   ded=eps_d),
+        concepto(502, "PENSIÓN",            pct=4,   ded=pension_d),
+    ]
+
+    conceptos_table = Table(conceptos_data, colWidths=ccw, repeatRows=1)
+    conceptos_table.setStyle(TableStyle([
+        ("BACKGROUND",    (0, 0), (-1, 0), _AZUL),
+        ("FONTSIZE",      (0, 0), (-1, -1), 7),
+        ("GRID",          (0, 0), (-1, -1), 0.3, _BORDE),
+        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING",    (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 3),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 3),
+    ]))
+    story.append(conceptos_table)
+    story.append(Spacer(1, 0.3 * cm))
+
+    # ── Totales (derecha) ──────────────────────────────────────────────────────
+    tot_cw = [_W - 5.6 * cm, 2.9 * cm, 2.7 * cm]
+
+    totales_data = [
+        [_p(""), _p("TOTAL DEVENGADO:",   "tot_lbl"), _p(_fmt(pago.vr_devengado),              "tot_val")],
+        [_p(""), _p("TOTAL DEDUCCIONES:", "tot_lbl"), _p(f"-{_fmt(pago.vr_deduccion)}",        "tot_val")],
+        [_p(""), _p("NETO PAGAR",         "neto_lbl"), _p(_fmt(pago.vr_neto),                  "neto_val")],
+    ]
+
+    totales_table = Table(totales_data, colWidths=tot_cw)
+    totales_table.setStyle(TableStyle([
+        ("GRID",          (1, 0), (2, -1), 0.3, _BORDE),
+        ("BACKGROUND",    (1, 2), (2, 2),  _GRIS_BG),
+        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING",    (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 4),
+    ]))
+    story.append(totales_table)
+
+    doc.build(story)
+    return buffer.getvalue()
