@@ -1,3 +1,4 @@
+import logging
 from app.core.rate_limit import limiter
 from fastapi import APIRouter, HTTPException, status, Depends, Request
 from sqlalchemy.orm import Session
@@ -7,6 +8,9 @@ from app.modules.auth.models.user import User, UserRole
 from app.modules.auth.schemas.user import UserCreate, UserResponse, RegisterRequest, RegisterResponse
 from app.core.security import hash_password, generate_verification_token
 from app.core.config import APP_URL
+from app.core.zinc import Zinc
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -57,7 +61,16 @@ def registrar(request: Request, data: RegisterRequest, db: Session = Depends(get
     db.refresh(new_user)
 
     verification_link = f"{APP_URL}/auth/verify-email?token={token}"
-    # TODO: enviar verification_link por correo a new_user.email
+
+    html_content = f"""
+        <h1>¡Hola {new_user.nombres}!</h1>
+        <p>Estamos comprometidos con la seguridad. Por favor verifica tu cuenta haciendo clic en el siguiente enlace.</p>
+        <a href='{verification_link}'>Verificar cuenta</a>
+    """
+    try:
+        Zinc().correo(new_user.email, "Verifica tu cuenta", html_content)
+    except Exception as e:
+        logger.warning(f"No se pudo enviar correo de verificación a {new_user.email}: {e}")
 
     return RegisterResponse(user=UserResponse.model_validate(new_user), verification_link=verification_link)
 
