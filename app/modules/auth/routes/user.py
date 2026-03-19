@@ -1,14 +1,17 @@
 import logging
 from app.core.rate_limit import limiter
 from fastapi import APIRouter, HTTPException, status, Depends, Request
-from sqlalchemy.orm import Session
-from app.core.security import require_admin
+from sqlalchemy.orm import Session, sessionmaker
+from app.core.security import require_admin, get_current_user
 from app.core.master_database import get_master_db
 from app.modules.auth.models.user import User, UserRole
-from app.modules.auth.schemas.user import UserCreate, UserResponse, RegisterRequest, RegisterResponse, RecuperarClaveRequest, RestablecerClaveRequest
+from app.modules.auth.models.tenant import Tenant
+from app.modules.auth.schemas.user import UserCreate, UserResponse, RegisterRequest, RegisterResponse, RecuperarClaveRequest, RestablecerClaveRequest, AsociarRequest
 from app.core.security import hash_password, generate_verification_token
 from app.core.config import APP_URL
 from app.core.zinc import Zinc
+from app.core.tenant_database import get_tenant_engine
+from app.modules.rhu.models.empleado import Empleado
 
 logger = logging.getLogger(__name__)
 
@@ -122,3 +125,39 @@ def verificar(request: Request, token: str, db: Session = Depends(get_master_db)
     user.verification_token = None
     db.commit()
     return {"detail": "Cuenta verificada correctamente"}
+
+@router.post("/asociar")
+@limiter.limit("10/minute")
+def asociar(request: Request, data: AsociarRequest, db: Session = Depends(get_master_db), _: dict = Depends(get_current_user),):
+    user = db.query(User).filter(User.id == data.usuario_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario no encontrado")
+    if user.tenant_id == data.tenant_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El usuario ya está asociado a esta empresa")
+    if user.role != UserRole.employee:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Solo los usuarios con rol empleado pueden ser asociados a una empresa")
+    tenant = db.query(Tenant).filter(Tenant.id == data.tenant_id).first()
+    if not tenant or not tenant.schema:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empresa no encontrada")
+
+    engine = get_tenant_engine(tenant.schema)
+    TenantSession = sessionmaker(bind=engine)
+    tenant_db = TenantSession()
+    try:
+        empleado = tenant_db.query(Empleado).filter(
+            Empleado.numero_identificacion == user.numero_identificacion,
+            Empleado.correo == user.email,
+        ).first()
+    finally:
+        tenant_db.close()
+
+    if not empleado:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No se encontró un empleado con ese número de identificación {user.numero_identificacion} y correo {user.email} en la empresa indicada"
+        )
+
+    user.tenant_id = data.tenant_id
+    user.empleado_id = empleado.codigo_empleado_pk
+    db.commit()
+    return {"detail": "Usuario asociado correctamente a la empresa"}

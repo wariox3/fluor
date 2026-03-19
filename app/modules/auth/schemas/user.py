@@ -62,3 +62,7 @@ class RecuperarClaveRequest(BaseModel):
 class RestablecerClaveRequest(BaseModel):
     token: str
     nueva_clave: str
+
+class AsociarRequest(BaseModel):
+    usuario_id: int
+    tenant_id: int
