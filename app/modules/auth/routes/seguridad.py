@@ -47,7 +47,7 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
             value=access_token,
             httponly=True,
             secure=True,
-            samesite="Strict",
+            samesite="none",
             max_age=3600
         )
         response.set_cookie(
@@ -55,7 +55,7 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
             value=refresh_token,
             httponly=True,
             secure=True,
-            samesite="Strict",
+            samesite="none",
             path="/",
             max_age=7 * 24 * 3600
         )
@@ -94,7 +94,7 @@ def refresh(request: Request, response: Response):
         value=new_access_token,
         httponly=True,
         secure=True,
-        samesite="Strict",
+        samesite="none",
         max_age=3600
     )
     return {"message": "Token renovado"}
@@ -118,13 +118,13 @@ def logout(request: Request, response: Response):
         key="access_token",
         httponly=True,
         secure=True,
-        samesite="Strict"
+        samesite="none"
     )
     response.delete_cookie(
         key="refresh_token",
         httponly=True,
         secure=True,
-        samesite="Strict",
+        samesite="none",
         path="/"
     )
     return {"message": "Sesión cerrada"}
