@@ -11,10 +11,10 @@ router = APIRouter()
 
 
 @router.get("/lista", response_model=PagoListResponse)
-def lista(page: int = 1, size: int = 50, numero_identificacion: Optional[str] = None, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+def lista(page: int = 1, size: int = 50, empleado_id: Optional[str] = None, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     query = db.query(Pago)
-    if numero_identificacion:
-        query = query.filter(Pago.codigo_empleado_fk == numero_identificacion)
+    if empleado_id:
+        query = query.filter(Pago.codigo_empleado_fk == empleado_id)
     total = query.with_entities(func.count(Pago.codigo_pago_pk)).scalar()
     offset = (page - 1) * size
     pagos = query.offset(offset).limit(size).all()
