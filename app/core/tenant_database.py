@@ -51,15 +51,27 @@ def get_tenant_engine(database_name: str):
 
 def get_tenant_db(current_user: dict = Depends(get_current_user), master_db: Session = Depends(get_master_db),):
     from app.modules.auth.models.user import User
+    from app.modules.auth.models.tenant import Tenant
 
-    user = master_db.query(User).filter(User.id == int(current_user.get("sub"))).first()
-    if not user or not user.tenant or not user.tenant.schema:
+    sub = current_user.get("sub", "")
+
+    if sub.lstrip("-").isdigit():
+        # JWT: sub es el ID del usuario — consultamos en tiempo real para reflejar cambios de tenant
+        user = master_db.query(User).filter(User.id == int(sub)).first()
+        schema = user.tenant.schema if user and user.tenant else None
+    else:
+        # API Key: sub es el prefix — usamos tenant_id del payload para obtener el schema
+        tenant_id = current_user.get("tenant_id")
+        tenant = master_db.query(Tenant).filter(Tenant.id == tenant_id).first() if tenant_id else None
+        schema = tenant.schema if tenant else None
+
+    if not schema:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Usuario no tiene tenant asignado"
         )
 
-    engine = get_tenant_engine(user.tenant.schema)
+    engine = get_tenant_engine(schema)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     db = SessionLocal()
 

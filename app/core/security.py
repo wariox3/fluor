@@ -93,7 +93,6 @@ def get_current_user(
         return {
             "sub": key.prefix,
             "tenant_id": key.tenant_id,
-            "tenant_schema": key.tenant.schema if key.tenant else None,
         }
 
     # 4. Cookie / Session

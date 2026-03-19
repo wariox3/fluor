@@ -21,7 +21,6 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
     token_data = {
         "sub": str(user.id),
         "tenant_id": user.tenant_id,
-        "tenant_schema": user.tenant.schema if user.tenant else None,
         "role": user.role,
         "empleado_id": user.empleado_id
     }
@@ -32,7 +31,6 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
         "id": user.id,
         "email": user.email,
         "tenant_id": user.tenant_id,
-        "tenant_schema": user.tenant.schema if user.tenant else None,
         "role": user.role,
         "empleado_id": user.empleado_id
     }
@@ -83,7 +81,6 @@ def refresh(request: Request, response: Response):
     token_data = {
         "sub": payload["sub"],
         "tenant_id": payload.get("tenant_id"),
-        "tenant_schema": payload.get("tenant_schema"),
         "role": payload.get("role"),
     }
 
