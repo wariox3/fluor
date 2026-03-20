@@ -19,6 +19,7 @@ from app.modules.auth.models import *  # noqa: F401,F403 — registra modelos en
 
 from app.modules.rhu.models import *
 from app.modules.tte.models import *
+from app.modules.tur.models import *
 
 from app.modules.rhu.router import router as rhu_router
 from app.modules.tte.router import router as tte_router

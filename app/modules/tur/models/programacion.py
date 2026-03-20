@@ -6,3 +6,4 @@ class Programacion(Base):
     __tablename__ = "tur_programacion"
 
     codigo_programacion_pk = Column(Integer, primary_key=True, index=True)
+    codigo_empleado_fk = Column(Integer, ForeignKey("rhu_empleado.codigo_empleado_pk"), index=True)
