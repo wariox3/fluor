@@ -15,6 +15,9 @@ class PagoResponse(PagoBase):
 class PagoResponse(BaseModel):
     codigo_pago_pk: int
     codigo_empleado_fk: int
+    codigo_pago_tipo_fk: Optional[str]
+    pago_tipo_nombre: Optional[str]
+    numero: Optional[int]
     fecha_desde: Optional[datetime]
     fecha_hasta: Optional[datetime]
     vr_salario_contrato: float

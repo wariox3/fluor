@@ -71,7 +71,8 @@ def _estilo_info_grid() -> TableStyle:
     ])
 
 
-def generar(pago, empleado) -> bytes:
+def generar(pago, detalles) -> bytes:
+    empleado = pago.empleado
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -170,24 +171,19 @@ def generar(pago, empleado) -> bytes:
         _p("DEVENGADO", "th"), _p("DEDUCCIÓN", "th"),
     ]
 
-    # Conceptos simulados derivados de los totales
-    eps_d     = round((pago.vr_deduccion or 0) * 0.5)
-    pension_d = (pago.vr_deduccion or 0) - eps_d
-    sal_d     = pago.vr_salario_contrato or 0
-
-    def concepto(cod, nombre, det="", hrs="", dias="", pct="", dev=0, ded=0):
+    def fila_detalle(d):
         return [
-            _p(str(cod), "td_c"), _p(nombre, "td"),      _p(det, "td"),
-            _p(str(hrs), "td_c"), _p(str(dias), "td_c"), _p(str(pct), "td_c"),
-            _p(_fmt(dev), "td_r"), _p(_fmt(ded), "td_r"),
+            _p(d.codigo_concepto_fk or "", "td_c"),
+            _p(d.concepto_nombre or "", "td"),
+            _p(d.detalle or "", "td"),
+            _p(_fmt(d.horas) if d.horas else "", "td_c"),
+            _p(_fmt(d.dias) if d.dias else "", "td_c"),
+            _p(_fmt(d.porcentaje) if d.porcentaje else "", "td_c"),
+            _p(_fmt(d.vr_devengado), "td_r"),
+            _p(_fmt(d.vr_deduccion), "td_r"),
         ]
 
-    conceptos_data = [
-        conceptos_header,
-        concepto(1,   "SALARIO ORDINARIO",  dias=30, pct=100, dev=sal_d),
-        concepto(84,  "DEDUCCIÓN EPS",      pct=4,   ded=eps_d),
-        concepto(502, "PENSIÓN",            pct=4,   ded=pension_d),
-    ]
+    conceptos_data = [conceptos_header] + [fila_detalle(d) for d in (detalles or [])]
 
     conceptos_table = Table(conceptos_data, colWidths=ccw, repeatRows=1)
     conceptos_table.setStyle(TableStyle([
