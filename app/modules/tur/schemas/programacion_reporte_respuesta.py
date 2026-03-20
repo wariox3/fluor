@@ -8,7 +8,6 @@ class ProgramacionReporteRespuestaResponse(BaseModel):
     codigo_programacion_reporte_fk: int
     fecha: Optional[datetime]
     respuesta: Optional[str]
-    usuario: Optional[str]
 
     model_config = {"from_attributes": True}
 

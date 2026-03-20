@@ -22,6 +22,12 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
             detail="Credenciales inválidas"
         )
 
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cuenta no verificada"
+        )
+
     token_data = {
         "sub": str(user.id),
         "tenant_id": user.tenant_id,
