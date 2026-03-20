@@ -6,6 +6,7 @@ from .routes import pago_detalle
 from .routes import contrato
 from .routes import reclamo
 from .routes import reclamo_concepto
+from .routes import reclamo_respuesta
 
 router = APIRouter(
     prefix="/rhu"
@@ -18,3 +19,4 @@ router.include_router(pago_detalle.router, prefix="/pago_detalle", tags=["Recurs
 router.include_router(contrato.router, prefix="/contrato", tags=["Recurso Humano / Contrato"])
 router.include_router(reclamo.router, prefix="/reclamo", tags=["Recurso Humano / Reclamo"])
 router.include_router(reclamo_concepto.router, prefix="/reclamo_concepto", tags=["Recurso Humano / Reclamo Concepto"])
+router.include_router(reclamo_respuesta.router, prefix="/reclamo_respuesta", tags=["Recurso Humano / Reclamo Respuesta"])

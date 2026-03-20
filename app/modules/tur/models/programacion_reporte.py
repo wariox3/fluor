@@ -22,6 +22,7 @@ class ProgramacionReporte(Base):
     estado_cerrado = Column(Boolean, default=False)
     dia_desde = Column(Integer, nullable=True)
     dia_hasta = Column(Integer, nullable=True)
+    codigo_empresa_fk = Column(Integer, nullable=True)
 
     programacion_reporte_tipo = relationship("ProgramacionReporteTipo", foreign_keys=[codigo_programacion_reporte_tipo_fk], primaryjoin="ProgramacionReporte.codigo_programacion_reporte_tipo_fk == ProgramacionReporteTipo.codigo_programacion_reporte_tipo_pk")
 

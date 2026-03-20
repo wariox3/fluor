@@ -5,4 +5,5 @@ from .pago import Pago
 from .pago_detalle import PagoDetalle
 from .reclamo_concepto import ReclamoConcepto
 from .reclamo import Reclamo
+from .reclamo_respuesta import ReclamoRespuesta
 from .contrato import Contrato
