@@ -15,6 +15,8 @@ class ReclamoResponse(ReclamoBase):
 class ReclamoResponse(BaseModel):
     codigo_reclamo_pk: int
     codigo_empleado_fk: int
+    codigo_reclamo_concepto_fk: Optional[str]
+    concepto_nombre: Optional[str]
     fecha: Optional[datetime]
     fecha_cierre: Optional[datetime]
     descripcion: str
@@ -27,6 +29,12 @@ class ReclamoResponse(BaseModel):
 
     model_config = {"from_attributes": True}
 
+
+class ReclamoCreate(BaseModel):
+    codigo_empleado_fk: int
+    codigo_reclamo_concepto_fk: str
+    fecha: Optional[datetime] = None
+    descripcion: str
 
 class ReclamoListResponse(BaseModel):
     total: int
