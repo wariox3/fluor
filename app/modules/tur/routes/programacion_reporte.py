@@ -1,14 +1,42 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import Optional
+from datetime import date
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.tur.models.programacion import Programacion
 from app.modules.tur.models.programacion_reporte import ProgramacionReporte
-from app.modules.tur.schemas.programacion_reporte import ProgramacionReporteListResponse
+from app.modules.tur.schemas.programacion_reporte import ProgramacionReporteCreate, ProgramacionReporteListResponse, ProgramacionReporteResponse
 
 router = APIRouter()
+
+
+@router.post("/nuevo", response_model=ProgramacionReporteResponse)
+def nuevo(data: ProgramacionReporteCreate, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    programacion = db.query(Programacion).filter(Programacion.codigo_programacion_pk == data.codigo_programacion_fk).first()
+    if not programacion:
+        raise HTTPException(status_code=404, detail="Programacion no encontrada")
+
+    reporte = ProgramacionReporte(
+        codigo_programacion_fk=data.codigo_programacion_fk,
+        codigo_programacion_reporte_tipo_fk=data.codigo_programacion_reporte_tipo_fk,
+        fecha=data.fecha or date.today(),
+        reporta=data.reporta,
+        comentario=data.comentario,
+        dia_desde=data.dia_desde,
+        dia_hasta=data.dia_hasta,
+        cantidad_respuestas=0,
+        estado_autorizado=False,
+        estado_aprobado=False,
+        estado_anulado=False,
+        estado_atendido=False,
+        estado_cerrado=False,
+    )
+    db.add(reporte)
+    db.commit()
+    db.refresh(reporte)
+    return reporte
 
 
 @router.get("/lista", response_model=ProgramacionReporteListResponse)

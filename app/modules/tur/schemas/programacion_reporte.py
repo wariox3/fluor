@@ -24,6 +24,16 @@ class ProgramacionReporteResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ProgramacionReporteCreate(BaseModel):
+    codigo_programacion_fk: int
+    codigo_programacion_reporte_tipo_fk: Optional[str] = None
+    fecha: Optional[datetime] = None
+    reporta: Optional[str] = None
+    comentario: Optional[str] = None
+    dia_desde: Optional[int] = None
+    dia_hasta: Optional[int] = None
+
+
 class ProgramacionReporteListResponse(BaseModel):
     total: int
     page: int
