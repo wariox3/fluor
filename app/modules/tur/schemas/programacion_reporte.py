@@ -26,12 +26,10 @@ class ProgramacionReporteResponse(BaseModel):
 
 class ProgramacionReporteCreate(BaseModel):
     codigo_programacion_fk: int
-    codigo_programacion_reporte_tipo_fk: Optional[str] = None
-    fecha: Optional[datetime] = None
-    reporta: Optional[str] = None
-    comentario: Optional[str] = None
-    dia_desde: Optional[int] = None
-    dia_hasta: Optional[int] = None
+    codigo_programacion_reporte_tipo_fk: str
+    comentario: str
+    dia_desde: int
+    dia_hasta: int
 
 
 class ProgramacionReporteListResponse(BaseModel):
