@@ -6,8 +6,8 @@ class Reclamo(Base):
     __tablename__ = "rhu_reclamo"
 
     codigo_reclamo_pk = Column(Integer, primary_key=True, index=True)
-    codigo_empleado_fk = Column(Integer, index=True)
-    codigo_reclamo_concepto_fk = Column(String(10), ForeignKey("rhu_reclamo_concepto.codigo_reclamo_concepto_pk"), nullable=True)
+    codigo_empleado_fk = Column(Integer, ForeignKey("rhu_empleado.codigo_empleado_pk"), index=True)
+    codigo_reclamo_concepto_fk = Column(String(10), ForeignKey("rhu_reclamo_concepto.codigo_reclamo_concepto_pk"), index=True, nullable=True)
     fecha = Column(Date)
     fecha_cierre = Column(Date)
     descripcion = Column(String(2000), nullable=False)
@@ -20,9 +20,9 @@ class Reclamo(Base):
     codigo_empresa_fk = Column(Integer)
     usuario = Column(String(50), nullable=True)
 
-    concepto = relationship("ReclamoConcepto", foreign_keys=[codigo_reclamo_concepto_fk])
+    reclamo_concepto = relationship("ReclamoConcepto", foreign_keys=[codigo_reclamo_concepto_fk])
 
     @property
-    def concepto_nombre(self) -> str | None:
-        return self.concepto.nombre if self.concepto else None
+    def reclamo_concepto_nombre(self) -> str | None:
+        return self.reclamo_concepto.nombre if self.reclamo_concepto else None
 

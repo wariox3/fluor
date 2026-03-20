@@ -49,7 +49,7 @@ def nuevo(data: ReclamoCreate, db: Session = Depends(get_tenant_db), current_use
 
 @router.get("/lista", response_model=ReclamoListResponse)
 def lista(page: int = 1, size: int = 50, empleado_id: Optional[int] = None, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
-    query = db.query(Reclamo).options(joinedload(Reclamo.concepto))
+    query = db.query(Reclamo).options(joinedload(Reclamo.reclamo_concepto))
     if empleado_id:
         query = query.filter(Reclamo.codigo_empleado_fk == empleado_id)
     total = query.with_entities(func.count(Reclamo.codigo_reclamo_pk)).scalar()

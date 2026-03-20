@@ -16,7 +16,7 @@ class ReclamoResponse(BaseModel):
     codigo_reclamo_pk: int
     codigo_empleado_fk: int
     codigo_reclamo_concepto_fk: Optional[str]
-    concepto_nombre: Optional[str]
+    reclamo_concepto_nombre: Optional[str]
     fecha: Optional[datetime]
     fecha_cierre: Optional[datetime]
     descripcion: str
