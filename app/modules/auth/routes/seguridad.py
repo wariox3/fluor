@@ -25,7 +25,7 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
     if not user.is_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cuenta no verificada"
+            detail={"message": "Cuenta no verificada", "is_verified": False}
         )
 
     token_data = {
