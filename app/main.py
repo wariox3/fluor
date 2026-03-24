@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.exceptions import HTTPException
 
 # Importar modulos para rate limit
 from slowapi.middleware import SlowAPIMiddleware
@@ -12,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # Importar modulos para control errores
 from app.core.logging import setup_logging
-from app.core.middleware import ErrorHandlingMiddleware
+from app.core.middleware import ErrorHandlingMiddleware, http_exception_handler
 
 from app.core.master_database import Base as MasterBase, engine as master_engine
 from app.modules.auth.models import *  # noqa: F401,F403 — registra modelos en MasterBase
@@ -45,6 +46,7 @@ app.middleware("http")(ErrorHandlingMiddleware())
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_middleware(SlowAPIMiddleware)
 
 
