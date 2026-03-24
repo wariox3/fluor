@@ -6,7 +6,7 @@ from app.core.security import require_admin, get_current_user
 from app.core.master_database import get_master_db
 from app.modules.auth.models.user import User, UserRole
 from app.modules.auth.models.tenant import Tenant
-from app.modules.auth.schemas.user import UserCreate, UserResponse, RegisterRequest, RegisterResponse, RecuperarClaveRequest, RestablecerClaveRequest, AsociarRequest
+from app.modules.auth.schemas.user import UserCreate, UserResponse, RegisterRequest, RegisterResponse, RecuperarClaveRequest, RestablecerClaveRequest, AsociarRequest, ReenviarVerificacionRequest
 from app.core.security import hash_password, generate_verification_token
 from app.core.config import APP_URL
 from app.core.zinc import Zinc
@@ -132,6 +132,29 @@ def verificar(request: Request, token: str, db: Session = Depends(get_master_db)
     user.verification_token = None
     db.commit()
     return {"detail": "Cuenta verificada correctamente"}
+
+@router.post("/reenviar-verificacion")
+@limiter.limit("3/minute")
+def reenviar_verificacion(request: Request, data: ReenviarVerificacionRequest, db: Session = Depends(get_master_db)):
+    verify_turnstile(data.turnstile_token)
+
+    user = db.query(User).filter(User.email == data.email).first()
+    if user and not user.is_verified:
+        token = generate_verification_token()
+        user.verification_token = token
+        db.commit()
+        verification_link = f"{APP_URL}/auth/verify-email?token={token}"
+        html_content = f"""
+            <h1>¡Hola {user.nombres}!</h1>
+            <p>Solicitaste reenviar el correo de verificación. Haz clic en el siguiente enlace para verificar tu cuenta.</p>
+            <a href='{verification_link}'>Verificar cuenta</a>
+        """
+        try:
+            Zinc().correo(user.email, "Verifica tu cuenta", html_content)
+        except Exception as e:
+            logger.warning(f"No se pudo reenviar correo de verificación a {user.email}: {e}")
+    return {"detail": "Si el correo existe y la cuenta no está verificada, recibirás el enlace de verificación"}
+
 
 @router.post("/asociar")
 @limiter.limit("10/minute")

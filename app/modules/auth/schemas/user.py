@@ -70,3 +70,7 @@ class RestablecerClaveRequest(BaseModel):
 class AsociarRequest(BaseModel):
     usuario_id: int
     tenant_id: int
+
+class ReenviarVerificacionRequest(BaseModel):
+    email: EmailStr
+    turnstile_token: str
