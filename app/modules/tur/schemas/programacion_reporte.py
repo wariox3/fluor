@@ -30,6 +30,7 @@ class ProgramacionReporteCreate(BaseModel):
     comentario: str
     dia_desde: int
     dia_hasta: int
+    reporta: Optional[str]
 
 
 class ProgramacionReporteListResponse(BaseModel):

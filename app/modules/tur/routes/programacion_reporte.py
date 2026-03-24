@@ -26,6 +26,7 @@ def nuevo(data: ProgramacionReporteCreate, db: Session = Depends(get_tenant_db),
         dia_desde=data.dia_desde,
         dia_hasta=data.dia_hasta,
         fecha=datetime.now(),
+        reporta=data.reporta,
         codigo_empresa_fk=DEFAULT_EMPRESA_ID,
     )
     db.add(reporte)
