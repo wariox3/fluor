@@ -10,6 +10,8 @@ from app.modules.rhu.formats import pago_pdf
 from app.modules.rhu.models.pago import Pago
 from app.modules.rhu.models.pago_tipo import PagoTipo
 from app.modules.rhu.models.pago_detalle import PagoDetalle
+from app.modules.rhu.models.contrato import Contrato
+from app.modules.rhu.models.empleado import Empleado
 from app.modules.rhu.schemas.pago import PagoListResponse
 
 router = APIRouter()
@@ -41,7 +43,18 @@ def lista(page: int = 1, size: int = 50, empleado_id: Optional[int] = None, db: 
 def imprimir(pago_id: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     pago = (
         db.query(Pago)
-        .options(joinedload(Pago.empleado), joinedload(Pago.pago_tipo))
+        .options(
+            joinedload(Pago.empleado).joinedload(Empleado.banco_rel),
+            joinedload(Pago.empleado).joinedload(Empleado.zona_rel),
+            joinedload(Pago.pago_tipo),
+            joinedload(Pago.periodo_rel),
+            joinedload(Pago.cargo_rel),
+            joinedload(Pago.entidad_pension_rel),
+            joinedload(Pago.entidad_salud_rel),
+            joinedload(Pago.contrato_rel).joinedload(Contrato.grupo_rel),
+            joinedload(Pago.contrato_rel).joinedload(Contrato.puesto_rel),
+            joinedload(Pago.contrato_rel).joinedload(Contrato.tercero_rel),
+        )
         .filter(Pago.codigo_pago_pk == pago_id)
         .first()
     )

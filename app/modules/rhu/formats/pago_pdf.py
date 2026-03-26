@@ -62,8 +62,19 @@ def _estilo_info_grid() -> TableStyle:
     ])
 
 
+def _get(obj, *attrs, default="N/A"):
+    """Navega una cadena de atributos con fallback seguro."""
+    for attr in attrs:
+        if obj is None:
+            return default
+        obj = getattr(obj, attr, None)
+    return obj if obj is not None else default
+
+
 def generar(pago, detalles, db=None) -> bytes:
     empleado = pago.empleado
+    contrato = pago.contrato_rel
+
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -78,23 +89,22 @@ def generar(pago, detalles, db=None) -> bytes:
         ancho_util=_W,
     )
 
-    # ── Grid de datos del empleado ─────────────────────────────────────────────
-    nombre = getattr(empleado, "nombre_corto", "N/A") if empleado else "N/A"
-    nro_id = getattr(empleado, "numero_identificacion", "N/A") if empleado else "N/A"
-
-    # Campos simulados
-    numero   = str(pago.codigo_pago_pk)
-    periodo  = "MENSUAL"
-    cuenta   = "N/A"
-    banco    = "N/A"
-    cargo    = "N/A"
-    pension  = "N/A"
-    grupo    = "N/A"
-    salud    = "N/A"
-    puesto   = "N/A"
-    cliente  = "N/A"
-    zona     = "N/A"
-    salario  = _fmt(pago.vr_salario_contrato)
+    # ── Datos del grid ──────────────────────────────────────────────────────────
+    nombre  = _get(empleado, "nombre_corto")
+    nro_id  = _get(empleado, "numero_identificacion")
+    numero  = str(pago.numero or pago.codigo_pago_pk)
+    periodo = _get(pago.periodo_rel, "nombre")
+    cuenta  = _get(empleado, "cuenta")
+    banco   = _get(empleado, "banco_rel", "nombre")
+    cargo   = _get(pago.cargo_rel, "nombre")
+    pension = _get(pago.entidad_pension_rel, "nombre_corto")
+    salud   = _get(pago.entidad_salud_rel, "nombre_corto")
+    grupo   = _get(contrato, "grupo_rel", "nombre")
+    puesto_obj = getattr(contrato, "puesto_rel", None) if contrato else None
+    puesto  = f"{contrato.codigo_puesto_fk} | {puesto_obj.nombre}" if puesto_obj and contrato else _get(puesto_obj, "nombre")
+    cliente = _get(contrato, "tercero_rel", "nombre_corto")
+    zona    = _get(empleado, "zona_rel", "nombre")
+    salario = _fmt(pago.vr_salario_contrato)
 
     # Anchos: etiqueta | valor | etiqueta | valor | etiqueta | valor
     cw = [2.2*cm, 4.0*cm, 2.6*cm, 3.0*cm, 2.5*cm, 4.29*cm]
@@ -165,7 +175,7 @@ def generar(pago, detalles, db=None) -> bytes:
     totales_data = [
         [_p(""), _p("DEVENGADO:",   "tot_lbl"), _p(_fmt(pago.vr_devengado),              "tot_val")],
         [_p(""), _p("DEDUCCIONES:", "tot_lbl"), _p(f"-{_fmt(pago.vr_deduccion)}",        "tot_val")],
-        [_p(""), _p("NETO PAGAR",         "neto_lbl"), _p(_fmt(pago.vr_neto),                  "neto_val")],
+        [_p(""), _p("NETO PAGAR",   "neto_lbl"), _p(_fmt(pago.vr_neto),                  "neto_val")],
     ]
 
     totales_table = Table(totales_data, colWidths=tot_cw)

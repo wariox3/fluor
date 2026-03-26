@@ -7,3 +7,9 @@ from .reclamo_concepto import ReclamoConcepto
 from .reclamo import Reclamo
 from .reclamo_respuesta import ReclamoRespuesta
 from .contrato import Contrato
+from .periodo import Periodo
+from .cargo import Cargo
+from .entidad import Entidad
+from .grupo import Grupo
+from .zona import Zona
+from .banco import Banco
