@@ -36,6 +36,9 @@ def _p(text, style="val") -> Paragraph:
 def _fmt(v) -> str:
     return f"{v:,.0f}" if v is not None else "0"
 
+def _fmt_horas(v) -> str:
+    return f"{v:,.2f}" if v is not None else "0.00"
+
 def _fecha(d) -> str:
     return d.strftime("%Y-%m-%d") if d else ""
 
@@ -59,7 +62,7 @@ def _estilo_info_grid() -> TableStyle:
     ])
 
 
-def generar(pago, detalles, config=None, gen_imagen=None) -> bytes:
+def generar(pago, detalles, db=None) -> bytes:
     empleado = pago.empleado
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -71,8 +74,7 @@ def generar(pago, detalles, config=None, gen_imagen=None) -> bytes:
     story = []
     story += encabezado_pdf(
         titulo="COMPROBANTE DE PAGO DE NÓMINA",
-        config=config,
-        gen_imagen=gen_imagen,
+        db=db,
         ancho_util=_W,
     )
 
@@ -134,7 +136,7 @@ def generar(pago, detalles, config=None, gen_imagen=None) -> bytes:
             _p(d.codigo_concepto_fk or "", "td_c"),
             _p(d.concepto_nombre or "", "td"),
             _p(d.detalle or "", "td"),
-            _p(_fmt(d.horas) if d.horas else "", "td_c"),
+            _p(_fmt_horas(d.horas) if d.horas else "", "td_c"),
             _p(_fmt(d.dias) if d.dias else "", "td_c"),
             _p(_fmt(d.porcentaje) if d.porcentaje else "", "td_c"),
             _p(_fmt(d.vr_devengado), "td_r"),
@@ -161,8 +163,8 @@ def generar(pago, detalles, config=None, gen_imagen=None) -> bytes:
     tot_cw = [_W - 5.6 * cm, 2.9 * cm, 2.7 * cm]
 
     totales_data = [
-        [_p(""), _p("TOTAL DEVENGADO:",   "tot_lbl"), _p(_fmt(pago.vr_devengado),              "tot_val")],
-        [_p(""), _p("TOTAL DEDUCCIONES:", "tot_lbl"), _p(f"-{_fmt(pago.vr_deduccion)}",        "tot_val")],
+        [_p(""), _p("DEVENGADO:",   "tot_lbl"), _p(_fmt(pago.vr_devengado),              "tot_val")],
+        [_p(""), _p("DEDUCCIONES:", "tot_lbl"), _p(f"-{_fmt(pago.vr_deduccion)}",        "tot_val")],
         [_p(""), _p("NETO PAGAR",         "neto_lbl"), _p(_fmt(pago.vr_neto),                  "neto_val")],
     ]
 
