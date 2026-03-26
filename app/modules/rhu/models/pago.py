@@ -14,6 +14,7 @@ class Pago(Base):
     codigo_entidad_pension_fk = Column(Integer, ForeignKey("rhu_entidad.codigo_entidad_pk"), nullable=True)
     codigo_entidad_salud_fk = Column(Integer, ForeignKey("rhu_entidad.codigo_entidad_pk"), nullable=True)
     codigo_contrato_fk = Column(Integer, ForeignKey("rhu_contrato.codigo_contrato_pk"), nullable=True)
+    codigo_soporte_contrato_fk = Column(Integer, nullable=True)
     numero = Column(Integer)
     fecha_desde = Column(Date)
     fecha_hasta = Column(Date)

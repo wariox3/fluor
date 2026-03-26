@@ -12,6 +12,7 @@ from app.modules.rhu.models.pago_tipo import PagoTipo
 from app.modules.rhu.models.pago_detalle import PagoDetalle
 from app.modules.rhu.models.contrato import Contrato
 from app.modules.rhu.models.empleado import Empleado
+from app.modules.tur.models.programacion_respaldo import ProgramacionRespaldo
 from app.modules.rhu.schemas.pago import PagoListResponse
 
 router = APIRouter()
@@ -67,7 +68,14 @@ def imprimir(pago_id: int, db: Session = Depends(get_tenant_db), current_user: d
         .order_by(PagoDetalle.codigo_concepto_fk)
         .all()
     )
-    pdf_bytes = pago_pdf.generar(pago, detalles, db)
+    programacion = []
+    if pago.codigo_soporte_contrato_fk:
+        programacion = (
+            db.query(ProgramacionRespaldo)
+            .filter(ProgramacionRespaldo.codigo_soporte_contrato_fk == pago.codigo_soporte_contrato_fk)
+            .all()
+        )
+    pdf_bytes = pago_pdf.generar(pago, detalles, db, programacion)
     return StreamingResponse(
         BytesIO(pdf_bytes),
         media_type="application/pdf",

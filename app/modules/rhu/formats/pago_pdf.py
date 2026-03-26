@@ -71,7 +71,51 @@ def _get(obj, *attrs, default="N/A"):
     return obj if obj is not None else default
 
 
-def generar(pago, detalles, db=None) -> bytes:
+def _seccion_programacion(pago, programacion: list) -> list:
+    """Devuelve flowables con el grid de días de la programación."""
+    if not programacion:
+        return []
+
+    fecha_desde = pago.fecha_desde
+    fecha_hasta = pago.fecha_hasta
+    if not fecha_desde or not fecha_hasta:
+        return []
+
+    dia_ini = fecha_desde.day
+    dia_fin = fecha_hasta.day
+    if dia_fin == 30:
+        dia_fin = 31
+    dias = list(range(dia_ini, dia_fin + 1))
+    n = len(dias)
+    if n == 0:
+        return []
+
+    cell_w = _W / n
+    col_widths = [cell_w] * n
+
+    # Encabezado de días
+    header = [_p(f"D{d}", "th") for d in dias]
+
+    rows = [header]
+    for prog in programacion:
+        fila = [_p(getattr(prog, f"dia_{d}", "") or "", "td_c") for d in dias]
+        rows.append(fila)
+
+    tbl = Table(rows, colWidths=col_widths, repeatRows=1)
+    tbl.setStyle(TableStyle([
+        ("BACKGROUND",    (0, 0), (-1, 0), _AZUL),
+        ("FONTSIZE",      (0, 0), (-1, -1), 6.5),
+        ("GRID",          (0, 0), (-1, -1), 0.3, _BORDE),
+        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING",    (0, 0), (-1, -1), 2),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 1),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 1),
+    ]))
+    return [Spacer(1, 0.3 * cm), tbl]
+
+
+def generar(pago, detalles, db=None, programacion=None) -> bytes:
     empleado = pago.empleado
     contrato = pago.contrato_rel
 
@@ -128,6 +172,7 @@ def generar(pago, detalles, db=None) -> bytes:
     grid_style.add("SPAN", (0, 5), (3, 5))   # celda vacía antes de SALARIO
     grid_style.add("BACKGROUND", (0, 5), (3, 5), colors.white)
     grid_style.add("FONTNAME", (0, 5), (3, 5), "Helvetica")
+    grid_style.add("BACKGROUND", (1, 6), (5, 6), colors.white)  # limpiar grises dentro del span
     grid.setStyle(grid_style)
     story.append(grid)
     story.append(Spacer(1, 0.3 * cm))
@@ -189,6 +234,8 @@ def generar(pago, detalles, db=None) -> bytes:
         ("RIGHTPADDING",  (0, 0), (-1, -1), 4),
     ]))
     story.append(totales_table)
+
+    story += _seccion_programacion(pago, programacion or [])
 
     doc.build(story)
     return buffer.getvalue()
