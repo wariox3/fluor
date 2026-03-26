@@ -1,15 +1,15 @@
 from io import BytesIO
-from datetime import datetime
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from app.core.pdf_header import encabezado_pdf
 
 # ── Página ─────────────────────────────────────────────────────────────────────
 _MARGIN = 1.5 * cm
-_W = letter[0] - 2 * _MARGIN   # ~18.59 cm ancho útil
+_W = letter[0] - 2 * _MARGIN
 
 # ── Colores ────────────────────────────────────────────────────────────────────
 _AZUL    = colors.HexColor("#1a3c5e")
@@ -18,9 +18,6 @@ _BORDE   = colors.HexColor("#999999")
 
 # ── Estilos ────────────────────────────────────────────────────────────────────
 _S = {
-    "ts":       ParagraphStyle("ts",      fontSize=7,  textColor=colors.grey, alignment=TA_RIGHT),
-    "title":    ParagraphStyle("title",   fontSize=11, fontName="Helvetica-Bold", alignment=TA_CENTER, spaceAfter=2),
-    "co_info":  ParagraphStyle("co_info", fontSize=8,  leading=13),
     "lbl":      ParagraphStyle("lbl",     fontSize=7,  fontName="Helvetica-Bold"),
     "val":      ParagraphStyle("val",     fontSize=7),
     "th":       ParagraphStyle("th",      fontSize=7,  fontName="Helvetica-Bold", textColor=colors.white, alignment=TA_CENTER),
@@ -43,15 +40,6 @@ def _fecha(d) -> str:
     return d.strftime("%Y-%m-%d") if d else ""
 
 
-# ── Datos simulados (reemplazar con queries reales cuando estén disponibles) ───
-_EMPRESA = {
-    "nombre":    "EMPRESA DEMO S.A.S",
-    "nit":       "900000000-0",
-    "direccion": "CL 10 # 5 - 20 CENTRO",
-    "telefono":  "6000000",
-}
-
-
 def _estilo_info_grid() -> TableStyle:
     return TableStyle([
         # Fondo gris en columnas de etiqueta (0, 2, 4)
@@ -71,7 +59,7 @@ def _estilo_info_grid() -> TableStyle:
     ])
 
 
-def generar(pago, detalles) -> bytes:
+def generar(pago, detalles, config=None, gen_imagen=None) -> bytes:
     empleado = pago.empleado
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -81,42 +69,12 @@ def generar(pago, detalles) -> bytes:
         topMargin=_MARGIN,  bottomMargin=_MARGIN,
     )
     story = []
-
-    # ── Timestamp ──────────────────────────────────────────────────────────────
-    story.append(_p(
-        f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} [Semantica | ERP]", "ts"
-    ))
-
-    # ── Título ─────────────────────────────────────────────────────────────────
-    story.append(_p("COMPROBANTE DE PAGO DE NÓMINA", "title"))
-    story.append(Spacer(1, 0.15 * cm))
-
-    # ── Cabecera: logo + datos empresa ─────────────────────────────────────────
-    logo_box = Table([[""]], colWidths=[3.2 * cm], rowHeights=[2.8 * cm])
-    logo_box.setStyle(TableStyle([
-        ("BOX",    (0, 0), (-1, -1), 0.5, _BORDE),
-        ("ALIGN",  (0, 0), (-1, -1), "CENTER"),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-    ]))
-
-    e = _EMPRESA
-    empresa_info = _p(
-        f"<b>EMPRESA:</b> {e['nombre']}<br/>"
-        f"<b>NIT:</b> {e['nit']}<br/>"
-        f"<b>DIRECCIÓN:</b> {e['direccion']}<br/>"
-        f"<b>TELÉFONO:</b> {e['telefono']}",
-        "co_info"
+    story += encabezado_pdf(
+        titulo="COMPROBANTE DE PAGO DE NÓMINA",
+        config=config,
+        gen_imagen=gen_imagen,
+        ancho_util=_W,
     )
-
-    header = Table([[logo_box, empresa_info]], colWidths=[3.5 * cm, _W - 3.5 * cm])
-    header.setStyle(TableStyle([
-        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
-        ("LEFTPADDING",   (1, 0), (1, 0), 8),
-        ("TOPPADDING",    (0, 0), (-1, -1), 2),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
-    ]))
-    story.append(header)
-    story.append(Spacer(1, 0.3 * cm))
 
     # ── Grid de datos del empleado ─────────────────────────────────────────────
     nombre = getattr(empleado, "nombre_corto", "N/A") if empleado else "N/A"

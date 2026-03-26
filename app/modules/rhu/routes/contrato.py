@@ -10,20 +10,10 @@ from app.modules.rhu.models.contrato import Contrato
 from app.modules.rhu.models.empleado import Empleado
 from app.modules.rhu.schemas.contrato import ContratoListResponse
 from app.modules.rhu.formats.certificado_laboral_pdf import generar as generar_certificado
+from app.modules.gen.models.configuracion import Configuracion
+from app.modules.gen.models.imagen import Imagen
 
 router = APIRouter()
-
-# Datos de empresa simulados (reemplazar con query real cuando esté disponible)
-_EMPRESA_DEMO = {
-    "nombre":             "EMPRESA DEMO S.A.S",
-    "nit":                "900000000-0",
-    "ciudad":             "Medellín",
-    "direccion":          "Calle 10 # 5 - 20 Centro",
-    "telefono":           "3200000000",
-    "email":              "talentohumano@empresa.com",
-    "responsable_nombre": "DIRECTOR TALENTO HUMANO",
-    "responsable_cargo":  "DIRECTOR(A) TALENTO HUMANO",
-}
 
 
 @router.get("/lista", response_model=ContratoListResponse)
@@ -54,7 +44,16 @@ def imprimir_certificado_activo(contrato_id: int, db: Session = Depends(get_tena
     if not empleado:
         raise HTTPException(status_code=404, detail="Empleado no encontrado")
 
-    pdf_bytes = generar_certificado(empleado, contrato, _EMPRESA_DEMO)
+    config = db.query(Configuracion).with_entities(
+        Configuracion.nombre,
+        Configuracion.nit,
+        Configuracion.digito_verificacion,
+        Configuracion.telefono,
+        Configuracion.direccion,
+        Configuracion.correo,
+    ).first()
+    gen_imagen = db.query(Imagen).filter(Imagen.codigo_imagen_pk == "LOGO").first()
+    pdf_bytes = generar_certificado(empleado, contrato, config, gen_imagen)
 
     nombre_archivo = f"certificado_laboral_{contrato_id}.pdf"
     return Response(

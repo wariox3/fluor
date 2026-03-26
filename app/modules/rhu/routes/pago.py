@@ -11,6 +11,8 @@ from app.modules.rhu.models.pago import Pago
 from app.modules.rhu.models.pago_tipo import PagoTipo
 from app.modules.rhu.models.pago_detalle import PagoDetalle
 from app.modules.rhu.schemas.pago import PagoListResponse
+from app.modules.gen.models.configuracion import Configuracion
+from app.modules.gen.models.imagen import Imagen
 
 router = APIRouter()
 
@@ -54,7 +56,16 @@ def imprimir(pago_id: int, db: Session = Depends(get_tenant_db), current_user: d
         .order_by(PagoDetalle.codigo_concepto_fk)
         .all()
     )
-    pdf_bytes = pago_pdf.generar(pago, detalles)
+    config = db.query(Configuracion).with_entities(
+        Configuracion.nombre,
+        Configuracion.nit,
+        Configuracion.digito_verificacion,
+        Configuracion.telefono,
+        Configuracion.direccion,
+        Configuracion.correo,
+    ).first()
+    gen_imagen = db.query(Imagen).filter(Imagen.codigo_imagen_pk == "LOGO").first()
+    pdf_bytes = pago_pdf.generar(pago, detalles, config, gen_imagen)
     return StreamingResponse(
         BytesIO(pdf_bytes),
         media_type="application/pdf",
