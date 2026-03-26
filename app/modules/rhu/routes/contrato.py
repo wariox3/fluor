@@ -1,13 +1,29 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from sqlalchemy import func
+from datetime import date
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.rhu.models.contrato import Contrato
+from app.modules.rhu.models.empleado import Empleado
 from app.modules.rhu.schemas.contrato import ContratoListResponse
+from app.modules.rhu.formats.certificado_laboral_pdf import generar as generar_certificado
 
 router = APIRouter()
+
+# Datos de empresa simulados (reemplazar con query real cuando esté disponible)
+_EMPRESA_DEMO = {
+    "nombre":             "EMPRESA DEMO S.A.S",
+    "nit":                "900000000-0",
+    "ciudad":             "Medellín",
+    "direccion":          "Calle 10 # 5 - 20 Centro",
+    "telefono":           "3200000000",
+    "email":              "talentohumano@empresa.com",
+    "responsable_nombre": "DIRECTOR TALENTO HUMANO",
+    "responsable_cargo":  "DIRECTOR(A) TALENTO HUMANO",
+}
 
 
 @router.get("/lista", response_model=ContratoListResponse)
@@ -19,3 +35,30 @@ def lista(page: int = 1, size: int = 50, empleado_id: Optional[int] = None, db: 
     offset = (page - 1) * size
     contratos = query.offset(offset).limit(size).all()
     return ContratoListResponse(total=total, page=page, size=size, items=contratos)
+
+
+@router.get("/imprimir-certificado-activo")
+def imprimir_certificado_activo(contrato_id: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user),):
+    contrato = (
+        db.query(Contrato)
+        .filter(
+            Contrato.codigo_contrato_pk == contrato_id
+        )
+        .first()
+    )
+
+    if not contrato:
+        raise HTTPException(status_code=404, detail="No se encontró contrato activo")
+
+    empleado = db.query(Empleado).filter(Empleado.codigo_empleado_pk == contrato.codigo_empleado_fk).first()
+    if not empleado:
+        raise HTTPException(status_code=404, detail="Empleado no encontrado")
+
+    pdf_bytes = generar_certificado(empleado, contrato, _EMPRESA_DEMO)
+
+    nombre_archivo = f"certificado_laboral_{contrato_id}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename={nombre_archivo}"},
+    )

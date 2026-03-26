@@ -1,0 +1,81 @@
+from pydantic import BaseModel
+from typing import List, Optional
+from datetime import time
+
+
+class PedidoDetalleResponse(BaseModel):
+    codigo_pedido_detalle_pk: int
+    codigo_pedido_fk: Optional[int]
+    codigo_concepto_fk: Optional[int]
+    codigo_item_fk: Optional[int]
+    codigo_modalidad_fk: Optional[str]
+    codigo_puesto_fk: Optional[int]
+    codigo_contrato_detalle_fk: Optional[int]
+    codigo_cotizacion_detalle_fk: Optional[int]
+    periodo: Optional[str]
+    anio: Optional[int]
+    mes: Optional[int]
+    dia_desde: Optional[int]
+    dia_hasta: Optional[int]
+    dias: Optional[int]
+    horas_unidad: Optional[float]
+    horas_diurnas_unidad: Optional[float]
+    horas_nocturnas_unidad: Optional[float]
+    horas: Optional[float]
+    horas_diurnas: Optional[float]
+    horas_nocturnas: Optional[float]
+    horas_programadas: Optional[float]
+    horas_diurnas_programadas: Optional[float]
+    horas_nocturnas_programadas: Optional[float]
+    cantidad: Optional[int]
+    vr_precio_ajustado: Optional[float]
+    vr_precio_minimo: Optional[float]
+    vr_precio: Optional[float]
+    vr_precio_adicional: Optional[float]
+    porcentaje_iva: Optional[float]
+    porcentaje_base_iva: Optional[float]
+    vr_subtotal: Optional[float]
+    vr_devolucion: Optional[float]
+    vr_adicion: Optional[float]
+    vr_iva: Optional[float]
+    vr_base_iva: Optional[float]
+    vr_total: Optional[float]
+    vr_afectado: Optional[float]
+    vr_saldo: Optional[float]
+    lunes: Optional[bool]
+    martes: Optional[bool]
+    miercoles: Optional[bool]
+    jueves: Optional[bool]
+    viernes: Optional[bool]
+    sabado: Optional[bool]
+    domingo: Optional[bool]
+    festivo: Optional[bool]
+    detalle: Optional[str]
+    detalle_factura: Optional[str]
+    vr_salario_base: Optional[float]
+    hora_desde: Optional[time]
+    hora_hasta: Optional[time]
+    compuesto: Optional[bool]
+    estado_terminado: Optional[bool]
+    estado_programado: Optional[bool]
+    estado_descartado_programacion: Optional[bool]
+    dias_reales: Optional[bool]
+    codigo_grupo_fk: Optional[int]
+    programar: Optional[bool]
+    cortesia: Optional[bool]
+    codigo_pedido_detalle_fk: Optional[int]
+    horario: Optional[str]
+    codigo_grupo_facturacion_fk: Optional[int]
+    moto: Optional[bool]
+    carro: Optional[bool]
+    cuatrimoto: Optional[bool]
+    codigo_empresa_fk: Optional[int]
+
+    model_config = {"from_attributes": True}
+
+
+class PedidoDetalleListResponse(BaseModel):
+    total: int
+    page: int
+    size: int
+    items: List[PedidoDetalleResponse]
