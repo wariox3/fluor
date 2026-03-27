@@ -8,6 +8,7 @@ from .reclamo import Reclamo
 from .reclamo_respuesta import ReclamoRespuesta
 from .contrato import Contrato
 from .periodo import Periodo
+from .contrato_tipo import ContratoTipo
 from .cargo import Cargo
 from .entidad import Entidad
 from .grupo import Grupo

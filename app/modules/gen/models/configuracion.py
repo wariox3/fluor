@@ -1,5 +1,7 @@
-from sqlalchemy import Column, Integer, String, LargeBinary
+from sqlalchemy import Column, Integer, String, LargeBinary, ForeignKey
+from sqlalchemy.orm import relationship
 from app.core.tenant_database import Base
+from app.modules.gen.models.ciudad import Ciudad
 
 
 class Configuracion(Base):
@@ -14,3 +16,6 @@ class Configuracion(Base):
     correo = Column(String(200))
     logo = Column(LargeBinary, nullable=True)
     codigo_empresa_fk = Column(Integer)
+    codigo_ciudad_fk = Column(Integer, ForeignKey("gen_ciudad.codigo_ciudad_pk"), nullable=True)
+
+    ciudad_rel = relationship(Ciudad, foreign_keys=[codigo_ciudad_fk])

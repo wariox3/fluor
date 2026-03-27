@@ -1,9 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
-from sqlalchemy.orm import Session
-from typing import List, Optional
+from sqlalchemy.orm import Session, joinedload
+from typing import Optional
 from sqlalchemy import func
-from datetime import date
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.rhu.models.contrato import Contrato
@@ -12,9 +11,9 @@ from app.modules.rhu.schemas.contrato import ContratoListResponse
 from app.modules.rhu.formats.certificado_laboral_pdf import generar as generar_certificado
 from app.modules.gen.models.configuracion import Configuracion
 from app.modules.gen.models.imagen import Imagen
+from app.modules.gen.models.formato import Formato
 
 router = APIRouter()
-
 
 @router.get("/lista", response_model=ContratoListResponse)
 def lista(page: int = 1, size: int = 50, empleado_id: Optional[int] = None, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
@@ -28,15 +27,16 @@ def lista(page: int = 1, size: int = 50, empleado_id: Optional[int] = None, db: 
 
 
 @router.get("/imprimir-certificado-activo")
-def imprimir_certificado_activo(contrato_id: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user),):
+def imprimir_certificado_activo(contrato_id: int, formato_id: int = 13, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     contrato = (
         db.query(Contrato)
-        .filter(
-            Contrato.codigo_contrato_pk == contrato_id
+        .options(
+            joinedload(Contrato.cargo_rel),
+            joinedload(Contrato.contrato_tipo_rel),
         )
+        .filter(Contrato.codigo_contrato_pk == contrato_id)
         .first()
     )
-
     if not contrato:
         raise HTTPException(status_code=404, detail="No se encontró contrato activo")
 
@@ -44,20 +44,20 @@ def imprimir_certificado_activo(contrato_id: int, db: Session = Depends(get_tena
     if not empleado:
         raise HTTPException(status_code=404, detail="Empleado no encontrado")
 
-    config = db.query(Configuracion).with_entities(
-        Configuracion.nombre,
-        Configuracion.nit,
-        Configuracion.digito_verificacion,
-        Configuracion.telefono,
-        Configuracion.direccion,
-        Configuracion.correo,
-    ).first()
-    gen_imagen = db.query(Imagen).filter(Imagen.codigo_imagen_pk == "LOGO").first()
-    pdf_bytes = generar_certificado(empleado, contrato, config, gen_imagen)
+    config = (
+        db.query(Configuracion)
+        .options(joinedload(Configuracion.ciudad_rel))
+        .first()
+    )
 
-    nombre_archivo = f"certificado_laboral_{contrato_id}.pdf"
+    gen_imagen = db.query(Imagen).filter(Imagen.codigo_imagen_pk == "LOGO").first()
+
+    formato = db.query(Formato).filter(Formato.codigo_formato_pk == formato_id).first()
+
+    pdf_bytes = generar_certificado(empleado, contrato, config, gen_imagen, formato)
+
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f"inline; filename={nombre_archivo}"},
+        headers={"Content-Disposition": f"inline; filename=certificado_{contrato_id}.pdf"},
     )
