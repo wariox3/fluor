@@ -21,6 +21,7 @@ class Tercero(Base):
     permanente = Column(Boolean)
     estado_inactivo = Column(Boolean)
     codigo_ciudad_fk = Column(String(20), ForeignKey("gen_ciudad.codigo_ciudad_pk"))
+    codigo_forma_pago_fk = Column(String(10), nullable=True) 
     
     ciudad = relationship(Ciudad, foreign_keys=[codigo_ciudad_fk], backref="terceros_ciudad_rel")
 
