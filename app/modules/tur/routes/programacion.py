@@ -5,15 +5,22 @@ from typing import List, Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.tur.models.programacion import Programacion
+from app.modules.tur.models.pedido import Pedido
 from app.modules.tur.schemas.programacion import ProgramacionItem, ProgramacionListResponse, ProgramacionResponse
 
 router = APIRouter()
 
 @router.get("/lista", response_model=ProgramacionListResponse)
-def lista(page: int = 1, size: int = 50, empleado_id: Optional[int] = None, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+def lista(page: int = 1, size: int = 50, empleado_id: Optional[int] = None, tercero_id: Optional[int] = None, anio: Optional[int] = None, mes: Optional[int] = None, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     query = db.query(Programacion)
     if empleado_id:
         query = query.filter(Programacion.codigo_empleado_fk == empleado_id)
+    if tercero_id:
+        query = query.join(Pedido, Programacion.codigo_pedido_fk == Pedido.codigo_pedido_pk).filter(Pedido.codigo_tercero_fk == tercero_id)
+    if anio:
+        query = query.filter(Programacion.anio == anio)
+    if mes:
+        query = query.filter(Programacion.mes == mes)
     total = query.with_entities(func.count(Programacion.codigo_programacion_pk)).scalar()
     offset = (page - 1) * size
     items = (
