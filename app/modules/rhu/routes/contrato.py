@@ -10,7 +10,6 @@ from app.modules.rhu.models.empleado import Empleado
 from app.modules.rhu.schemas.contrato import ContratoListResponse
 from app.modules.rhu.formats.certificado_laboral_pdf import generar as generar_certificado
 from app.modules.gen.models.configuracion import Configuracion
-from app.modules.gen.models.imagen import Imagen
 from app.modules.gen.models.formato import Formato
 
 router = APIRouter()
@@ -50,11 +49,9 @@ def imprimir_certificado_activo(contrato_id: int, formato_id: int = 13, db: Sess
         .first()
     )
 
-    gen_imagen = db.query(Imagen).filter(Imagen.codigo_imagen_pk == "LOGO").first()
-
     formato = db.query(Formato).filter(Formato.codigo_formato_pk == formato_id).first()
 
-    pdf_bytes = generar_certificado(empleado, contrato, config, gen_imagen, formato)
+    pdf_bytes = generar_certificado(empleado, contrato, config, formato)
 
     return Response(
         content=pdf_bytes,

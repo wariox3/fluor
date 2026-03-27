@@ -1,15 +1,5 @@
-from io import BytesIO
-from datetime import date, datetime
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import ParagraphStyle
-from reportlab.lib.units import cm
-from reportlab.lib.enums import TA_JUSTIFY, TA_RIGHT
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
-from app.core.pdf_header import _blob_to_bytes
-
-_MARGIN_H = 3.0 * cm
-_MARGIN_V = 2.5 * cm
+from datetime import date
+from weasyprint import HTML
 
 _MESES = [
     "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -33,25 +23,15 @@ def _reemplazar_etiquetas(texto: str, datos: dict) -> str:
     return texto
 
 
-def generar(empleado, contrato, config=None, gen_imagen=None, formato=None) -> bytes:
-    fuente_size = 10
+def generar(empleado, contrato, config=None, formato=None) -> bytes:
+    fuente_size = 11
     if formato and formato.tamanio_fuente:
         try:
             fuente_size = int(formato.tamanio_fuente)
         except ValueError:
             pass
 
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=letter,
-        leftMargin=_MARGIN_H,
-        rightMargin=_MARGIN_H,
-        topMargin=_MARGIN_V,
-        bottomMargin=_MARGIN_V,
-    )
-
-    # ── Datos para etiquetas ───────────────────────────────────────────────────
+    # ── Datos para etiquetas ──────────────────────────────────────────────────
     empresa_nombre = getattr(config, "nombre",              "").upper() if config else ""
     nit_raw        = getattr(config, "nit",                 "")         if config else ""
     dv             = getattr(config, "digito_verificacion", "")         if config else ""
@@ -62,12 +42,12 @@ def generar(empleado, contrato, config=None, gen_imagen=None, formato=None) -> b
     ciudad_rel     = getattr(config, "ciudad_rel", None) if config else None
     empresa_ciudad = ciudad_rel.nombre if ciudad_rel else ""
 
-    nombre         = getattr(empleado, "nombre_corto",          "").upper()
-    identificacion = getattr(empleado, "numero_identificacion",  "")
-    fecha_inicio   = contrato.fecha_desde.strftime("%Y-%m-%d") if contrato.fecha_desde else ""
-    cargo_rel      = getattr(contrato, "cargo_rel",         None)
+    nombre         = getattr(empleado, "nombre_corto",         "").upper()
+    identificacion = getattr(empleado, "numero_identificacion", "")
+    fecha_inicio   = _fecha_larga(contrato.fecha_desde) if contrato.fecha_desde else ""
+    cargo_rel      = getattr(contrato, "cargo_rel",        None)
     cargo          = cargo_rel.nombre.upper() if cargo_rel else ""
-    tipo_rel       = getattr(contrato, "contrato_tipo_rel",  None)
+    tipo_rel       = getattr(contrato, "contrato_tipo_rel", None)
     tipo_contrato  = tipo_rel.nombre.upper() if tipo_rel else ""
     salario        = _fmt(getattr(contrato, "vr_salario", 0))
 
@@ -87,40 +67,33 @@ def generar(empleado, contrato, config=None, gen_imagen=None, formato=None) -> b
         "DIRECCION":      empresa_dir,
     }
 
-    story = []
+    # ── Contenido con etiquetas reemplazadas ──────────────────────────────────
+    contenido = getattr(formato, "contenido_externo", "") or ""
+    contenido = _reemplazar_etiquetas(contenido, etiquetas)
 
-    # ── Timestamp ──────────────────────────────────────────────────────────────
-    story.append(Paragraph(
-        f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} [Semantica | ERP]",
-        ParagraphStyle("ts", fontSize=7, textColor=colors.HexColor("#555555"), alignment=TA_RIGHT),
-    ))
-    story.append(Spacer(1, 0.4 * cm))
+    html = f"""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    @page {{
+      size: letter;
+      margin: 2.5cm 3cm;
+    }}
+    body {{
+      font-family: Arial, sans-serif;
+      font-size: {fuente_size}pt;
+      color: #000;
+    }}
+    .contenido p {{
+      line-height: 1.6;
+      margin: 0 0 0.4cm 0;
+    }}
+  </style>
+</head>
+<body>
+  <div class="contenido">{contenido}</div>
+</body>
+</html>"""
 
-    # ── Logo ───────────────────────────────────────────────────────────────────
-    if gen_imagen:
-        data = _blob_to_bytes(gen_imagen.imagen)
-        if data:
-            try:
-                img = Image(BytesIO(data), width=3.0 * cm, height=3.0 * cm)
-                img.hAlign = "LEFT"
-                story.append(img)
-            except Exception:
-                pass
-    story.append(Spacer(1, 0.4 * cm))
-
-    # ── Contenido desde contenido_externo ──────────────────────────────────────
-    contenido = getattr(formato, "contenido_externo", None) if formato else None
-    if contenido:
-        texto = _reemplazar_etiquetas(contenido, etiquetas)
-        story.append(Paragraph(
-            texto,
-            ParagraphStyle(
-                "cuerpo",
-                fontSize=fuente_size,
-                leading=fuente_size * 1.6,
-                alignment=TA_JUSTIFY,
-            ),
-        ))
-
-    doc.build(story)
-    return buffer.getvalue()
+    return HTML(string=html).write_pdf()
