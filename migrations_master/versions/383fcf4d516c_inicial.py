@@ -1,8 +1,8 @@
-"""Crear tablas gen_movimiento, gen_movimiento_detalle y gen_movimiento_tipo
+"""inicial
 
-Revision ID: d8f01fe9e7d4
-Revises: 2a429c1d3759
-Create Date: 2026-03-27 17:01:48.601753
+Revision ID: 383fcf4d516c
+Revises: 
+Create Date: 2026-03-28 09:02:41.810238
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'd8f01fe9e7d4'
-down_revision: Union[str, Sequence[str], None] = '2a429c1d3759'
+revision: str = '383fcf4d516c'
+down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
