@@ -8,7 +8,7 @@ from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.rhu.models.contrato import Contrato
 from app.modules.rhu.models.empleado import Empleado
-from app.modules.rhu.schemas.contrato import ContratoListResponse
+from app.modules.rhu.schemas.contrato import ContratoListResponse, ContratoResponse
 from app.core.pdf_template import generar_pdf
 from app.core.utils import fecha_larga, fmt_numero
 from app.modules.gen.models.configuracion import Configuracion
@@ -23,8 +23,30 @@ def lista(page: int = 1, size: int = 50, empleado_id: Optional[int] = None, db: 
         query = query.filter(Contrato.codigo_empleado_fk == empleado_id)
     total = query.with_entities(func.count(Contrato.codigo_contrato_pk)).scalar()
     offset = (page - 1) * size
-    contratos = query.offset(offset).limit(size).all()
-    return ContratoListResponse(total=total, page=page, size=size, items=contratos)
+    contratos = (
+        query
+        .options(
+            joinedload(Contrato.contrato_tipo_rel),
+            joinedload(Contrato.cargo_rel),
+            joinedload(Contrato.grupo_rel),
+        )
+        .offset(offset)
+        .limit(size)
+        .all()
+    )
+    items = []
+    for c in contratos:
+        items.append(ContratoResponse(
+            codigo_contrato_pk=c.codigo_contrato_pk,
+            codigo_empleado_fk=c.codigo_empleado_fk,
+            fecha_desde=c.fecha_desde,
+            fecha_hasta=c.fecha_hasta,
+            vr_salario=c.vr_salario,
+            contrato_tipo_nombre=c.contrato_tipo_rel.nombre if c.contrato_tipo_rel else None,
+            cargo_nombre=c.cargo_rel.nombre if c.cargo_rel else None,
+            grupo_nombre=c.grupo_rel.nombre if c.grupo_rel else None,
+        ))
+    return ContratoListResponse(total=total, page=page, size=size, items=items)
 
 
 @router.get("/imprimir-certificado-laboral")

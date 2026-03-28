@@ -18,6 +18,9 @@ class ContratoResponse(BaseModel):
     fecha_desde: Optional[date]
     fecha_hasta: Optional[date]
     vr_salario: Optional[float]
+    contrato_tipo_nombre: Optional[str] = None
+    cargo_nombre: Optional[str] = None
+    grupo_nombre: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
