@@ -10,5 +10,6 @@ class Tenant(Base):
     schema = Column(String(100))
     credito = Column(Boolean, default=False, server_default="0")
     anticipo = Column(Boolean, default=False, server_default="0")
+    activo = Column(Boolean, default=False, server_default="0")
     users = relationship("User", back_populates="tenant")
     api_keys = relationship("ApiKey", back_populates="tenant")
