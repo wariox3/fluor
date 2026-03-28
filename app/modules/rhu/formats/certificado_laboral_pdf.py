@@ -89,6 +89,9 @@ def generar(empleado, contrato, config=None, formato=None) -> bytes:
       line-height: 1.6;
       margin: 0 0 0.4cm 0;
     }}
+    .ql-align-center {{ text-align: center; }}
+    .ql-align-right {{ text-align: right; }}
+    .ql-align-justify {{ text-align: justify; }}
   </style>
 </head>
 <body>
