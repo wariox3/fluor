@@ -14,6 +14,6 @@ class Notificacion(Base):
     mensaje         = Column(Text, nullable=True)
     url             = Column(String(255), nullable=True)
     leida           = Column(Boolean, default=False, server_default="0", nullable=False)
-    fecha_creacion  = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    fecha_creacion  = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     usuario = relationship("User", foreign_keys=[usuario_id])
