@@ -109,13 +109,14 @@ def refresh(request: Request, response: Response):
 
 @router.get("/me", response_model=UserInfo)
 def me(current_user: dict = Depends(get_current_user_from_token), db: Session = Depends(get_master_db)):
-    user = db.query(User).filter(User.id == int(current_user["sub"])).first()
+    user = db.query(User).options(joinedload(User.tenant)).filter(User.id == int(current_user["sub"])).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
     return UserInfo(
         id=user.id,
         email=user.email,
         tenant_id=user.tenant_id,
+        tenant_nombre=user.tenant.nombre if user.tenant else None,
         role=user.role,
         empleado_id=user.empleado_id
     )
