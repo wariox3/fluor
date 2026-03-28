@@ -17,6 +17,7 @@ from app.core.master_database import DATABASE_URL, Base
 from app.modules.auth.models.tenant import Tenant
 from app.modules.auth.models.user import User
 from app.modules.auth.models.api_key import ApiKey
+from app.modules.auth.models.notificacion import Notificacion
 
 # Alembic Config
 config = context.config
