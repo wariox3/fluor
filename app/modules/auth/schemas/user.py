@@ -13,6 +13,7 @@ class UserInfo(BaseModel):
     id: int
     email: str
     tenant_id: int | None = None
+    tenant_nombre: str | None = None
     role: UserRole | None = None
     empleado_id: int | None = None
    

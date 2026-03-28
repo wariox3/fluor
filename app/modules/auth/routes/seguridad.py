@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.security import verify_password, create_access_token, create_refresh_token, decode_refresh_token, get_current_user_from_token
 from app.core.turnstile import verify_turnstile
 from app.modules.auth.schemas.user import LoginRequest, LoginResponse, UserInfo
+from sqlalchemy.orm import joinedload
 from app.core.master_database import get_master_db
 from app.modules.auth.models.user import User
 
@@ -15,7 +16,7 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
     if data.client_type not in ("integration", "api"):
         verify_turnstile(data.turnstile_token)
 
-    user = db.query(User).filter(User.email == data.email).first()
+    user = db.query(User).options(joinedload(User.tenant)).filter(User.email == data.email).first()
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -41,6 +42,7 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
         "id": user.id,
         "email": user.email,
         "tenant_id": user.tenant_id,
+        "tenant_nombre": user.tenant.nombre if user.tenant else None,
         "role": user.role,
         "empleado_id": user.empleado_id
     }
