@@ -9,7 +9,7 @@ from app.modules.auth.schemas.tenant import TenantResponse, TenantListResponse
 router = APIRouter()
 
 
-@router.get("/lista", response_model=TenantListResponse)
+@router.get("/lista", response_model=TenantListResponse, include_in_schema=False)
 def lista(page: int = 1, size: int = 50, db: Session = Depends(get_master_db)):
     query = db.query(Tenant)
     total = query.with_entities(func.count(Tenant.id)).scalar()
@@ -18,7 +18,7 @@ def lista(page: int = 1, size: int = 50, db: Session = Depends(get_master_db)):
     items = [TenantResponse(id=t.id, nombre=t.nombre, schema_=t.schema) for t in tenants]
     return TenantListResponse(total=total, page=page, size=size, items=items)
 
-@router.get("/seleccionar", response_model=TenantListResponse)
+@router.get("/seleccionar", response_model=TenantListResponse, include_in_schema=False)
 def seleccionar(page: int = 1, size: int = 50, nombre: Optional[str] = None, db: Session = Depends(get_master_db)):
     query = db.query(Tenant).filter(Tenant.activo == True)
     if nombre:

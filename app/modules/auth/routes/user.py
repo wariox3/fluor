@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-@router.post("/nuevo", response_model=UserResponse)
+@router.post("/nuevo", response_model=UserResponse, include_in_schema=False)
 @limiter.limit("5/minute")
 def nuevo(request: Request, data: UserCreate, db: Session = Depends(get_master_db), _: dict = Depends(require_admin)):
     existing_user = db.query(User).filter((User.email == data.email)).first()
@@ -40,7 +40,7 @@ def nuevo(request: Request, data: UserCreate, db: Session = Depends(get_master_d
     return new_user
 
 
-@router.post("/registrar", response_model=RegisterResponse)
+@router.post("/registrar", response_model=RegisterResponse, include_in_schema=False)
 @limiter.limit("3/minute")
 def registrar(request: Request, data: RegisterRequest, db: Session = Depends(get_master_db)):
     verify_turnstile(data.turnstile_token)
@@ -81,7 +81,7 @@ def registrar(request: Request, data: RegisterRequest, db: Session = Depends(get
     return RegisterResponse(user=UserResponse.model_validate(new_user), verification_link=verification_link)
 
 
-@router.post("/recuperar-clave")
+@router.post("/recuperar-clave", include_in_schema=False)
 @limiter.limit("3/minute")
 def recuperar_clave(request: Request, data: RecuperarClaveRequest, db: Session = Depends(get_master_db)):
     verify_turnstile(data.turnstile_token)
@@ -106,7 +106,7 @@ def recuperar_clave(request: Request, data: RecuperarClaveRequest, db: Session =
     return {"detail": "Si el correo existe, recibirás las instrucciones para recuperar tu clave"}
 
 
-@router.post("/restablecer-clave")
+@router.post("/restablecer-clave", include_in_schema=False)
 @limiter.limit("5/minute")
 def restablecer_clave(request: Request, data: RestablecerClaveRequest, db: Session = Depends(get_master_db)):
     verify_turnstile(data.turnstile_token)
@@ -120,7 +120,7 @@ def restablecer_clave(request: Request, data: RestablecerClaveRequest, db: Sessi
     return {"detail": "Clave restablecida correctamente"}
 
 
-@router.get("/verificar")
+@router.get("/verificar", include_in_schema=False)
 @limiter.limit("10/minute")
 def verificar(request: Request, token: str, db: Session = Depends(get_master_db)):
     user = db.query(User).filter(User.verification_token == token).first()
@@ -133,7 +133,7 @@ def verificar(request: Request, token: str, db: Session = Depends(get_master_db)
     db.commit()
     return {"detail": "Cuenta verificada correctamente"}
 
-@router.post("/reenviar-verificacion")
+@router.post("/reenviar-verificacion", include_in_schema=False)
 @limiter.limit("3/minute")
 def reenviar_verificacion(request: Request, data: ReenviarVerificacionRequest, db: Session = Depends(get_master_db)):
     verify_turnstile(data.turnstile_token)
@@ -156,7 +156,7 @@ def reenviar_verificacion(request: Request, data: ReenviarVerificacionRequest, d
     return {"detail": "Si el correo existe y la cuenta no está verificada, recibirás el enlace de verificación"}
 
 
-@router.post("/asociar")
+@router.post("/asociar", include_in_schema=False)
 @limiter.limit("10/minute")
 def asociar(request: Request, data: AsociarRequest, db: Session = Depends(get_master_db), current_user: dict = Depends(get_current_user),):
     if int(current_user.get("sub")) != data.usuario_id:

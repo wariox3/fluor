@@ -10,7 +10,7 @@ from app.modules.auth.models.api_key import ApiKey
 
 router = APIRouter()
 
-@router.post("/nuevo")
+@router.post("/nuevo", include_in_schema=False)
 @limiter.limit("5/minute")
 def nuevo(request: Request, data: ApiKeyCreate, db: Session = Depends(get_master_db), _: dict = Depends(require_admin_control)):
     prefix, api_key = generate_api_key()
@@ -30,7 +30,7 @@ def nuevo(request: Request, data: ApiKeyCreate, db: Session = Depends(get_master
         "warning": "Guarda esta API Key, no podrá ser recuperada después"
     }
 
-@router.get("/lista", response_model=List[ApiKeyResponse])
+@router.get("/lista", response_model=List[ApiKeyResponse], include_in_schema=False)
 def lista(page: int = 1, size: int = 50, tenant_id: Optional[str] = None, db: Session = Depends(get_master_db)):
     offset = (page - 1) * size
     query = db.query(ApiKey)    
@@ -39,7 +39,7 @@ def lista(page: int = 1, size: int = 50, tenant_id: Optional[str] = None, db: Se
     api_keys = query.offset(offset).limit(size).all()
     return api_keys
 
-@router.delete("/eliminar/{api_key_id}")
+@router.delete("/eliminar/{api_key_id}", include_in_schema=False)
 @limiter.limit("5/minute")
 def eliminar(request: Request, api_key_id: int, db: Session = Depends(get_master_db), _: dict = Depends(require_admin_control)):
     key = db.query(ApiKey).filter(ApiKey.id == api_key_id).first()

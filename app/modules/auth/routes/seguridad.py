@@ -10,7 +10,7 @@ from app.modules.auth.models.user import User
 
 router = APIRouter()
 
-@router.post("/login", response_model=LoginResponse, response_model_exclude_none=True)
+@router.post("/login", response_model=LoginResponse, response_model_exclude_none=True, include_in_schema=False)
 @limiter.limit("5/minute")
 def login(request: Request, data: LoginRequest, response: Response, db: Session = Depends(get_master_db)):    
     if data.client_type not in ("integration", "api"):
@@ -78,7 +78,7 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
         "user": user_data
     }
 
-@router.post("/refresh")
+@router.post("/refresh", include_in_schema=False)
 @limiter.limit("10/minute")
 def refresh(request: Request, response: Response):
     token = request.cookies.get("refresh_token")
@@ -107,7 +107,7 @@ def refresh(request: Request, response: Response):
     )
     return {"message": "Token renovado"}
 
-@router.get("/me", response_model=UserInfo)
+@router.get("/me", response_model=UserInfo, include_in_schema=False)
 def me(current_user: dict = Depends(get_current_user_from_token), db: Session = Depends(get_master_db)):
     user = db.query(User).options(joinedload(User.tenant)).filter(User.id == int(current_user["sub"])).first()
     if not user:
@@ -121,7 +121,7 @@ def me(current_user: dict = Depends(get_current_user_from_token), db: Session = 
         empleado_id=user.empleado_id
     )
 
-@router.post("/logout")
+@router.post("/logout", include_in_schema=False)
 def logout(request: Request, response: Response):
     response.delete_cookie(
         key="access_token",
