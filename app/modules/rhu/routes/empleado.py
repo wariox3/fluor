@@ -44,7 +44,7 @@ def lista(page: int = 1, size: int = 50, numero_identificacion: Optional[str] = 
     return EmpleadoListResponse(total=total, page=page, size=size, items=empleados)
 
 
-@router.get("/estudio-credito", response_model=EstudioCreditoResponse)
+@router.get("/estudio-credito", response_model=EstudioCreditoResponse, include_in_schema=False)
 def estudio_credito(
     empleado_id: int,
     db: Session = Depends(get_tenant_db),
