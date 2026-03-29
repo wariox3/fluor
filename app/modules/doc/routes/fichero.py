@@ -1,4 +1,6 @@
-from datetime import date
+import magic
+import re
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import Response
 from sqlalchemy import func
@@ -10,6 +12,18 @@ from app.core.backblaze import b2_client
 from app.modules.doc.models.fichero import Fichero
 from app.modules.doc.schemas.fichero import FicheroListResponse, FicheroResponse
 from app.modules.gen.models.configuracion import Configuracion
+
+ALLOWED_EXTENSIONS = {"pdf", "jpg", "jpeg", "png", "doc", "docx", "xls", "xlsx"}
+
+ALLOWED_MIME_TYPES = {
+    "application/pdf",
+    "image/jpeg",
+    "image/png",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+}
 
 router = APIRouter()
 
@@ -73,7 +87,16 @@ async def cargar(
 
     nombre_original = archivo.filename or ""
     extension = nombre_original.rsplit(".", 1)[-1].lower() if "." in nombre_original else ""
-    mime_type = archivo.content_type or "application/octet-stream"
+
+    if extension not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Tipo de archivo no permitido")
+
+    mime_real = magic.from_buffer(data[:2048], mime=True)
+    if mime_real not in ALLOWED_MIME_TYPES:
+        raise HTTPException(status_code=400, detail="El contenido del archivo no corresponde a un tipo permitido")
+
+    nombre_original = re.sub(r"[^\w.\-]", "_", nombre_original)
+    mime_type = mime_real
 
     configuracion = db.query(Configuracion).first()
     if not configuracion or not configuracion.ruta_almacenamiento_servicio:
@@ -84,7 +107,7 @@ async def cargar(
         codigo_fichero_tipo_fk='G',
         codigo_modelo_fk=codigo_modelo,
         codigo=codigo,
-        fecha=date.today(),
+        fecha=datetime.now(),
         nombre=nombre_original,
         extension=extension,
         tipo=mime_type,

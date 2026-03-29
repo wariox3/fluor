@@ -12,7 +12,7 @@ class Fichero(Base):
     codigo_fichero_tipo_fk = Column(String(1))
     codigo_modelo_fk = Column(String(80))
     codigo = Column(String(50))
-    fecha = Column(Date)
+    fecha = Column(DateTime)
     nombre = Column(String(500))
     extension = Column(String(20))
     tipo = Column(String(100))
