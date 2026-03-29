@@ -17,5 +17,6 @@ class Configuracion(Base):
     logo = Column(LargeBinary, nullable=True)
     codigo_empresa_fk = Column(Integer)
     codigo_ciudad_fk = Column(Integer, ForeignKey("gen_ciudad.codigo_ciudad_pk"), nullable=True)
+    ruta_almacenamiento_servicio = Column(String(200), nullable=True)
 
     ciudad_rel = relationship(Ciudad, foreign_keys=[codigo_ciudad_fk])

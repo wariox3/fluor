@@ -9,15 +9,15 @@ class FicheroResponse(BaseModel):
     codigo_modelo_fk: str
     codigo: str
     fecha: Optional[datetime]
-    nombre: str
-    extension: str
-    tipo: str
-    ui: str
-    comprimido: bool
-    tamano: float
-    usuario: str
-    directorio_base: str
-    error_carga: bool
+    nombre: Optional[str]
+    extension: Optional[str]
+    tipo: Optional[str]
+    ui: Optional[str]
+    comprimido: Optional[bool]
+    tamano: Optional[float]
+    usuario: Optional[str]
+    directorio_base: Optional[str]
+    error_carga: Optional[bool]
 
 
 
