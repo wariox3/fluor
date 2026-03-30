@@ -34,6 +34,7 @@ def nuevo_documento(data: MovimientoCreate, db: Session = Depends(get_tenant_db)
         comentarios=data.comentarios,
         operacion_inventario=movimiento_tipo.operacion_inventario,
         operacion_comercial=movimiento_tipo.operacion_comercial,
+        codigo_interface=data.codigo_interface,
         codigo_empresa_fk=DEFAULT_EMPRESA_ID,
     )
     db.add(movimiento)
