@@ -16,5 +16,5 @@ def lista(page: int = 1, size: int = 50, numero_identificacion: Optional[str] = 
         query = query.filter(Tercero.numero_identificacion.ilike(f"%{numero_identificacion}%"))
     total = query.with_entities(func.count(Tercero.codigo_tercero_pk)).scalar()
     offset = (page - 1) * size
-    terceros = query.offset(offset).limit(size).all()
+    terceros = query.options(joinedload(Tercero.asesor)).offset(offset).limit(size).all()
     return TerceroListResponse(total=total, page=page, size=size, items=terceros)

@@ -17,6 +17,8 @@ class TerceroResponse(BaseModel):
     permanente: Optional[bool] = None
     estado_inactivo: Optional[bool] = None
     ciudad_nombre: Optional[str] = None
+    codigo_asesor_fk: Optional[int] = None
+    asesor_nombre: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
