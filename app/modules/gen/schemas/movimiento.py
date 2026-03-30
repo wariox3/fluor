@@ -23,6 +23,7 @@ class MovimientoCreate(BaseModel):
     codigo_forma_pago_fk: Optional[int] = None
     comentarios: Optional[str] = None
     orden_compra: Optional[str] = None
+    codigo_interface: Optional[str] = None    
     soporte: Optional[str] = None
     plazo_pago: int
     fecha: datetime
