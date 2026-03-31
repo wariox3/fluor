@@ -75,28 +75,29 @@ def imprimir_certificado_laboral(contrato_id: int, db: Session = Depends(get_ten
     else:
         formato = db.query(Formato).filter(Formato.codigo_formato_pk == 12).first()
 
-    nit_raw             = getattr(config, "nit", "") if config else ""
-    dv                  = getattr(config, "digito_verificacion", "") if config else ""
-    ciudad_rel          = getattr(config, "ciudad_rel", None) if config else None
-    empleado_rel        = getattr(contrato, "empleado_rel", None)
-    cargo_rel           = getattr(contrato, "cargo_rel", None)
-    contrato_tipo_rel   = getattr(contrato, "contrato_tipo_rel", None)
+    nit                 = getattr(config,       "nit", "") if config else ""
+    dv                  = getattr(config,       "digito_verificacion", "") if config else ""
+    ciudad_rel          = getattr(config,       "ciudad_rel", None) if config else None
+    empleado_rel        = getattr(contrato,     "empleado_rel", None)
+    cargo_rel           = getattr(contrato,     "cargo_rel", None)
+    contrato_tipo_rel   = getattr(contrato,     "contrato_tipo_rel", None)
 
     etiquetas = {
-        "FECHA_HOY":                        fecha_larga(date.today()),
-        "EMPRESA_NOMBRE":                   empleado_rel.nombre_corto.upper() if empleado_rel else "",
-        "EMPRESA_IDENTIFICACION":           empleado_rel.numero_identificacion.upper() if empleado_rel else "",
-        "EMPRESA_NOMBRE":                   getattr(config, "nombre", "").upper() if config else "",
-        "EMPRESA_IDENTIFICACION_COMPLETO":  f"{nit_raw}-{dv}",
-        "EMPRESA_CIUDAD":                   ciudad_rel.nombre if ciudad_rel else "",
-        "FECHA_INGRESO":                    fecha_larga(contrato.fecha_desde) if contrato.fecha_desde else "",
-        "FECHA_TERMINO":                    fecha_larga(contrato.fecha_hasta) if contrato.fecha_hasta else "",
-        "TIPO_CONTRATO":                    contrato_tipo_rel.nombre.upper() if contrato_tipo_rel else "",
-        "CARGO":                            cargo_rel.nombre.upper() if cargo_rel else "",
-        "SALARIO":                          fmt_numero(getattr(contrato, "vr_salario", 0)),                
-        "TELEFONO":                         getattr(config, "telefono",  "") if config else "",
-        "EMAIL":                            getattr(config, "correo",    "") if config else "",
-        "DIRECCION":                        getattr(config, "direccion", "") if config else "",
+        "FECHA_HOY":                    fecha_larga(date.today()),
+        "EMPRESA_NOMBRE":               getattr(config,   "nombre", "").upper() if config else "",
+        "EMPRESA_IDENTIFICACION":       f"{nit}-{dv}",
+        "EMPRESA_TELEFONO":             getattr(config, "telefono",  "") if config else "",
+        "EMPRESA_EMAIL":                getattr(config, "correo",    "") if config else "",
+        "EMPRESA_ DIRECCION":           getattr(config, "direccion", "") if config else "",
+        "EMPRESA_CIUDAD":               ciudad_rel.nombre if ciudad_rel else "",                
+        "EMPLEADO_NOMBRE":              empleado_rel.nombre_corto.upper() if empleado_rel else "",
+        "EMPLEADO_IDENTIFICACION":      empleado_rel.numero_identificacion.upper() if empleado_rel else "",
+        "FECHA_INGRESO":                fecha_larga(contrato.fecha_desde) if contrato.fecha_desde else "",
+        "FECHA_TERMINO":                fecha_larga(contrato.fecha_hasta) if contrato.fecha_hasta else "",
+        "TIPO_CONTRATO":                contrato_tipo_rel.nombre.upper() if contrato_tipo_rel else "",
+        "CARGO":                        cargo_rel.nombre.upper() if cargo_rel else "",
+        "SALARIO":                      fmt_numero(getattr(contrato, "vr_salario", 0)),                
+
     }
 
     pdf_bytes = generar_pdf(etiquetas, formato)
