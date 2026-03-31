@@ -95,8 +95,10 @@ def recuperar_clave(request: Request, data: RecuperarClaveRequest, db: Session =
     verify_turnstile(data.turnstile_token)
 
     user = db.query(User).filter(User.email == data.email).first()
-    if user and not user.is_verified:
-        return {"detail": "Cuenta no verificada o el usuario no existe", "no_verificado": True}
+    if not user:
+        return {"detail": "Si el correo existe, recibirás las instrucciones para recuperar tu clave"}
+    if not user.is_verified:
+        return {"detail": "Cuenta no verificada", "no_verificado": True}    
     if user:
         token = generate_verification_token()
         user.reset_password_token = token
