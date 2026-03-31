@@ -18,7 +18,7 @@ from app.modules.auth.schemas.notificacion import (
 router = APIRouter()
 
 
-@router.post("/crear", response_model=NotificacionResponse)
+@router.post("/crear", response_model=NotificacionResponse, include_in_schema=False)
 def crear(
     data: NotificacionCreate,
     db: Session = Depends(get_master_db),
@@ -35,7 +35,7 @@ def crear(
     return notif
 
 
-@router.get("/stream")
+@router.get("/stream", include_in_schema=False)
 async def stream(current_user: dict = Depends(get_current_user)):
     usuario_id = int(current_user["sub"])
     cola = registrar_cola(usuario_id)
@@ -63,7 +63,7 @@ async def stream(current_user: dict = Depends(get_current_user)):
     )
 
 
-@router.get("/lista", response_model=NotificacionListResponse)
+@router.get("/lista", response_model=NotificacionListResponse, include_in_schema=False)
 def lista(
     page: int = 1,
     size: int = 20,
@@ -81,7 +81,7 @@ def lista(
     return NotificacionListResponse(total=total, page=page, size=size, items=items)
 
 
-@router.get("/contador", response_model=ContadorResponse)
+@router.get("/contador", response_model=ContadorResponse, include_in_schema=False)
 def contador(
     db: Session = Depends(get_master_db),
     current_user: dict = Depends(get_current_user),
@@ -95,7 +95,7 @@ def contador(
     return ContadorResponse(no_leidas=no_leidas)
 
 
-@router.patch("/{notificacion_id}/leer", response_model=NotificacionResponse)
+@router.patch("/{notificacion_id}/leer", response_model=NotificacionResponse, include_in_schema=False)
 def leer(
     notificacion_id: int,
     db: Session = Depends(get_master_db),
@@ -114,7 +114,7 @@ def leer(
     return notif
 
 
-@router.patch("/leer-todas")
+@router.patch("/leer-todas", include_in_schema=False)
 def leer_todas(
     db: Session = Depends(get_master_db),
     current_user: dict = Depends(get_current_user),

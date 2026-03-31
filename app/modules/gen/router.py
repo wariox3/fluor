@@ -7,6 +7,7 @@ from .routes import formato
 from .routes import movimiento
 from .routes import movimiento_tipo
 from .routes import asesor
+from .routes import sucursal
 
 router = APIRouter(
     prefix="/gen"
@@ -20,3 +21,4 @@ router.include_router(movimiento.router,prefix="/movimiento", tags=["General / M
 router.include_router(movimiento_tipo.router,prefix="/movimiento_tipo", tags=["General / Movimiento Tipo"])
 router.include_router(formato.router,prefix="/formato", tags=["General / Formato"])
 router.include_router(asesor.router,prefix="/asesor", tags=["General / Asesor"])
+router.include_router(sucursal.router,prefix="/sucursal", tags=["General / Sucursal"])
