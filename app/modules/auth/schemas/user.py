@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Literal
 
 from app.modules.auth.models.user import UserRole
@@ -75,3 +75,15 @@ class AsociarRequest(BaseModel):
 class ReenviarVerificacionRequest(BaseModel):
     email: EmailStr
     turnstile_token: str
+
+class ActualizarPerfilRequest(BaseModel):
+    nombres: str
+    apellidos: str
+    numero_identificacion: str
+
+    @field_validator("nombres", "apellidos", "numero_identificacion")
+    @classmethod
+    def no_vacio(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("El campo no puede estar vacío")
+        return v.strip()

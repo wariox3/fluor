@@ -6,7 +6,7 @@ from app.core.security import require_admin, get_current_user
 from app.core.master_database import get_master_db
 from app.modules.auth.models.user import User, UserRole
 from app.modules.auth.models.tenant import Tenant
-from app.modules.auth.schemas.user import UserCreate, UserResponse, RegisterRequest, RegisterResponse, RecuperarClaveRequest, RestablecerClaveRequest, AsociarRequest, ReenviarVerificacionRequest
+from app.modules.auth.schemas.user import UserCreate, UserResponse, RegisterRequest, RegisterResponse, RecuperarClaveRequest, RestablecerClaveRequest, AsociarRequest, ReenviarVerificacionRequest, ActualizarPerfilRequest
 from app.core.security import hash_password, generate_verification_token
 from app.core.config import APP_URL
 from app.core.zinc import Zinc
@@ -194,3 +194,16 @@ def asociar(request: Request, data: AsociarRequest, db: Session = Depends(get_ma
     user.empleado_id = empleado.codigo_empleado_pk
     db.commit()
     return {"detail": "Usuario asociado correctamente a la empresa"}
+
+
+@router.put("/actualizar", response_model=UserResponse, include_in_schema=False)
+def actualizar(data: ActualizarPerfilRequest, db: Session = Depends(get_master_db), current_user: dict = Depends(get_current_user)):
+    user = db.query(User).filter(User.id == int(current_user.get("sub"))).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+    user.nombres = data.nombres
+    user.apellidos = data.apellidos
+    user.numero_identificacion = data.numero_identificacion
+    db.commit()
+    db.refresh(user)
+    return user
