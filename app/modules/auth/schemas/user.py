@@ -81,6 +81,7 @@ class PerfilResponse(BaseModel):
     apellidos: str | None = None
     numero_identificacion: str | None = None
     empleado_id: int | None = None
+    email: str | None = None
 
     class Config:
         from_attributes = True
