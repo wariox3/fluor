@@ -98,7 +98,11 @@ def recuperar_clave(request: Request, data: RecuperarClaveRequest, db: Session =
     if not user:
         return {"detail": "Si el correo existe, recibirás las instrucciones para recuperar tu clave"}
     if not user.is_verified:
-        return {"detail": "Cuenta no verificada", "no_verificado": True}    
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"message": "Cuenta no verificada", "is_verified": False}
+        )
+    
     if user:
         token = generate_verification_token()
         user.reset_password_token = token
