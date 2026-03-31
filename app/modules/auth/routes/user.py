@@ -6,7 +6,7 @@ from app.core.security import require_admin, get_current_user
 from app.core.master_database import get_master_db
 from app.modules.auth.models.user import User, UserRole
 from app.modules.auth.models.tenant import Tenant
-from app.modules.auth.schemas.user import UserCreate, UserResponse, RegisterRequest, RegisterResponse, RecuperarClaveRequest, RestablecerClaveRequest, AsociarRequest, ReenviarVerificacionRequest, ActualizarPerfilRequest
+from app.modules.auth.schemas.user import UserCreate, UserResponse, RegisterRequest, RegisterResponse, RecuperarClaveRequest, RestablecerClaveRequest, AsociarRequest, ReenviarVerificacionRequest, ActualizarPerfilRequest, PerfilResponse
 from app.core.security import hash_password, generate_verification_token
 from app.core.config import APP_URL
 from app.core.zinc import Zinc
@@ -17,6 +17,14 @@ from app.modules.rhu.models.empleado import Empleado
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+@router.get("/detalle", response_model=PerfilResponse, include_in_schema=False)
+def detalle(db: Session = Depends(get_master_db), current_user: dict = Depends(get_current_user)):
+    user = db.query(User).filter(User.id == int(current_user.get("sub"))).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+    return user
+
 
 @router.post("/nuevo", response_model=UserResponse, include_in_schema=False)
 @limiter.limit("5/minute")

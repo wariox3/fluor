@@ -76,6 +76,16 @@ class ReenviarVerificacionRequest(BaseModel):
     email: EmailStr
     turnstile_token: str
 
+class PerfilResponse(BaseModel):
+    nombres: str | None = None
+    apellidos: str | None = None
+    numero_identificacion: str | None = None
+    empleado_id: int | None = None
+
+    class Config:
+        from_attributes = True
+
+
 class ActualizarPerfilRequest(BaseModel):
     nombres: str
     apellidos: str
