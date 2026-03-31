@@ -74,6 +74,7 @@ class ProgramacionListResponse(BaseModel):
 
 class ProgramacionItem(BaseModel):
     codigo_programacion_pk: int
+    codigo_puesto_fk: Optional[int] = None
     puesto_nombre: Optional[str] = None
     puesto_direccion: Optional[str] = None
     coordinador_nombre: Optional[str] = None
