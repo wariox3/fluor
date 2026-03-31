@@ -27,6 +27,7 @@ class Movimiento(Base):
     codigo_centro_costo_fk = Column(String(20), nullable=True)
     codigo_resolucion_fk = Column(Integer, nullable=True)
     codigo_empresa_fk = Column(Integer, nullable=False)
+    codigo_interface = Column(String(20), nullable=True)
 
     tercero = relationship(Tercero, foreign_keys=[codigo_tercero_fk],backref="movimientos_tercero")
     # Relaciones (ajusta según tus modelos relacionados)
