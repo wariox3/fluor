@@ -68,6 +68,7 @@ class Item(Base):
     codigo_dotacion_elemento_fk = Column(Integer, nullable=True)
     codigo_empresa_fk = Column(Integer, nullable=False)
     estado_inactivo = Column(Boolean, nullable=False, default=False)
+    codigo_interface = Column(String(20), nullable=True)
 
     impuesto_retencion = relationship(
         Impuesto,
