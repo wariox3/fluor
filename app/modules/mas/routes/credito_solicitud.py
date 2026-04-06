@@ -60,7 +60,7 @@ def nuevo(
         monto=datos.monto,
         plazo=datos.plazo,
         descripcion=datos.descripcion,
-        tasa_interes=0,
+        tasa_interes=datos.tasa_interes,
         estado="pendiente",
     )
     db.add(solicitud)

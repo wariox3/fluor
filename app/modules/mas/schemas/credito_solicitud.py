@@ -43,6 +43,7 @@ class CreditoSolicitudCrear(BaseModel):
     monto: Decimal
     plazo: int
     descripcion: str
+    tasa_interes: float
 
 
 class CreditoSolicitudActualizarEstado(BaseModel):
