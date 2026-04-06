@@ -13,6 +13,7 @@ from .routes import credito
 from .routes import embargo
 from .routes import adicional
 from .routes import concepto
+from .routes import capacitacion_detalle
 
 router = APIRouter(
     prefix="/rhu"
@@ -32,3 +33,4 @@ router.include_router(credito.router, prefix="/credito", tags=["Recurso Humano /
 router.include_router(embargo.router, prefix="/embargo", tags=["Recurso Humano / Embargo"])
 router.include_router(adicional.router, prefix="/adicional", tags=["Recurso Humano / Adicional"])
 router.include_router(concepto.router, prefix="/concepto", tags=["Recurso Humano / Concepto"])
+router.include_router(capacitacion_detalle.router, prefix="/capacitacion_detalle", tags=["Recurso Humano / Capacitacion Detalle"])
