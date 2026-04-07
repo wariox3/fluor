@@ -30,3 +30,20 @@ def lista(
     offset = (page - 1) * size
     items = query.order_by(Enlace.codigo_enlace_pk.desc()).offset(offset).limit(size).all()
     return EnlaceListResponse(total=total, page=page, size=size, items=items)
+
+
+@router.get("/lista-portal", response_model=EnlaceListResponse)
+def lista_portal(
+    page: int = 1,
+    size: int = 50,
+    db: Session = Depends(get_tenant_db),
+    current_user: dict = Depends(get_current_user),
+):
+    query = db.query(Enlace).filter(
+        Enlace.codigo_modelo_fk.is_(None),
+        Enlace.codigo_documento.is_(None),
+    )
+    total = query.with_entities(func.count(Enlace.codigo_enlace_pk)).scalar()
+    offset = (page - 1) * size
+    items = query.order_by(Enlace.codigo_enlace_pk.desc()).offset(offset).limit(size).all()
+    return EnlaceListResponse(total=total, page=page, size=size, items=items)
