@@ -7,6 +7,8 @@ from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.rhu.models.capacitacion_detalle import CapacitacionDetalle
 from app.modules.rhu.schemas.capacitacion_detalle import CapacitacionDetalleListResponse
+from app.modules.gen.models.enlace import Enlace
+from app.modules.doc.models.fichero import Fichero
 
 router = APIRouter()
 
@@ -50,6 +52,26 @@ def lista_portal(
     total = query.with_entities(func.count(CapacitacionDetalle.codigo_capacitacion_detalle_pk)).scalar()
     offset = (page - 1) * size
     items = query.order_by(CapacitacionDetalle.codigo_capacitacion_detalle_pk.desc()).offset(offset).limit(size).all()
+
+    ids = [item.codigo_capacitacion_detalle_pk for item in items]
+
+    enlaces_map: dict[int, list] = {i: [] for i in ids}
+    for enlace in db.query(Enlace).filter(
+        Enlace.codigo_modelo_fk == "RhuCapacitacion",
+        Enlace.codigo_documento.in_(ids),
+    ).all():
+        enlaces_map[enlace.codigo_documento].append(enlace)
+
+    ficheros_map: dict[int, list] = {i: [] for i in ids}
+    for fichero in db.query(Fichero).filter(
+        Fichero.codigo_modelo_fk == "RhuCapacitacion",
+        Fichero.codigo.in_([str(i) for i in ids]),
+    ).all():
+        ficheros_map[int(fichero.codigo)].append(fichero)
+
+    for item in items:
+        item.__dict__["enlaces"] = enlaces_map[item.codigo_capacitacion_detalle_pk]
+        item.__dict__["ficheros"] = ficheros_map[item.codigo_capacitacion_detalle_pk]
 
     return CapacitacionDetalleListResponse(total=total, page=page, size=size, items=items)
 
