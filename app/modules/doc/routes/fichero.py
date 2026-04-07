@@ -54,7 +54,7 @@ def descargar(fichero_id: int, db: Session = Depends(get_tenant_db), current_use
     fichero = db.query(Fichero).filter(Fichero.codigo_fichero_pk == fichero_id).first()
     if not fichero:
         raise HTTPException(status_code=404, detail="Fichero no encontrado")
-    directorio = {"F": "firma", "I": "imagen"}.get(fichero.codigo_fichero_tipo_fk, "fichero")
+    directorio = {"F": "firma", "I": "imagen", "G": "fichero"}.get(fichero.codigo_fichero_tipo_fk, "fichero")
     ruta = f"{fichero.directorio_base}/{directorio}/{fichero.codigo_fichero_pk}.{fichero.extension}"
 
     try:
@@ -74,7 +74,7 @@ def descargar_url(fichero_id: int, db: Session = Depends(get_tenant_db), current
     fichero = db.query(Fichero).filter(Fichero.codigo_fichero_pk == fichero_id).first()
     if not fichero:
         raise HTTPException(status_code=404, detail="Fichero no encontrado")
-    directorio = {"F": "firma", "I": "imagen"}.get(fichero.codigo_fichero_tipo_fk, "fichero")
+    directorio = {"F": "firma", "I": "imagen", "G": "fichero"}.get(fichero.codigo_fichero_tipo_fk, "fichero")
     ruta = f"{fichero.directorio_base}/{directorio}/{fichero.codigo_fichero_pk}.{fichero.extension}"
     url = b2_client.get_download_url(ruta)
     return {"url": url}
