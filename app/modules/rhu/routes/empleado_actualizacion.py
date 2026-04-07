@@ -27,7 +27,6 @@ def nuevo(
         telefono=data.telefono,
         direccion=data.direccion,
         barrio=data.barrio,
-        correo=data.correo,
         fecha=date.today(),
         estado_aplicado=False,
     )

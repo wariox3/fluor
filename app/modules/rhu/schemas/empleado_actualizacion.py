@@ -5,12 +5,11 @@ from datetime import date
 
 class EmpleadoActualizacionCreate(BaseModel):
     codigo_empleado_fk: int
-    codigo_ciudad_fk: Optional[int] = None
-    celular: Optional[str] = None
-    telefono: Optional[str] = None
-    direccion: Optional[str] = None
-    barrio: Optional[str] = None
-    correo: Optional[str] = None
+    codigo_ciudad_fk: int
+    celular: str
+    telefono: str
+    direccion: str
+    barrio: str
 
 
 class EmpleadoActualizacionResponse(BaseModel):
