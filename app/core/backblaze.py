@@ -97,5 +97,9 @@ class BackblazeB2:
         content_type = response.headers.get("content-type", "application/octet-stream")
         return response.content, content_type
 
+    def get_download_url(self, file_path: str) -> str:
+        self._ensure_authorized()
+        return f"{self._download_url}/file/{B2_BUCKET_NAME}/{file_path}?Authorization={self._auth_token}"
+
 
 b2_client = BackblazeB2()

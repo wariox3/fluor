@@ -69,6 +69,17 @@ def descargar(fichero_id: int, db: Session = Depends(get_tenant_db), current_use
         headers={"Content-Disposition": f'attachment; filename="{nombre_archivo}"'},
     )
 
+@router.get("/descargar-url/{fichero_id}")
+def descargar_url(fichero_id: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    fichero = db.query(Fichero).filter(Fichero.codigo_fichero_pk == fichero_id).first()
+    if not fichero:
+        raise HTTPException(status_code=404, detail="Fichero no encontrado")
+    directorio = {"F": "firma", "I": "imagen"}.get(fichero.codigo_fichero_tipo_fk, "fichero")
+    ruta = f"{fichero.directorio_base}/{directorio}/{fichero.codigo_fichero_pk}.{fichero.extension}"
+    url = b2_client.get_download_url(ruta)
+    return {"url": url}
+
+
 @router.post("/cargar/{codigo_modelo}/{codigo}", status_code=201)
 async def cargar(
     codigo_modelo: str,
