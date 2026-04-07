@@ -13,11 +13,14 @@ router = APIRouter()
 def lista(
     page: int = 1,
     size: int = 50,
+    ciudad_id: Optional[int] = None,
     nombre: Optional[str] = None,
     db: Session = Depends(get_tenant_db),
     current_user: dict = Depends(get_current_user),
 ):
     query = db.query(Ciudad)
+    if ciudad_id:
+        query = query.filter(Ciudad.codigo_ciudad_pk == ciudad_id)
     if nombre:
         query = query.filter(Ciudad.nombre.ilike(f"%{nombre}%"))
     total = query.with_entities(func.count(Ciudad.codigo_ciudad_pk)).scalar()
