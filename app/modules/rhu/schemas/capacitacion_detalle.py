@@ -7,6 +7,7 @@ from app.modules.doc.schemas.fichero import FicheroResponse
 
 class CapacitacionDetalleResponse(BaseModel):
     codigo_capacitacion_detalle_pk: int
+    codigo_capacitacion_fk: int
     evaluacion: Optional[str] = None
     asistencia: bool
     capacitacion_objetivo: Optional[str] = None
