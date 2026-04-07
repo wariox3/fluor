@@ -10,6 +10,27 @@ from app.modules.tur.schemas.consigna import ConsignaListResponse
 router = APIRouter()
 
 
+@router.get("/lista-portal", response_model=ConsignaListResponse)
+def lista_portal(
+    page: int = 1,
+    size: int = 50,
+    puesto_id: Optional[int] = None,
+    db: Session = Depends(get_tenant_db),
+    current_user: dict = Depends(get_current_user),
+):
+    query = db.query(Consigna).options(joinedload(Consigna.puesto_rel))
+    query = query.filter(Consigna.habilitado_portal == True)
+
+    if puesto_id:
+        query = query.filter(Consigna.codigo_puesto_fk == puesto_id)
+
+    total = query.with_entities(func.count(Consigna.codigo_consigna_pk)).scalar()
+    offset = (page - 1) * size
+    items = query.order_by(Consigna.codigo_consigna_pk.asc()).offset(offset).limit(size).all()
+
+    return ConsignaListResponse(total=total, page=page, size=size, items=items)
+
+
 @router.get("/lista", response_model=ConsignaListResponse)
 def lista(
     page: int = 1,
