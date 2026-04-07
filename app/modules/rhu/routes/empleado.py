@@ -10,7 +10,7 @@ from app.modules.rhu.models.contrato import Contrato
 from app.modules.rhu.models.pago import Pago
 from app.modules.rhu.models.credito import Credito
 from app.modules.rhu.models.embargo import Embargo
-from app.modules.rhu.schemas.empleado import EmpleadoListResponse, EstudioCreditoResponse, CuotasPorPlazo, PlazoCredito
+from app.modules.rhu.schemas.empleado import EmpleadoDetalleResponse, EmpleadoDetalleVencimientoResponse, EmpleadoListResponse, EstudioCreditoResponse, CuotasPorPlazo, PlazoCredito
 
 router = APIRouter()
 
@@ -42,6 +42,30 @@ def lista(page: int = 1, size: int = 50, numero_identificacion: Optional[str] = 
     offset = (page - 1) * size
     empleados = query.offset(offset).limit(size).all()
     return EmpleadoListResponse(total=total, page=page, size=size, items=empleados)
+
+
+@router.get("/detalle", response_model=EmpleadoDetalleResponse)
+def detalle(
+    empleado_id: int,
+    db: Session = Depends(get_tenant_db),
+    current_user: dict = Depends(get_current_user),
+):
+    empleado = db.query(Empleado).filter(Empleado.codigo_empleado_pk == empleado_id).first()
+    if not empleado:
+        raise HTTPException(status_code=404, detail="Empleado no encontrado")
+    return empleado
+
+
+@router.get("/detalle-vencimiento", response_model=EmpleadoDetalleVencimientoResponse)
+def detalle_vencimiento(
+    empleado_id: int,
+    db: Session = Depends(get_tenant_db),
+    current_user: dict = Depends(get_current_user),
+):
+    empleado = db.query(Empleado).filter(Empleado.codigo_empleado_pk == empleado_id).first()
+    if not empleado:
+        raise HTTPException(status_code=404, detail="Empleado no encontrado")
+    return empleado
 
 
 @router.get("/estudio-credito", response_model=EstudioCreditoResponse, include_in_schema=False)
