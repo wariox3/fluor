@@ -37,6 +37,21 @@ def lista(
     return CreditoSolicitudListResponse(total=total, page=page, size=size, items=items)
 
 
+@router.get("/lista-portal", response_model=CreditoSolicitudListResponse)
+def lista_portal(
+    page: int = 1,
+    size: int = 50,
+    db: Session = Depends(get_master_db),
+    current_user: dict = Depends(get_current_user),
+):
+    usuario_id = int(current_user["sub"])
+    query = db.query(CreditoSolicitud).filter(CreditoSolicitud.usuario_id == usuario_id)
+    total = query.with_entities(func.count(CreditoSolicitud.codigo_credito_solicitud_pk)).scalar()
+    offset = (page - 1) * size
+    items = query.offset(offset).limit(size).all()
+    return CreditoSolicitudListResponse(total=total, page=page, size=size, items=items)
+
+
 @router.get("/{id}", response_model=CreditoSolicitudDetalleResponse)
 def detalle(
     id: int,
