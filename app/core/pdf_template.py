@@ -1,3 +1,4 @@
+import base64
 from weasyprint import HTML
 
 
@@ -7,7 +8,36 @@ def _reemplazar_etiquetas(texto: str, datos: dict) -> str:
     return texto
 
 
-def generar_pdf(etiquetas: dict, formato=None) -> bytes:
+def _generar_html_imagenes(imagenes) -> str:
+    """Genera divs con position absolute para cada imagen del formato."""
+    html_imagenes = ""
+    for img in imagenes:
+        if not img.imagen:
+            continue
+        ext = img.extension or "png"
+        img_base64 = base64.b64encode(img.imagen).decode("utf-8")
+        data_uri = f"data:image/{ext};base64,{img_base64}"
+
+        # Compensar márgenes de @page (2.5cm=25mm arriba, 3cm=30mm izquierda)
+        # para posicionar desde el borde real de la página como FPDF
+        left = img.posicion_x - 30
+        top = img.posicion_y - 25
+        style_parts = [
+            "position: fixed",
+            f"left: {left}mm",
+            f"top: {top}mm",
+        ]
+        if img.ancho:
+            style_parts.append(f"width: {img.ancho}mm")
+        if img.alto:
+            style_parts.append(f"height: {img.alto}mm")
+
+        style = "; ".join(style_parts)
+        html_imagenes += f'<img src="{data_uri}" style="{style};" />\n'
+    return html_imagenes
+
+
+def generar_pdf(etiquetas: dict, formato=None, imagenes=None) -> bytes:
     fuente_size = 11
     if formato and formato.tamanio_fuente:
         try:
@@ -17,6 +47,10 @@ def generar_pdf(etiquetas: dict, formato=None) -> bytes:
 
     contenido = getattr(formato, "contenido_externo", "") or ""
     contenido = _reemplazar_etiquetas(contenido, etiquetas)
+
+    html_imagenes = ""
+    if imagenes:
+        html_imagenes = _generar_html_imagenes(imagenes)
 
     html = f"""<!DOCTYPE html>
 <html>
@@ -42,6 +76,7 @@ def generar_pdf(etiquetas: dict, formato=None) -> bytes:
   </style>
 </head>
 <body>
+  {html_imagenes}
   <div class="contenido">{contenido}</div>
 </body>
 </html>"""

@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, Boolean
+from sqlalchemy.orm import relationship
 from app.core.tenant_database import Base
 
 
@@ -26,3 +27,5 @@ class Formato(Base):
     codigo_modelo_fk = Column(String(80), nullable=True)
     version = Column(String(20), nullable=True)
     codigo = Column(String(20), nullable=True)
+
+    formatos_imagen_formato_rel = relationship("FormatoImagen", back_populates="formato_rel")

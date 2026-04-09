@@ -13,6 +13,7 @@ from app.core.pdf_template import generar_pdf
 from app.core.utils import fecha_larga, fmt_numero
 from app.modules.gen.models.configuracion import Configuracion
 from app.modules.gen.models.formato import Formato
+from app.modules.gen.models.formato_imagen import FormatoImagen
 
 router = APIRouter()
 
@@ -75,6 +76,12 @@ def imprimir_certificado_laboral(contrato_id: int, db: Session = Depends(get_ten
     else:
         formato = db.query(Formato).filter(Formato.codigo_formato_pk == 12).first()
 
+    imagenes = []
+    if formato:
+        imagenes = db.query(FormatoImagen).filter(
+            FormatoImagen.codigo_formato_fk == formato.codigo_formato_pk
+        ).all()
+
     nit                 = getattr(config,       "nit", "") if config else ""
     dv                  = getattr(config,       "digito_verificacion", "") if config else ""
     ciudad_rel          = getattr(config,       "ciudad_rel", None) if config else None
@@ -100,7 +107,7 @@ def imprimir_certificado_laboral(contrato_id: int, db: Session = Depends(get_ten
 
     }
 
-    pdf_bytes = generar_pdf(etiquetas, formato)
+    pdf_bytes = generar_pdf(etiquetas, formato, imagenes)
 
     return Response(
         content=pdf_bytes,
