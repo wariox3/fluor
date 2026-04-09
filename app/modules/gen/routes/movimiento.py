@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from typing import Optional
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from app.core.config import DEFAULT_EMPRESA_ID
@@ -75,13 +76,13 @@ def nuevo_documento(data: MovimientoCreate, db: Session = Depends(get_tenant_db)
     return movimiento
 
 @router.get("/lista", response_model=MovimientoListResponse)
-def lista(page: int = 1, size: int = 50, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
-    total = db.query(func.count(Movimiento.codigo_movimiento_pk)).scalar()
+def lista(page: int = 1, size: int = 50, movimiento_id: Optional[int] = None, codigo_interface: Optional[str] = None, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    query = db.query(Movimiento)
+    if movimiento_id:
+        query = query.filter(Movimiento.codigo_movimiento_pk == movimiento_id)
+    if codigo_interface:
+        query = query.filter(Movimiento.codigo_interface == codigo_interface)
+    total = query.with_entities(func.count(Movimiento.codigo_movimiento_pk)).scalar()
     offset = (page - 1) * size
-    movimientos = (
-        db.query(Movimiento)
-        .offset(offset)
-        .limit(size)
-        .all()
-    )
-    return MovimientoListResponse(total=total, page=page, size=size, movimientos=movimientos)
+    movimientos = query.offset(offset).limit(size).all()
+    return MovimientoListResponse(total=total, page=page, size=size, items=movimientos)
