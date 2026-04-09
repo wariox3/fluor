@@ -15,6 +15,18 @@ class FormatoImagenResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class FormatoImagenDetalleResponse(BaseModel):
+    codigo_formato_imagen_pk: int
+    codigo_formato_fk: int
+    imagen: Optional[str] = None  # base64
+    posicion_x: Optional[int] = None
+    posicion_y: Optional[int] = None
+    ancho: Optional[int] = None
+    alto: Optional[int] = None
+    extension: Optional[str] = None
+    visualizar_ultima_pagina: Optional[bool] = None
+
+
 class FormatoImagenListResponse(BaseModel):
     total: int
     page: int

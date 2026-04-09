@@ -1,3 +1,4 @@
+import base64
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -5,11 +6,36 @@ from typing import Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.gen.models.formato_imagen import FormatoImagen
-from app.modules.gen.schemas.formato_imagen import FormatoImagenListResponse, FormatoImagenResponse
+from app.modules.gen.schemas.formato_imagen import FormatoImagenListResponse, FormatoImagenResponse, FormatoImagenDetalleResponse
 
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png"}
 
 router = APIRouter()
+
+
+@router.get("/{formato_imagen_id}/detalle", response_model=FormatoImagenDetalleResponse)
+def detalle(
+    formato_imagen_id: int,
+    db: Session = Depends(get_tenant_db),
+    current_user: dict = Depends(get_current_user),
+):
+    registro = db.query(FormatoImagen).filter(FormatoImagen.codigo_formato_imagen_pk == formato_imagen_id).first()
+    if not registro:
+        raise HTTPException(status_code=404, detail="Imagen de formato no encontrada")
+    imagen_base64 = None
+    if registro.imagen:
+        imagen_base64 = base64.b64encode(registro.imagen).decode("utf-8")
+    return FormatoImagenDetalleResponse(
+        codigo_formato_imagen_pk=registro.codigo_formato_imagen_pk,
+        codigo_formato_fk=registro.codigo_formato_fk,
+        imagen=imagen_base64,
+        posicion_x=registro.posicion_x,
+        posicion_y=registro.posicion_y,
+        ancho=registro.ancho,
+        alto=registro.alto,
+        extension=registro.extension,
+        visualizar_ultima_pagina=registro.visualizar_ultima_pagina,
+    )
 
 
 @router.post("/nuevo", response_model=FormatoImagenResponse, status_code=201)
