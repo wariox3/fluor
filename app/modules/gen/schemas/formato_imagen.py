@@ -27,6 +27,13 @@ class FormatoImagenDetalleResponse(BaseModel):
     visualizar_ultima_pagina: Optional[bool] = None
 
 
+class FormatoImagenActualizar(BaseModel):
+    posicion_x: Optional[int] = None
+    posicion_y: Optional[int] = None
+    ancho: Optional[int] = None
+    alto: Optional[int] = None
+
+
 class FormatoImagenListResponse(BaseModel):
     total: int
     page: int

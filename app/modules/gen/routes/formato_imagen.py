@@ -6,7 +6,7 @@ from typing import Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.gen.models.formato_imagen import FormatoImagen
-from app.modules.gen.schemas.formato_imagen import FormatoImagenListResponse, FormatoImagenResponse, FormatoImagenDetalleResponse
+from app.modules.gen.schemas.formato_imagen import FormatoImagenListResponse, FormatoImagenResponse, FormatoImagenDetalleResponse, FormatoImagenActualizar
 
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png"}
 
@@ -76,14 +76,9 @@ async def nuevo(
 
 
 @router.patch("/{formato_imagen_id}/actualizar", response_model=FormatoImagenResponse)
-async def actualizar(
+def actualizar(
     formato_imagen_id: int,
-    posicion_x: Optional[int] = Form(None),
-    posicion_y: Optional[int] = Form(None),
-    ancho: Optional[int] = Form(None),
-    alto: Optional[int] = Form(None),
-    visualizar_ultima_pagina: Optional[bool] = Form(None),
-    imagen: Optional[UploadFile] = File(None),
+    payload: FormatoImagenActualizar,
     db: Session = Depends(get_tenant_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -91,31 +86,32 @@ async def actualizar(
     if not registro:
         raise HTTPException(status_code=404, detail="Imagen de formato no encontrada")
 
-    if imagen is not None:
-        nombre_original = imagen.filename or ""
-        extension = nombre_original.rsplit(".", 1)[-1].lower() if "." in nombre_original else ""
-        if extension not in ALLOWED_EXTENSIONS:
-            raise HTTPException(status_code=400, detail="Solo se permiten imágenes jpg o png")
-        data = await imagen.read()
-        if len(data) == 0:
-            raise HTTPException(status_code=400, detail="El archivo está vacío")
-        registro.imagen = data
-        registro.extension = extension
-
-    if posicion_x is not None:
-        registro.posicion_x = posicion_x
-    if posicion_y is not None:
-        registro.posicion_y = posicion_y
-    if ancho is not None:
-        registro.ancho = ancho
-    if alto is not None:
-        registro.alto = alto
-    if visualizar_ultima_pagina is not None:
-        registro.visualizar_ultima_pagina = visualizar_ultima_pagina
+    if payload.posicion_x is not None:
+        registro.posicion_x = payload.posicion_x
+    if payload.posicion_y is not None:
+        registro.posicion_y = payload.posicion_y
+    if payload.ancho is not None:
+        registro.ancho = payload.ancho
+    if payload.alto is not None:
+        registro.alto = payload.alto
 
     db.commit()
     db.refresh(registro)
     return registro
+
+
+@router.delete("/{formato_imagen_id}/eliminar", status_code=200)
+def eliminar(
+    formato_imagen_id: int,
+    db: Session = Depends(get_tenant_db),
+    current_user: dict = Depends(get_current_user),
+):
+    registro = db.query(FormatoImagen).filter(FormatoImagen.codigo_formato_imagen_pk == formato_imagen_id).first()
+    if not registro:
+        raise HTTPException(status_code=404, detail="Imagen de formato no encontrada")
+    db.delete(registro)
+    db.commit()
+    return {"mensaje": "Imagen eliminada correctamente"}
 
 
 @router.get("/lista", response_model=FormatoImagenListResponse)
