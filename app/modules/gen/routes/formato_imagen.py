@@ -6,7 +6,7 @@ from typing import Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.gen.models.formato_imagen import FormatoImagen
-from app.modules.gen.schemas.formato_imagen import FormatoImagenListResponse, FormatoImagenResponse, FormatoImagenDetalleResponse, FormatoImagenActualizar
+from app.modules.gen.schemas.formato_imagen import FormatoImagenListResponse, FormatoImagenResponse, FormatoImagenDetalleResponse, FormatoImagenActualizar, FormatoImagenActualizarItem, FormatoImagenListActualizarResponse
 
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png"}
 
@@ -129,3 +129,32 @@ def lista(
     offset = (page - 1) * size
     items = query.offset(offset).limit(size).all()
     return FormatoImagenListResponse(total=total, page=page, size=size, items=items)
+
+
+@router.get("/lista-actualizar", response_model=FormatoImagenListActualizarResponse)
+def lista_actualizar(
+    formato_id: int,
+    page: int = 1,
+    size: int = 50,
+    db: Session = Depends(get_tenant_db),
+    current_user: dict = Depends(get_current_user),
+):
+    query = db.query(FormatoImagen).filter(FormatoImagen.codigo_formato_fk == formato_id)
+    total = query.with_entities(func.count(FormatoImagen.codigo_formato_imagen_pk)).scalar()
+    offset = (page - 1) * size
+    registros = query.offset(offset).limit(size).all()
+    items = [
+        FormatoImagenActualizarItem(
+            codigo_formato_imagen_pk=r.codigo_formato_imagen_pk,
+            codigo_formato_fk=r.codigo_formato_fk,
+            imagen=base64.b64encode(r.imagen).decode("utf-8") if r.imagen else None,
+            posicion_x=r.posicion_x,
+            posicion_y=r.posicion_y,
+            ancho=r.ancho,
+            alto=r.alto,
+            extension=r.extension,
+            visualizar_ultima_pagina=r.visualizar_ultima_pagina,
+        )
+        for r in registros
+    ]
+    return FormatoImagenListActualizarResponse(total=total, page=page, size=size, items=items)
