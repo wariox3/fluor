@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
-from app.modules.fin.schemas.balance import CuentaBalanceItem
+from app.modules.fin.schemas.balance import CuentaBalanceItem, CentroCostoBalanceItem
 
 router = APIRouter()
 
@@ -47,6 +47,25 @@ WHERE
     OR COALESCE(mp.vr_credito, 0) != 0
 ORDER BY sa.codigo_cuenta_fk
 """)
+
+
+SQL_BALANCE_CENTRO_COSTO = text("""
+    SELECT
+        codigo_periodo_fk,
+        codigo_cuenta_fk,
+        codigo_centro_costo_fk,
+        vr_debito,
+        vr_credito
+    FROM fin_saldo_centro_costo
+    WHERE codigo_periodo_fk BETWEEN :periodo_inicio AND :periodo_fin
+    ORDER BY codigo_periodo_fk, codigo_cuenta_fk, codigo_centro_costo_fk
+""")
+
+
+@router.get("/centro-costo", response_model=List[CentroCostoBalanceItem])
+def centro_costo(periodo_inicio: int, periodo_fin: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    rows = db.execute(SQL_BALANCE_CENTRO_COSTO, {"periodo_inicio": periodo_inicio, "periodo_fin": periodo_fin}).mappings().all()
+    return [CentroCostoBalanceItem(**row) for row in rows]
 
 
 @router.get("/cuenta", response_model=List[CuentaBalanceItem])
