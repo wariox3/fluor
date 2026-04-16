@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from typing import Optional
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
@@ -18,7 +18,12 @@ router = APIRouter()
 def nuevo_documento(data: MovimientoCreate, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
 
     movimiento_tipo = db.query(MovimientoTipo).filter(MovimientoTipo.codigo_movimiento_tipo_pk == data.codigo_movimiento_tipo_fk).first()
+    if not movimiento_tipo:
+        raise HTTPException(status_code=404, detail=f"MovimientoTipo '{data.codigo_movimiento_tipo_fk}' no existe")
+
     tercero = db.query(Tercero).filter(Tercero.codigo_tercero_pk == data.codigo_tercero_fk).first()
+    if not tercero:
+        raise HTTPException(status_code=404, detail=f"Tercero '{data.codigo_tercero_fk}' no existe")
 
     movimiento = Movimiento(
         fecha=data.fecha,
@@ -46,6 +51,8 @@ def nuevo_documento(data: MovimientoCreate, db: Session = Depends(get_tenant_db)
     for detalle_data in data.detalles:
 
         item = db.query(Item).filter(Item.codigo_item_pk == detalle_data.codigo_item_fk).first()
+        if not item:
+            raise HTTPException(status_code=404, detail=f"Item '{detalle_data.codigo_item_fk}' no existe")
 
         cantidad = detalle_data.cantidad or 0.0
         operacion = movimiento.operacion_inventario or 0
