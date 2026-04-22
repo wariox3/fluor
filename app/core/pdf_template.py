@@ -26,6 +26,7 @@ def _generar_html_imagenes(imagenes) -> str:
             "position: fixed",
             f"left: {left}mm",
             f"top: {top}mm",
+            "z-index: -1",
         ]
         if img.ancho:
             style_parts.append(f"width: {img.ancho}mm")
