@@ -83,12 +83,14 @@ def nuevo_documento(data: MovimientoCreate, db: Session = Depends(get_tenant_db)
     return movimiento
 
 @router.get("/lista", response_model=MovimientoListResponse)
-def lista(page: int = 1, size: int = 50, movimiento_id: Optional[int] = None, codigo_interface: Optional[str] = None, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+def lista(page: int = 1, size: int = 50, movimiento_id: Optional[int] = None, codigo_interface: Optional[str] = None, numero: Optional[int] = None, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     query = db.query(Movimiento)
     if movimiento_id:
         query = query.filter(Movimiento.codigo_movimiento_pk == movimiento_id)
     if codigo_interface:
         query = query.filter(Movimiento.codigo_interface == codigo_interface)
+    if numero is not None:
+        query = query.filter(Movimiento.numero == numero)
     total = query.with_entities(func.count(Movimiento.codigo_movimiento_pk)).scalar()
     offset = (page - 1) * size
     movimientos = query.offset(offset).limit(size).all()
