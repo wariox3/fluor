@@ -7,7 +7,6 @@ from sqlalchemy import func
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.rhu.models.contrato import Contrato
-from app.modules.rhu.models.empleado import Empleado
 from app.modules.rhu.schemas.contrato import ContratoListResponse, ContratoResponse
 from app.core.pdf_template import generar_pdf
 from app.core.utils import fecha_larga, fmt_numero
@@ -71,7 +70,7 @@ def imprimir_certificado_laboral(contrato_id: int, db: Session = Depends(get_ten
         .first()
     )
     
-    if(contrato.estado_terminado == False):
+    if(not contrato.estado_terminado):
         formato = db.query(Formato).filter(Formato.codigo_formato_pk == 13).first()
     else:
         formato = db.query(Formato).filter(Formato.codigo_formato_pk == 12).first()

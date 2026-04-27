@@ -60,7 +60,7 @@ def generar_pdf(etiquetas: dict, formato=None, imagenes=None) -> bytes:
   <style>
     @page {{
       size: letter;
-      margin: 2.5cm 3cm;
+      margin: 2.5cm 2.5cm;
     }}
     body {{
       font-family: Arial, sans-serif;
@@ -68,7 +68,7 @@ def generar_pdf(etiquetas: dict, formato=None, imagenes=None) -> bytes:
       color: #000;
     }}
     .contenido p {{
-      line-height: 1.6;
+      line-height: 1.0;
       margin: 0 0 0.4cm 0;
     }}
     .ql-align-center {{ text-align: center; }}
