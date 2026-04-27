@@ -48,6 +48,7 @@ def generar_pdf(etiquetas: dict, formato=None, imagenes=None) -> bytes:
 
     contenido = getattr(formato, "contenido_externo", "") or ""
     contenido = _reemplazar_etiquetas(contenido, etiquetas)
+    contenido = contenido.replace("&nbsp;", " ")
 
     html_imagenes = ""
     if imagenes:
@@ -69,11 +70,13 @@ def generar_pdf(etiquetas: dict, formato=None, imagenes=None) -> bytes:
     }}
     .contenido p {{
       line-height: 1.0;
-      margin: 0 0 0.4cm 0;
+      margin: 0 0 0.1cm 0;
+      text-align: justify;
+      min-height: 1em;
     }}
-    .ql-align-center {{ text-align: center; }}
-    .ql-align-right {{ text-align: right; }}
-    .ql-align-justify {{ text-align: justify; }}
+    .contenido p.ql-align-center {{ text-align: center; }}
+    .contenido p.ql-align-right {{ text-align: right; }}
+    .contenido p.ql-align-justify {{ text-align: justify; }}
   </style>
 </head>
 <body>
