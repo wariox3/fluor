@@ -1,8 +1,8 @@
-from datetime import datetime
+from datetime import datetime, date
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.core.config import DEFAULT_EMPRESA_ID
@@ -14,7 +14,7 @@ from app.modules.tte.models.guia_tipo import GuiaTipo
 from app.modules.tte.models.operacion import Operacion
 from app.modules.tte.models.producto import Producto
 from app.modules.tte.models.servicio import Servicio
-from app.modules.tte.schemas.guia import GuiaCreateRequest, GuiaCreateResponse, GuiaResponse, GuiaEstadoResponse, GuiasMasivoRequest
+from app.modules.tte.schemas.guia import GuiaCreateRequest, GuiaCreateResponse, GuiaCorreccionRequest, GuiaCorreccionResponse, GuiaListResponse, GuiaEstadoResponse, GuiasMasivoRequest
 
 router = APIRouter()
 
@@ -88,17 +88,39 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), curr
 
     return guia
 
-@router.get("/lista", response_model=List[GuiaResponse])
-def lista(page: int = 1, size: int = 50, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+@router.get("/lista", response_model=GuiaListResponse)
+def lista(
+    page: int = 1,
+    size: int = 50,
+    tercero_id: Optional[int] = None,
+    fecha_desde: Optional[date] = None,
+    fecha_hasta: Optional[date] = None,
+    estado_ingreso: Optional[bool] = None,
+    estado_despachado: Optional[bool] = None,
+    estado_entregado: Optional[bool] = None,
+    estado_novedad: Optional[bool] = None,
+    db: Session = Depends(get_tenant_db),
+    current_user: dict = Depends(get_current_user),
+):
+    query = db.query(Guia)
+    if tercero_id is not None:
+        query = query.filter(Guia.codigo_tercero_fk == tercero_id)
+    if fecha_desde is not None:
+        query = query.filter(Guia.fecha_ingreso >= fecha_desde)
+    if fecha_hasta is not None:
+        query = query.filter(Guia.fecha_ingreso <= fecha_hasta)
+    if estado_ingreso is not None:
+        query = query.filter(Guia.estado_ingreso == estado_ingreso)
+    if estado_despachado is not None:
+        query = query.filter(Guia.estado_despachado == estado_despachado)
+    if estado_entregado is not None:
+        query = query.filter(Guia.estado_entregado == estado_entregado)
+    if estado_novedad is not None:
+        query = query.filter(Guia.estado_novedad == estado_novedad)
+    total = query.with_entities(func.count(Guia.codigo_guia_pk)).scalar()
     offset = (page - 1) * size
-    guias = (
-        db.query(Guia)
-        .offset(offset)
-        .limit(size)
-        .all()
-    )
-
-    return guias
+    guias = query.order_by(Guia.codigo_guia_pk.desc()).offset(offset).limit(size).all()
+    return GuiaListResponse(total=total, page=page, size=size, items=guias)
 
 @router.get("/estado/{guia}", response_model=GuiaEstadoResponse)
 def estado(guia: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
@@ -134,5 +156,23 @@ def estado_documento(codigo_tercero: int, documento_cliente: str, db: Session = 
 
     if guia is None:
         raise HTTPException(status_code=404, detail="Guía no encontrada")
+
+    return guia
+
+@router.patch("/corregir/{codigo_guia_pk}", response_model=GuiaCorreccionResponse)
+def corregir(codigo_guia_pk: int, payload: GuiaCorreccionRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    guia = db.query(Guia).filter(Guia.codigo_guia_pk == codigo_guia_pk).first()
+
+    if not guia:
+        raise HTTPException(status_code=404, detail="Guía no encontrada")
+
+    guia.unidades = payload.unidades
+    guia.peso_real = payload.peso_real
+    guia.peso_volumen = payload.peso_volumen
+    guia.peso_facturado = payload.peso_facturado
+    guia.correccion = True
+
+    db.commit()
+    db.refresh(guia)
 
     return guia

@@ -60,12 +60,50 @@ class GuiaCreateResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class GuiaCorreccionRequest(BaseModel):
+    unidades: float
+    peso_real: float
+    peso_volumen: float
+    peso_facturado: float
+
+
+class GuiaCorreccionResponse(BaseModel):
+    codigo_guia_pk: int
+    unidades: float
+    peso_real: float
+    peso_volumen: float
+    peso_facturado: float
+    correccion: bool
+
+    model_config = {"from_attributes": True}
+
+
 class GuiasMasivoRequest(BaseModel):
-    guias: Annotated[List[int], Field(min_length=1, max_length=1000)] 
+    guias: Annotated[List[int], Field(min_length=1, max_length=1000)]
 
-class GuiaResponse(GuiaBase):
+
+class GuiaResponse(BaseModel):
     codigo_guia_pk: int
-    documento_cliente: str
+    codigo_guia_tipo_fk: Optional[str]
+    codigo_tercero_fk: Optional[int]
+    codigo_adquiriente_fk: Optional[int]
+    codigo_ciudad_origen_fk: Optional[str]
+    codigo_ciudad_destino_fk: Optional[str]
+    codigo_ruta_fk: Optional[str]
+    documento_cliente: Optional[str]
+    remitente: Optional[str]
+    nombre_destinatario: Optional[str]
+    direccion_destinatario: Optional[str]
+    telefono_destinatario: Optional[str]
+    unidades: Optional[float]
+    peso_real: Optional[float]
+    peso_volumen: Optional[float]
+    peso_facturado: Optional[float]
+    vr_flete: Optional[float]
+    vr_manejo: Optional[float]
+    vr_declara: Optional[float]
+    estado_recogido: bool
+    fecha_recogido: Optional[datetime]
     estado_ingreso: bool
     fecha_ingreso: Optional[datetime]
     estado_despachado: bool
@@ -75,11 +113,23 @@ class GuiaResponse(GuiaBase):
     estado_cumplido: bool
     fecha_cumplido: Optional[datetime]
     estado_novedad: bool
-    estado_novedad_solucion: bool 
+    estado_novedad_solucion: bool
 
-class GuiaEstadoResponse(GuiaBase):
+    model_config = {"from_attributes": True}
+
+
+class GuiaListResponse(BaseModel):
+    total: int
+    page: int
+    size: int
+    items: List[GuiaResponse]
+
+
+class GuiaEstadoResponse(BaseModel):
     codigo_guia_pk: int
-    documento_cliente: str
+    documento_cliente: Optional[str]
+    estado_recogido: bool
+    fecha_recogido: Optional[datetime]
     estado_ingreso: bool
     fecha_ingreso: Optional[datetime]
     estado_despachado: bool
@@ -89,9 +139,6 @@ class GuiaEstadoResponse(GuiaBase):
     estado_cumplido: bool
     fecha_cumplido: Optional[datetime]
     estado_novedad: bool
-    estado_novedad_solucion: bool   
+    estado_novedad_solucion: bool
 
-    class Config:
-        from_attributes = True
-
-       
+    model_config = {"from_attributes": True}
