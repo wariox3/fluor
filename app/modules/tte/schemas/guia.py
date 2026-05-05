@@ -31,6 +31,35 @@ class GuiaCreateRequest(BaseModel):
     estado_recogido: bool
     estado_ingreso: bool
 
+class GuiaCreateResponse(BaseModel):
+    codigo_guia_pk: int
+    codigo_guia_tipo_fk: str
+    codigo_operacion_ingreso_fk: str
+    codigo_tercero_fk: int
+    codigo_adquiriente_fk: int
+    codigo_empaque_fk: str
+    codigo_producto_fk: str
+    codigo_servicio_fk: str
+    codigo_ciudad_origen_fk: str
+    codigo_ciudad_destino_fk: str
+    documento_cliente: Optional[str] = None
+    remitente: str
+    nombre_destinatario: str
+    direccion_destinatario: str
+    telefono_destinatario: str
+    unidades: float
+    peso_real: float
+    peso_volumen: float
+    peso_facturado: float
+    vr_flete: float
+    vr_manejo: float
+    vr_declara: float
+    estado_recogido: bool
+    estado_ingreso: bool
+
+    class Config:
+        from_attributes = True
+
 class GuiasMasivoRequest(BaseModel):
     guias: Annotated[List[int], Field(min_length=1, max_length=1000)] 
 

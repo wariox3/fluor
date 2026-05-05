@@ -14,11 +14,11 @@ from app.modules.tte.models.guia_tipo import GuiaTipo
 from app.modules.tte.models.operacion import Operacion
 from app.modules.tte.models.producto import Producto
 from app.modules.tte.models.servicio import Servicio
-from app.modules.tte.schemas.guia import GuiaCreateRequest, GuiaResponse, GuiaEstadoResponse, GuiasMasivoRequest
+from app.modules.tte.schemas.guia import GuiaCreateRequest, GuiaCreateResponse, GuiaResponse, GuiaEstadoResponse, GuiasMasivoRequest
 
 router = APIRouter()
 
-@router.post("/nuevo", response_model=GuiaCreateRequest)
+@router.post("/nuevo", response_model=GuiaCreateResponse)
 def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     fks = [
         (GuiaTipo, GuiaTipo.codigo_guia_tipo_pk, payload.codigo_guia_tipo_fk, "Tipo de guía no encontrado"),
