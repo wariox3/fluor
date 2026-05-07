@@ -57,6 +57,8 @@ def imprimir_certificado_laboral(contrato_id: int, db: Session = Depends(get_ten
             joinedload(Contrato.cargo_rel),
             joinedload(Contrato.contrato_tipo_rel),
             joinedload(Contrato.empleado_rel),
+            joinedload(Contrato.entidad_salud_rel),
+            joinedload(Contrato.entidad_pension_rel),
         )
         .filter(Contrato.codigo_contrato_pk == contrato_id)
         .first()
@@ -87,6 +89,8 @@ def imprimir_certificado_laboral(contrato_id: int, db: Session = Depends(get_ten
     empleado_rel        = getattr(contrato,     "empleado_rel", None)
     cargo_rel           = getattr(contrato,     "cargo_rel", None)
     contrato_tipo_rel   = getattr(contrato,     "contrato_tipo_rel", None)
+    entidad_salud_rel   = getattr(contrato,     "entidad_salud_rel", None)
+    entidad_pension_rel = getattr(contrato,     "entidad_pension_rel", None)
 
     etiquetas = {
         "FECHA_HOY":                    fecha_larga(date.today()),
@@ -102,8 +106,9 @@ def imprimir_certificado_laboral(contrato_id: int, db: Session = Depends(get_ten
         "FECHA_TERMINO":                fecha_larga(contrato.fecha_hasta) if contrato.fecha_hasta else "",
         "TIPO_CONTRATO":                contrato_tipo_rel.nombre.upper() if contrato_tipo_rel else "",
         "CARGO":                        cargo_rel.nombre.upper() if cargo_rel else "",
-        "SALARIO":                      fmt_numero(getattr(contrato, "vr_salario", 0)),                
-
+        "SALARIO":                      fmt_numero(getattr(contrato, "vr_salario", 0)),
+        "ENTIDAD_SALUD":                entidad_salud_rel.nombre if entidad_salud_rel else "",
+        "ENTIDAD_PENSION":              entidad_pension_rel.nombre if entidad_pension_rel else "",
     }
 
     pdf_bytes = generar_pdf(etiquetas, formato, imagenes)
