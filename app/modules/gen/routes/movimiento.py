@@ -10,7 +10,7 @@ from app.modules.gen.models.movimiento_tipo import MovimientoTipo
 from app.modules.gen.models.item import Item
 from app.modules.gen.models.tercero import Tercero
 from app.modules.gen.models.movimiento_detalle import MovimientoDetalle
-from app.modules.gen.schemas.movimiento import MovimientoListResponse, MovimientoResponse, MovimientoCreate
+from app.modules.gen.schemas.movimiento import MovimientoListResponse, MovimientoResponse, MovimientoCreate, MovimientoActualizarInterface
 
 router = APIRouter()
 
@@ -95,3 +95,29 @@ def lista(page: int = 1, size: int = 50, movimiento_id: Optional[int] = None, co
     offset = (page - 1) * size
     movimientos = query.offset(offset).limit(size).all()
     return MovimientoListResponse(total=total, page=page, size=size, items=movimientos)
+
+@router.patch("/{movimiento_id}/actualizar-interface", response_model=MovimientoResponse)
+def actualizar_interface(
+    movimiento_id: int,
+    payload: MovimientoActualizarInterface,
+    db: Session = Depends(get_tenant_db),
+    current_user: dict = Depends(get_current_user),
+):
+    
+    movimiento = db.query(Movimiento).filter(
+        Movimiento.codigo_movimiento_pk == movimiento_id
+    ).first()
+
+    if not movimiento:
+        raise HTTPException(
+            status_code=404,
+            detail="Movimiento no encontrado"
+        )
+
+    if payload.codigo_interface is not None:
+        movimiento.codigo_interface = payload.codigo_interface
+
+    db.commit()
+    db.refresh(movimiento)
+
+    return movimiento

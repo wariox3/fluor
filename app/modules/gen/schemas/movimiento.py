@@ -105,3 +105,6 @@ class MovimientoCreate(BaseModel):
     fecha: datetime
     fecha_vence: date
     detalles: List[MovimientoDetalleCreate] = []
+
+class MovimientoActualizarInterface(BaseModel):
+    codigo_interface: str | None = None    
