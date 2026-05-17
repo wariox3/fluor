@@ -14,6 +14,7 @@ class Configuracion(Base):
     telefono = Column(String(25))
     direccion = Column(String(120))
     correo = Column(String(200))
+    sitio_web = Column(String(120), nullable=True)
     logo = Column(LargeBinary, nullable=True)
     codigo_empresa_fk = Column(Integer)
     codigo_ciudad_fk = Column(Integer, ForeignKey("gen_ciudad.codigo_ciudad_pk"), nullable=True)

@@ -207,6 +207,54 @@ def imprimir_rotulo(
     )
 
 
+@router.get("/imprimir-guia")
+def imprimir_guia(
+    numero_desde: int,
+    numero_hasta: int,
+    formato: int,
+    db: Session = Depends(get_tenant_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if numero_desde > numero_hasta:
+        raise HTTPException(status_code=400, detail="numero_desde no puede ser mayor que numero_hasta")
+
+    guias = (
+        db.query(Guia)
+        .options(
+            joinedload(Guia.ciudad_origen),
+            joinedload(Guia.ciudad_destino),
+            joinedload(Guia.tercero),
+            joinedload(Guia.adquiriente),
+            joinedload(Guia.empaque),
+            joinedload(Guia.servicio),
+            joinedload(Guia.producto),
+            joinedload(Guia.guia_tipo),
+            joinedload(Guia.operacion_ingreso),
+        )
+        .filter(Guia.codigo_guia_pk >= numero_desde, Guia.codigo_guia_pk <= numero_hasta)
+        .order_by(Guia.codigo_guia_pk)
+        .limit(31)
+        .all()
+    )
+
+    if not guias:
+        raise HTTPException(status_code=404, detail="No se encontraron guías en el rango indicado")
+
+    if len(guias) > 30:
+        raise HTTPException(status_code=400, detail="El rango contiene más de 30 guías. Ajuste numero_desde y numero_hasta")
+
+    from app.modules.tte.formats.guia_pdf import generar
+    try:
+        pdf_bytes = generar(guias, formato=formato, db=db)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename=guias_{numero_desde}_{numero_hasta}.pdf"},
+    )
+
+
 @router.patch("/corregir/{codigo_guia_pk}", response_model=GuiaCorreccionResponse)
 def corregir(codigo_guia_pk: int, payload: GuiaCorreccionRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     guia = db.query(Guia).filter(Guia.codigo_guia_pk == codigo_guia_pk).first()
