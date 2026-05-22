@@ -1,4 +1,5 @@
 from datetime import date
+from app.modules.rhu.schemas import contrato
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 from sqlalchemy.orm import Session, joinedload
@@ -13,6 +14,7 @@ from app.core.utils import fecha_larga, fmt_numero
 from app.modules.gen.models.configuracion import Configuracion
 from app.modules.gen.models.formato import Formato
 from app.modules.gen.models.formato_imagen import FormatoImagen
+from app.modules.rhu.routes.pago import salario_promedio_ultimos_pagos
 
 router = APIRouter()
 
@@ -65,6 +67,12 @@ def imprimir_certificado_laboral(contrato_id: int, db: Session = Depends(get_ten
     )
     if not contrato:
         raise HTTPException(status_code=404, detail="No se encontró contrato")
+    
+    salario_promedio = salario_promedio_ultimos_pagos(
+        db,
+        contrato.codigo_contrato_pk,
+        2
+    )    
 
     config = (
         db.query(Configuracion)
@@ -107,6 +115,7 @@ def imprimir_certificado_laboral(contrato_id: int, db: Session = Depends(get_ten
         "TIPO_CONTRATO":                contrato_tipo_rel.nombre.upper() if contrato_tipo_rel else "",
         "CARGO":                        cargo_rel.nombre.upper() if cargo_rel else "",
         "SALARIO":                      fmt_numero(getattr(contrato, "vr_salario", 0)),
+        "SALARIO_PROMEDIO_ULTIMOS_DOS_PAGOS": fmt_numero(salario_promedio),
         "ENTIDAD_SALUD":                entidad_salud_rel.nombre if entidad_salud_rel else "",
         "ENTIDAD_PENSION":              entidad_pension_rel.nombre if entidad_pension_rel else "",
     }

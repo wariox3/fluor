@@ -95,3 +95,36 @@ def imprimir(pago_id: int, db: Session = Depends(get_tenant_db), current_user: d
         media_type="application/pdf",
         headers={"Content-Disposition": f"inline; filename=pago_{pago_id}.pdf"},
     )
+
+def salario_promedio_ultimos_pagos(
+    db,
+    codigo_contrato: int,
+    cantidad: int = 2
+):
+    pagos = (
+        db.query(Pago)
+        .join(PagoTipo, Pago.codigo_pago_tipo_fk == PagoTipo.codigo_pago_tipo_pk)
+        .filter(
+            Pago.codigo_contrato_fk == codigo_contrato,
+            PagoTipo.codigo_pago_clase_fk == "NOM",
+            Pago.estado_anulado == False
+        )
+        .order_by(Pago.fecha_hasta.desc())
+        .limit(cantidad)
+        .all()
+    )
+
+    devengado = 0
+    dias = 0
+
+    for pago in pagos:
+        devengado += pago.vr_devengado or 0
+
+        if pago.fecha_desde and pago.fecha_hasta:
+            dias_pago = (pago.fecha_hasta - pago.fecha_desde).days + 1
+            dias += dias_pago
+
+    if dias > 0:
+        return round((devengado / dias) * 30, 2)
+
+    return 0

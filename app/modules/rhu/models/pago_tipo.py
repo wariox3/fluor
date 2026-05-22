@@ -5,5 +5,6 @@ class PagoTipo(Base):
     __tablename__ = "rhu_pago_tipo"
 
     codigo_pago_tipo_pk = Column(String(10), primary_key=True, index=True)
+    codigo_pago_clase_fk = Column(String(10))
     nombre = Column(String(80), nullable=False)
     habilitado_portal = Column(Boolean, default=True)
