@@ -1,4 +1,5 @@
 from datetime import date
+from logging import config
 from app.modules.rhu.schemas import contrato
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
@@ -61,6 +62,7 @@ def imprimir_certificado_laboral(contrato_id: int, db: Session = Depends(get_ten
             joinedload(Contrato.empleado_rel),
             joinedload(Contrato.entidad_salud_rel),
             joinedload(Contrato.entidad_pension_rel),
+            joinedload(Contrato.ciudad_contrato_rel),
         )
         .filter(Contrato.codigo_contrato_pk == contrato_id)
         .first()
@@ -94,11 +96,16 @@ def imprimir_certificado_laboral(contrato_id: int, db: Session = Depends(get_ten
     nit                 = getattr(config,       "nit", "") if config else ""
     dv                  = getattr(config,       "digito_verificacion", "") if config else ""
     ciudad_rel          = getattr(config,       "ciudad_rel", None) if config else None
+    ciudad_contrato_rel = getattr(contrato,       "ciudad_contrato_rel", None) if config else None
     empleado_rel        = getattr(contrato,     "empleado_rel", None)
     cargo_rel           = getattr(contrato,     "cargo_rel", None)
     contrato_tipo_rel   = getattr(contrato,     "contrato_tipo_rel", None)
     entidad_salud_rel   = getattr(contrato,     "entidad_salud_rel", None)
     entidad_pension_rel = getattr(contrato,     "entidad_pension_rel", None)
+    vr_auxilio_transporte = (getattr(config, "vr_auxilio_transporte", 0)
+        if config and contrato.auxilio_transporte
+        else 0
+    )
 
     etiquetas = {
         "FECHA_HOY":                    fecha_larga(date.today()),
@@ -118,6 +125,8 @@ def imprimir_certificado_laboral(contrato_id: int, db: Session = Depends(get_ten
         "SALARIO_PROMEDIO_ULTIMOS_DOS_PAGOS": fmt_numero(salario_promedio),
         "ENTIDAD_SALUD":                entidad_salud_rel.nombre if entidad_salud_rel else "",
         "ENTIDAD_PENSION":              entidad_pension_rel.nombre if entidad_pension_rel else "",
+        "CIUDAD_CONTRATACION":          ciudad_contrato_rel.nombre if ciudad_contrato_rel else "",
+        "AUXILIO_TRANSPORTE": fmt_numero(vr_auxilio_transporte),
     }
 
     pdf_bytes = generar_pdf(etiquetas, formato, imagenes)
