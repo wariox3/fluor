@@ -28,6 +28,7 @@ class GuiaCreateRequest(BaseModel):
     vr_flete: float
     vr_manejo: float
     vr_declara: float
+    vr_recaudo: float = 0.0
     estado_recogido: bool
     estado_ingreso: bool
 
@@ -54,6 +55,8 @@ class GuiaCreateResponse(BaseModel):
     vr_flete: float
     vr_manejo: float
     vr_declara: float
+    vr_recaudo: float
+    vr_cobro_entrega: float
     estado_recogido: bool
     estado_ingreso: bool
 
@@ -127,6 +130,7 @@ class GuiaListResponse(BaseModel):
 
 class GuiaEstadoResponse(BaseModel):
     codigo_guia_pk: int
+    codigo_guia_tipo_fk: Optional[str]
     documento_cliente: Optional[str]
     estado_recogido: bool
     fecha_recogido: Optional[datetime]
