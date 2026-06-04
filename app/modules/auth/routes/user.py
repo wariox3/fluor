@@ -13,6 +13,8 @@ from app.core.zinc import Zinc
 from app.core.turnstile import verify_turnstile
 from app.core.tenant_database import get_tenant_engine
 from app.modules.rhu.models.empleado import Empleado
+from typing import List
+from app.modules.auth.schemas.user import UserListResponse
 
 logger = logging.getLogger(__name__)
 
@@ -223,3 +225,14 @@ def actualizar(data: ActualizarPerfilRequest, db: Session = Depends(get_master_d
     db.commit()
     db.refresh(user)
     return user
+
+@router.get("/lista", response_model=List[UserListResponse], include_in_schema=False)
+def lista(
+    db: Session = Depends(get_master_db),
+    current_user: dict = Depends(require_admin)
+):
+    """
+    Lista todos los usuarios. Solo accesible para administradores.
+    """
+    users = db.query(User).order_by(User.id.asc()).all()
+    return users
