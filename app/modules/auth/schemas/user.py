@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, field_validator
-from typing import Literal, Optional
+from typing import Literal, Optional, List
 
 from app.modules.auth.models.user import UserRole
 
@@ -99,13 +99,9 @@ class ActualizarPerfilRequest(BaseModel):
             raise ValueError("El campo no puede estar vacío")
         return v.strip()
     
+
 class UserListResponse(BaseModel):
-    id: int
-    email: str
-    nombres: Optional[str] = None
-    apellidos: Optional[str] = None
-    role: str
-    is_verified: bool
-    
-    class Config:
-        from_attributes = True
+    total: int
+    page: int
+    size: int
+    items: List[UserResponse]        
