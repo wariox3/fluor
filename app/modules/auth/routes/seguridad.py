@@ -121,19 +121,3 @@ def me(current_user: dict = Depends(get_current_user_from_token), db: Session = 
         empleado_id=user.empleado_id
     )
 
-@router.post("/logout", include_in_schema=False)
-def logout(request: Request, response: Response):
-    response.delete_cookie(
-        key="access_token",
-        httponly=True,
-        secure=True,
-        samesite="none"
-    )
-    response.delete_cookie(
-        key="refresh_token",
-        httponly=True,
-        secure=True,
-        samesite="none",
-        path="/"
-    )
-    return {"message": "Sesión cerrada"}

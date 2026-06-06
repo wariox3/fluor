@@ -126,7 +126,8 @@ def imprimir_certificado_laboral(contrato_id: int, db: Session = Depends(get_ten
         "ENTIDAD_SALUD":                entidad_salud_rel.nombre if entidad_salud_rel else "",
         "ENTIDAD_PENSION":              entidad_pension_rel.nombre if entidad_pension_rel else "",
         "CIUDAD_CONTRATACION":          ciudad_contrato_rel.nombre if ciudad_contrato_rel else "",
-        "AUXILIO_TRANSPORTE": fmt_numero(vr_auxilio_transporte),
+        "AUXILIO_TRANSPORTE":           fmt_numero(vr_auxilio_transporte),
+        "ADICIONAL_CONTRATO":           fmt_numero(contrato.vr_adicional) if contrato.vr_adicional else "0",
     }
 
     pdf_bytes = generar_pdf(etiquetas, formato, imagenes)

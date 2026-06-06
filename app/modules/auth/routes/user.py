@@ -2,6 +2,7 @@ import logging
 from app.core.rate_limit import limiter
 from fastapi import APIRouter, HTTPException, status, Depends, Request
 from sqlalchemy.orm import Session, sessionmaker
+from typing import Optional
 from app.core.security import require_admin, get_current_user
 from app.core.master_database import get_master_db
 from app.modules.auth.models.user import User, UserRole
@@ -13,10 +14,27 @@ from app.core.zinc import Zinc
 from app.core.turnstile import verify_turnstile
 from app.core.tenant_database import get_tenant_engine
 from app.modules.rhu.models.empleado import Empleado
+from typing import List
+from app.modules.auth.schemas.user import UserListResponse
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+@router.get("/lista", response_model=UserListResponse, include_in_schema=False)
+def lista(page: int = 1, size: int = 50, email: Optional[str] = None,role: Optional[str] = None, is_verified: Optional[bool] = None,db: Session = Depends(get_master_db),current_user: dict = Depends(require_admin)
+):
+    query = db.query(User)
+    if email:
+        query = query.filter(User.email.ilike(f"%{email}%"))
+    if role:
+        query = query.filter(User.role == role)
+    if is_verified is not None:
+        query = query.filter(User.is_verified == is_verified)
+    total = query.count()
+    offset = (page - 1) * size
+    users = query.order_by(User.id.asc()).offset(offset).limit(size).all()
+    return UserListResponse(total=total, page=page, size=size, items=users)
 
 @router.get("/detalle", response_model=PerfilResponse, include_in_schema=False)
 def detalle(db: Session = Depends(get_master_db), current_user: dict = Depends(get_current_user)):
