@@ -15,7 +15,8 @@ from app.modules.tte.models.guia_tipo import GuiaTipo
 from app.modules.tte.models.operacion import Operacion
 from app.modules.tte.models.producto import Producto
 from app.modules.tte.models.servicio import Servicio
-from app.modules.tte.schemas.guia import GuiaCreateRequest, GuiaCreateResponse, GuiaCorreccionRequest, GuiaCorreccionResponse, GuiaListResponse, GuiaEstadoResponse, GuiasMasivoRequest
+from app.modules.tte.schemas.guia import GuiaCreateRequest, GuiaCreateResponse, GuiaCorreccionRequest, GuiaCorreccionResponse, GuiaListResponse, GuiaEstadoResponse, GuiasMasivoRequest, LiquidarRequest, LiquidarResponse
+from app.modules.tte.services import guia as guia_service
 
 router = APIRouter()
 
@@ -43,6 +44,30 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), curr
     cobro_entrega = 0
     if payload.vr_recaudo > 0:
         cobro_entrega = payload.vr_recaudo
+
+    vr_flete = payload.vr_flete
+    vr_manejo = payload.vr_manejo
+    peso_facturado = payload.peso_facturado
+    if payload.liquidar:
+        resultado = guia_service.liquidar(
+            db,
+            tercero=payload.codigo_tercero_fk,
+            condicion_id=payload.condicion,
+            precio=payload.precio,
+            origen=payload.codigo_ciudad_origen_fk,
+            destino=payload.codigo_ciudad_destino_fk,
+            producto=payload.codigo_producto_fk,
+            zona=payload.zona,
+            tipo_liquidacion=payload.tipo_liquidacion,
+            unidades=payload.unidades,
+            peso=payload.peso_real,
+            volumen=payload.peso_volumen,
+            declarado=payload.vr_declara,
+        )
+        vr_flete = resultado["flete"]
+        vr_manejo = resultado["manejo"]
+        peso_facturado = resultado["peso_facturado"]
+
     guia = Guia(
         codigo_guia_tipo_fk=payload.codigo_guia_tipo_fk,
         codigo_operacion_ingreso_fk=payload.codigo_operacion_ingreso_fk,
@@ -54,7 +79,7 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), curr
         codigo_servicio_fk=payload.codigo_servicio_fk,
         codigo_ciudad_origen_fk=payload.codigo_ciudad_origen_fk,
         codigo_ciudad_destino_fk=payload.codigo_ciudad_destino_fk,
-        documento_cliente=payload.documento_cliente,
+        documeadunto_cliente=payload.documento_cliente,
         remitente=payload.remitente,
         nombre_remitente=tercero.nombre_corto,
         direccion_remitente=tercero.direccion,
@@ -66,9 +91,9 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), curr
         unidades=payload.unidades,
         peso_real=payload.peso_real,
         peso_volumen=payload.peso_volumen,
-        peso_facturado=payload.peso_facturado,
-        vr_flete=payload.vr_flete,
-        vr_manejo=payload.vr_manejo,
+        peso_facturado=peso_facturado,
+        vr_flete=vr_flete,
+        vr_manejo=vr_manejo,
         vr_declara=payload.vr_declara,
         vr_recaudo=payload.vr_recaudo,
         vr_cobro_entrega=cobro_entrega,
@@ -81,7 +106,7 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), curr
         fecha_ingreso_operacion=datetime.now(),
         estado_recogido=payload.estado_recogido,
         estado_ingreso=payload.estado_ingreso,
-        ui="API2",
+        ui="API_F",
         estado_impreso=True,
         estado_aprobado=True,
         estado_autorizado=True,
@@ -276,3 +301,23 @@ def corregir(codigo_guia_pk: int, payload: GuiaCorreccionRequest, db: Session = 
     db.refresh(guia)
 
     return guia
+
+
+@router.post("/liquidar", response_model=LiquidarResponse)
+def liquidar(payload: LiquidarRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    resultado = guia_service.liquidar(
+        db,
+        tercero=payload.tercero,
+        condicion_id=payload.condicion,
+        precio=payload.precio,
+        origen=payload.origen,
+        destino=payload.destino,
+        producto=payload.producto,
+        zona=payload.zona,
+        tipo_liquidacion=payload.tipo_liquidacion,
+        unidades=payload.unidades,
+        peso=payload.peso,
+        volumen=payload.volumen,
+        declarado=payload.declarado,
+    )
+    return LiquidarResponse(**resultado)

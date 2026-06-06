@@ -31,6 +31,11 @@ class GuiaCreateRequest(BaseModel):
     vr_recaudo: float = 0.0
     estado_recogido: bool
     estado_ingreso: bool
+    liquidar: bool = False
+    condicion: Optional[int] = None
+    precio: Optional[int] = None
+    zona: Optional[str] = None
+    tipo_liquidacion: str = "K"
 
 class GuiaCreateResponse(BaseModel):
     codigo_guia_pk: int
@@ -83,6 +88,28 @@ class GuiaCorreccionResponse(BaseModel):
 
 class GuiasMasivoRequest(BaseModel):
     guias: Annotated[List[int], Field(min_length=1, max_length=1000)]
+
+
+class LiquidarRequest(BaseModel):
+    tercero: int
+    condicion: Optional[int] = None
+    precio: int
+    origen: str
+    destino: str
+    producto: str
+    zona: Optional[str] = None
+    tipo_liquidacion: str = "K"
+    unidades: float = 0.0
+    peso: float = 0.0
+    volumen: float = 0.0
+    declarado: float = 0.0
+
+
+class LiquidarResponse(BaseModel):
+    error: bool = False
+    flete: float
+    manejo: float
+    peso_facturado: float
 
 
 class GuiaResponse(BaseModel):
