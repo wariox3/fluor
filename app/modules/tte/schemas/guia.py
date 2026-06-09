@@ -62,6 +62,7 @@ class GuiaCreateResponse(BaseModel):
     vr_declara: float
     vr_recaudo: float
     vr_cobro_entrega: float
+    tipo_liquidacion: Optional[str] = None
     estado_recogido: bool
     estado_ingreso: bool
 
