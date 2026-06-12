@@ -1,5 +1,6 @@
 import re
 from sqlalchemy import create_engine
+from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import sessionmaker, Session
 from decouple import config
 from fastapi import Depends, HTTPException, status
@@ -38,12 +39,13 @@ def get_tenant_engine(database_name: str):
             f"@{DB_HOST}:{DB_PORT}/{database_name}"
         )
 
+        # NullPool: sin pool por tenant. Con muchas bases accedidas de forma
+        # esporádica, un QueuePool dejaría pool_size conexiones idle (Sleep) vivas
+        # por cada tenant indefinidamente. NullPool abre la conexión por request y
+        # la cierra de verdad en db.close(), evitando conexiones colgadas en MySQL.
         engine = create_engine(
             DATABASE_URL,
-            pool_pre_ping=True,
-            pool_recycle=1800,  # < wait_timeout del servidor (3600s) para no usar conexiones ya cerradas
-            pool_size=2,
-            max_overflow=5
+            poolclass=NullPool,
         )
         tenant_engines[database_name] = engine
         return engine
