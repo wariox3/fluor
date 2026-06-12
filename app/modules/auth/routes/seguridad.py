@@ -107,6 +107,23 @@ def refresh(request: Request, response: Response):
     )
     return {"message": "Token renovado"}
 
+@router.post("/logout", include_in_schema=False)
+def logout(response: Response):
+    response.delete_cookie(
+        key="access_token",
+        httponly=True,
+        secure=True,
+        samesite="none",
+    )
+    response.delete_cookie(
+        key="refresh_token",
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+    )
+    return {"message": "Sesión cerrada"}
+
 @router.get("/me", response_model=UserInfo, include_in_schema=False)
 def me(current_user: dict = Depends(get_current_user_from_token), db: Session = Depends(get_master_db)):
     user = db.query(User).options(joinedload(User.tenant)).filter(User.id == int(current_user["sub"])).first()
