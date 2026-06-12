@@ -41,7 +41,7 @@ def get_tenant_engine(database_name: str):
         engine = create_engine(
             DATABASE_URL,
             pool_pre_ping=True,
-            pool_recycle=1800,
+            pool_recycle=1800,  # < wait_timeout del servidor (3600s) para no usar conexiones ya cerradas
             pool_size=2,
             max_overflow=5
         )

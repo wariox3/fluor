@@ -20,8 +20,8 @@ DATABASE_URL = (
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
-    pool_recycle=3600,
-        pool_size=DB_POOL_SIZE,
+    pool_recycle=1800,  # < wait_timeout del servidor (3600s) para no usar conexiones ya cerradas
+    pool_size=DB_POOL_SIZE,
     max_overflow=DB_MAX_OVERFLOW,
     pool_timeout=DB_POOL_TIMEOUT,
 )
