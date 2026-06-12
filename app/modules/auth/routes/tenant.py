@@ -1,8 +1,9 @@
 from typing import Optional
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.core.master_database import get_master_db
+from app.core.rate_limit import limiter
 from app.modules.auth.models.tenant import Tenant
 from app.modules.auth.schemas.tenant import TenantResponse, TenantListResponse
 
@@ -19,7 +20,8 @@ def lista(page: int = 1, size: int = 50, db: Session = Depends(get_master_db)):
     return TenantListResponse(total=total, page=page, size=size, items=items)
 
 @router.get("/seleccionar", response_model=TenantListResponse, include_in_schema=False)
-def seleccionar(page: int = 1, size: int = 50, nombre: Optional[str] = None, db: Session = Depends(get_master_db)):
+@limiter.limit("60/minute")
+def seleccionar(request: Request, page: int = 1, size: int = 50, nombre: Optional[str] = None, db: Session = Depends(get_master_db)):
     query = db.query(Tenant).filter(Tenant.activo == True)
     if nombre:
         query = query.filter(Tenant.nombre.like(f"%{nombre}%"))
