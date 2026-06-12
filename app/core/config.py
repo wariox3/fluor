@@ -2,6 +2,11 @@ from decouple import config
 
 DEBUG=config("DEBUG", default=False, cast=bool)
 
+# Observabilidad / Sentry. Si SENTRY_DSN está vacío, Sentry queda desactivado.
+SENTRY_DSN = config("SENTRY_DSN", default="")
+ENVIRONMENT = config("ENVIRONMENT", default="production")
+SENTRY_TRACES_SAMPLE_RATE = config("SENTRY_TRACES_SAMPLE_RATE", default=0.0, cast=float)
+
 SECRET_KEY = config("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60

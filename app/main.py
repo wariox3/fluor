@@ -1,6 +1,10 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.exceptions import HTTPException
+from fastapi.responses import JSONResponse
+from sqlalchemy import text
+
+from app.core.observability import setup_sentry
 
 # Importar modulos para rate limit
 from slowapi.middleware import SlowAPIMiddleware
@@ -36,6 +40,8 @@ from app.modules.auth.router import router as auth_router
 from app.modules.mas.router import router as mas_router
 
 setup_logging()
+# Inicializar Sentry tras el logging y antes de crear la app
+setup_sentry()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):    
@@ -81,4 +87,22 @@ app.include_router(crm_router)
 app.include_router(car_router)
 app.include_router(auth_router)
 app.include_router(mas_router)
+
+
+@app.get("/health", include_in_schema=False)
+def health():
+    """Healthcheck para monitores externos (uptime) y balanceadores.
+
+    Devuelve 200 si la app responde y la Master DB acepta conexiones;
+    503 si la base de datos no responde.
+    """
+    try:
+        with master_engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "error", "database": "unreachable"},
+        )
+    return {"status": "ok", "database": "ok"}
 
