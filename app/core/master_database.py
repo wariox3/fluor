@@ -1,6 +1,22 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from decouple import config
+from app.core.config import DB_TIME_ZONE
+
+
+@event.listens_for(Engine, "connect")
+def _set_db_timezone(dbapi_connection, connection_record):
+    """Fija la zona horaria en cada conexión MySQL (master y tenants).
+
+    Al escuchar sobre la clase base Engine, aplica a todos los engines del
+    proyecto, así NOW()/CURRENT_TIMESTAMP y los server_default quedan en hora local.
+    """
+    cursor = dbapi_connection.cursor()
+    try:
+        cursor.execute("SET time_zone = %s", (DB_TIME_ZONE,))
+    finally:
+        cursor.close()
 
 DB_HOST = config("DB_MASTER_HOST")
 DB_PORT = config("DB_MASTER_PORT", default="3306")

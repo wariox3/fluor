@@ -1,6 +1,5 @@
 import enum
-from datetime import datetime, timezone
-from sqlalchemy import (Boolean, Column, DateTime, Enum, ForeignKey, Integer, String)
+from sqlalchemy import (Boolean, Column, DateTime, Enum, ForeignKey, Integer, String, func)
 from sqlalchemy.orm import relationship
 from app.core.master_database import Base
 from app.modules.auth.models.tenant import Tenant
@@ -25,7 +24,7 @@ class User(Base):
     numero_identificacion = Column(String(50), nullable=True)
     is_verified = Column(Boolean, nullable=False, default=False)
     empleado_id = Column(Integer, nullable=True)
-    fecha_creacion = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    fecha_creacion = Column(DateTime, server_default=func.now(), nullable=False)
 
     tenant = relationship(Tenant, back_populates="users")
 

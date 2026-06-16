@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime, timezone
 from app.core.rate_limit import limiter
 from fastapi import APIRouter, HTTPException, status, Depends, Request
 from sqlalchemy.orm import Session, sessionmaker
@@ -14,6 +13,7 @@ from app.core.security import hash_password, generate_verification_token
 from app.core.config import APP_URL
 from app.core.zinc import Zinc
 from app.core.turnstile import verify_turnstile
+from sqlalchemy import func
 from app.core.tenant_database import get_tenant_engine
 from app.modules.rhu.models.empleado import Empleado
 from app.modules.auth.schemas.user import UserListResponse
@@ -177,7 +177,7 @@ def restablecer_clave(request: Request, data: RestablecerClaveRequest, db: Sessi
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token inválido o expirado")
     user.password_hash = hash_password(data.nueva_clave)
     verificacion.estado = EstadoVerificacion.usado
-    verificacion.fecha_uso = datetime.now(timezone.utc)
+    verificacion.fecha_uso = func.now()
     db.commit()
     return {"detail": "Clave restablecida correctamente"}
 
@@ -199,7 +199,7 @@ def verificar(request: Request, token: str, db: Session = Depends(get_master_db)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cuenta ya verificada")
     user.is_verified = True
     verificacion.estado = EstadoVerificacion.usado
-    verificacion.fecha_uso = datetime.now(timezone.utc)
+    verificacion.fecha_uso = func.now()
     db.commit()
     return {"detail": "Cuenta verificada correctamente"}
 

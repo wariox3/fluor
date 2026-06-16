@@ -20,6 +20,10 @@ DEFAULT_EMPRESA_ID = 1
 
 APP_URL = config("APP_URL", default="http://localhost:4200")
 
+# Zona horaria fijada en cada conexión MySQL (Colombia, sin horario de verano).
+# Así NOW()/CURRENT_TIMESTAMP y los server_default producen hora local.
+DB_TIME_ZONE = config("DB_TIME_ZONE", default="-05:00")
+
 ZINC_URL = config("ZINC_URL", default="http://zinc.semantica.com.co")
 
 TURNSTILE_SECRET_KEY = config("TURNSTILE_SECRET_KEY", default="")

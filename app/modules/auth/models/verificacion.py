@@ -1,6 +1,5 @@
 import enum
-from datetime import datetime, timezone
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, func
 from sqlalchemy.orm import relationship
 from app.core.master_database import Base
 
@@ -25,7 +24,7 @@ class Verificacion(Base):
     token          = Column(String(64), nullable=False, unique=True, index=True)
     estado         = Column(Enum(EstadoVerificacion), nullable=False, default=EstadoVerificacion.pendiente)
     ip             = Column(String(45), nullable=True)
-    fecha_creacion = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    fecha_creacion = Column(DateTime, server_default=func.now(), nullable=False)
     fecha_uso      = Column(DateTime, nullable=True)
 
     usuario = relationship("User", foreign_keys=[usuario_id])

@@ -1,5 +1,4 @@
-from datetime import datetime, timezone
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import relationship
 from app.core.master_database import Base
 
@@ -14,6 +13,6 @@ class Notificacion(Base):
     mensaje         = Column(Text, nullable=True)
     url             = Column(String(255), nullable=True)
     leida           = Column(Boolean, default=False, server_default="0", nullable=False)
-    fecha_creacion  = Column(DateTime, default=datetime.utcnow, nullable=False)
+    fecha_creacion  = Column(DateTime, server_default=func.now(), nullable=False)
 
     usuario = relationship("User", foreign_keys=[usuario_id])
