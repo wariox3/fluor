@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 from app.core.rate_limit import limiter
 from fastapi import APIRouter, HTTPException, status, Depends, Request
 from sqlalchemy.orm import Session, sessionmaker
@@ -7,6 +8,7 @@ from app.core.security import require_admin, get_current_user
 from app.core.master_database import get_master_db
 from app.modules.auth.models.user import User, UserRole
 from app.modules.auth.models.tenant import Tenant
+from app.modules.auth.models.verificacion import Verificacion, TipoVerificacion, EstadoVerificacion
 from app.modules.auth.schemas.user import UserCreate, UserResponse, RegisterRequest, RegisterResponse, RecuperarClaveRequest, RestablecerClaveRequest, AsociarRequest, ReenviarVerificacionRequest, ActualizarPerfilRequest, PerfilResponse
 from app.core.security import hash_password, generate_verification_token
 from app.core.config import APP_URL
@@ -14,12 +16,18 @@ from app.core.zinc import Zinc
 from app.core.turnstile import verify_turnstile
 from app.core.tenant_database import get_tenant_engine
 from app.modules.rhu.models.empleado import Empleado
-from typing import List
 from app.modules.auth.schemas.user import UserListResponse
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# Tipos de verificación de cuenta (registro inicial + reenvíos)
+TIPOS_VERIFICACION = (TipoVerificacion.registro, TipoVerificacion.reenvio)
+
+
+def _client_ip(request: Request) -> Optional[str]:
+    return request.client.host if request.client else None
 
 @router.get("/lista", response_model=UserListResponse, include_in_schema=False)
 def lista(page: int = 1, size: int = 50, email: Optional[str] = None,role: Optional[str] = None, is_verified: Optional[bool] = None,db: Session = Depends(get_master_db),current_user: dict = Depends(require_admin)
@@ -86,11 +94,18 @@ def registrar(request: Request, data: RegisterRequest, db: Session = Depends(get
         numero_identificacion=data.numero_identificacion,
         role=UserRole.employee,
         is_verified=False,
-        verification_token=token,
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    db.add(Verificacion(
+        usuario_id=new_user.id,
+        tipo=TipoVerificacion.registro,
+        token=token,
+        ip=_client_ip(request),
+    ))
+    db.commit()
 
     verification_link = f"{APP_URL}/auth/verify-email?token={token}"
 
@@ -123,7 +138,12 @@ def recuperar_clave(request: Request, data: RecuperarClaveRequest, db: Session =
     
     if user:
         token = generate_verification_token()
-        user.reset_password_token = token
+        db.add(Verificacion(
+            usuario_id=user.id,
+            tipo=TipoVerificacion.recuperacion,
+            token=token,
+            ip=_client_ip(request),
+        ))
         db.commit()
         reset_link = f"{APP_URL}/auth/restablecer-clave?token={token}"
         html_content = f"""
@@ -145,11 +165,19 @@ def recuperar_clave(request: Request, data: RecuperarClaveRequest, db: Session =
 def restablecer_clave(request: Request, data: RestablecerClaveRequest, db: Session = Depends(get_master_db)):
     verify_turnstile(data.turnstile_token)
 
-    user = db.query(User).filter(User.reset_password_token == data.token).first()
+    verificacion = db.query(Verificacion).filter(
+        Verificacion.token == data.token,
+        Verificacion.tipo == TipoVerificacion.recuperacion,
+        Verificacion.estado == EstadoVerificacion.pendiente,
+    ).first()
+    if not verificacion:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token inválido o expirado")
+    user = db.query(User).filter(User.id == verificacion.usuario_id).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token inválido o expirado")
     user.password_hash = hash_password(data.nueva_clave)
-    user.reset_password_token = None
+    verificacion.estado = EstadoVerificacion.usado
+    verificacion.fecha_uso = datetime.now(timezone.utc)
     db.commit()
     return {"detail": "Clave restablecida correctamente"}
 
@@ -157,25 +185,38 @@ def restablecer_clave(request: Request, data: RestablecerClaveRequest, db: Sessi
 @router.get("/verificar", include_in_schema=False)
 @limiter.limit("10/minute")
 def verificar(request: Request, token: str, db: Session = Depends(get_master_db)):
-    user = db.query(User).filter(User.verification_token == token).first()
+    verificacion = db.query(Verificacion).filter(
+        Verificacion.token == token,
+        Verificacion.tipo.in_(TIPOS_VERIFICACION),
+        Verificacion.estado == EstadoVerificacion.pendiente,
+    ).first()
+    if not verificacion:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token inválido")
+    user = db.query(User).filter(User.id == verificacion.usuario_id).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token inválido")
     if user.is_verified:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cuenta ya verificada")
     user.is_verified = True
-    user.verification_token = None
+    verificacion.estado = EstadoVerificacion.usado
+    verificacion.fecha_uso = datetime.now(timezone.utc)
     db.commit()
     return {"detail": "Cuenta verificada correctamente"}
 
 @router.post("/reenviar-verificacion", include_in_schema=False)
-@limiter.limit("3/minute")
+@limiter.limit("1/minute")
 def reenviar_verificacion(request: Request, data: ReenviarVerificacionRequest, db: Session = Depends(get_master_db)):
     verify_turnstile(data.turnstile_token)
 
     user = db.query(User).filter(User.email == data.email).first()
     if user and not user.is_verified:
         token = generate_verification_token()
-        user.verification_token = token
+        db.add(Verificacion(
+            usuario_id=user.id,
+            tipo=TipoVerificacion.reenvio,
+            token=token,
+            ip=_client_ip(request),
+        ))
         db.commit()
         verification_link = f"{APP_URL}/auth/verify-email?token={token}"
         html_content = f"""

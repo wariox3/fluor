@@ -18,6 +18,7 @@ from app.modules.auth.models.tenant import Tenant
 from app.modules.auth.models.user import User
 from app.modules.auth.models.api_key import ApiKey
 from app.modules.auth.models.notificacion import Notificacion
+from app.modules.auth.models.verificacion import Verificacion
 from app.modules.mas.models.credito_solicitud import CreditoSolicitud
 from app.modules.mas.models.configuracion import Configuracion
 

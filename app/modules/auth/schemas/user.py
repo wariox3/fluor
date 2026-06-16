@@ -39,7 +39,7 @@ class RegisterRequest(BaseModel):
     nombres: str
     apellidos: str
     numero_identificacion: str
-    turnstile_token: str
+    turnstile_token: str | None = None
 
 class UserResponse(BaseModel):
     id: int
@@ -61,12 +61,12 @@ class RegisterResponse(BaseModel):
 
 class RecuperarClaveRequest(BaseModel):
     email: EmailStr
-    turnstile_token: str
+    turnstile_token: str | None = None
 
 class RestablecerClaveRequest(BaseModel):
     token: str
     nueva_clave: str
-    turnstile_token: str
+    turnstile_token: str | None = None
 
 class AsociarRequest(BaseModel):
     usuario_id: int
@@ -74,7 +74,7 @@ class AsociarRequest(BaseModel):
 
 class ReenviarVerificacionRequest(BaseModel):
     email: EmailStr
-    turnstile_token: str
+    turnstile_token: str | None = None
 
 class PerfilResponse(BaseModel):
     nombres: str | None = None
