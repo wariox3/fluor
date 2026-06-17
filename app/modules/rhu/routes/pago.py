@@ -12,6 +12,7 @@ from app.modules.rhu.models.pago_tipo import PagoTipo
 from app.modules.rhu.models.pago_detalle import PagoDetalle
 from app.modules.rhu.models.contrato import Contrato
 from app.modules.rhu.models.empleado import Empleado
+from app.modules.gen.models.configuracion import Configuracion
 from app.modules.tur.models.programacion_respaldo import ProgramacionRespaldo
 from app.modules.rhu.schemas.pago import PagoListResponse
 
@@ -89,7 +90,12 @@ def imprimir(pago_id: int, db: Session = Depends(get_tenant_db), current_user: d
             .filter(ProgramacionRespaldo.codigo_soporte_contrato_fk == pago.codigo_soporte_contrato_fk)
             .all()
         )
-    pdf_bytes = pago_pdf.generar(pago, detalles, db, programacion)
+    config = (
+        db.query(Configuracion.mostrar_programacion_impresion_pago)
+        .first()
+    )
+    mostrar_prog = config[0] if config else 1
+    pdf_bytes = pago_pdf.generar(pago, detalles, db, programacion, mostrar_prog)
     return StreamingResponse(
         BytesIO(pdf_bytes),
         media_type="application/pdf",

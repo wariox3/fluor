@@ -20,5 +20,6 @@ class Configuracion(Base):
     codigo_empresa_fk = Column(Integer)
     codigo_ciudad_fk = Column(Integer, ForeignKey("gen_ciudad.codigo_ciudad_pk"), nullable=True)
     ruta_almacenamiento_servicio = Column(String(200), nullable=True)
+    mostrar_programacion_impresion_pago = Column(Integer, nullable=True, default=1)
 
     ciudad_rel = relationship(Ciudad, foreign_keys=[codigo_ciudad_fk])

@@ -115,7 +115,7 @@ def _seccion_programacion(pago, programacion: list) -> list:
     return [Spacer(1, 0.3 * cm), tbl]
 
 
-def generar(pago, detalles, db=None, programacion=None) -> bytes:
+def generar(pago, detalles, db=None, programacion=None, mostrar_programacion=1) -> bytes:
     empleado = pago.empleado
     contrato = pago.contrato_rel
 
@@ -235,7 +235,8 @@ def generar(pago, detalles, db=None, programacion=None) -> bytes:
     ]))
     story.append(totales_table)
 
-    story += _seccion_programacion(pago, programacion or [])
+    if mostrar_programacion == 1:
+        story += _seccion_programacion(pago, programacion or [])
 
     doc.build(story)
     return buffer.getvalue()
