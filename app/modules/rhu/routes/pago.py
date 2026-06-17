@@ -45,7 +45,7 @@ def lista_portal(page: int = 1, size: int = 50, empleado_id: Optional[int] = Non
             Pago.habilitado_portal == True,
             Pago.estado_anulado == False,
         )
-        .order_by(Pago.fecha_desde.desc(), Pago.codigo_pago_pk.desc())
+        .order_by(Pago.codigo_pago_pk.desc(), Pago.fecha_desde.desc())
     )
     if empleado_id:
         query = query.filter(Pago.codigo_empleado_fk == empleado_id)
