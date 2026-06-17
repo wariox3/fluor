@@ -6,6 +6,7 @@ from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.tur.models.programacion import Programacion
 from app.modules.tur.models.pedido import Pedido
+from app.modules.gen.models.configuracion import Configuracion
 from app.modules.tur.schemas.programacion import ProgramacionItem, ProgramacionListResponse, ProgramacionResponse
 
 router = APIRouter()
@@ -42,6 +43,9 @@ def lista(page: int = 1, size: int = 50, empleado_id: Optional[int] = None, terc
 
 @router.get("/empleado", response_model=List[ProgramacionItem])
 def empleado(empleado_id: int, anio: int, mes: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user),):
+    mostrar_programacion = db.query(Configuracion.mostrar_programacion).scalar()
+    if not mostrar_programacion:
+        return []
     sql = text("""
         SELECT
             p.*,
