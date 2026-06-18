@@ -22,6 +22,9 @@ def nuevo(data: ReclamoCreate, db: Session = Depends(get_tenant_db), current_use
     empleado = db.query(Empleado).filter(Empleado.codigo_empleado_pk == data.codigo_empleado_fk).first()
     if not empleado:
         raise HTTPException(status_code=404, detail="Empleado no encontrado")
+    
+    if not empleado.codigo_contrato_fk:
+        raise HTTPException(status_code=400, detail="No es posible registrar un reclamo porque su contrato está terminado, por favor comuníquese con su empresa")    
 
     concepto = db.query(ReclamoConcepto).filter(ReclamoConcepto.codigo_reclamo_concepto_pk == data.codigo_reclamo_concepto_fk).first()
     if not concepto:
