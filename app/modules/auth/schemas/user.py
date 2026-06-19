@@ -16,7 +16,8 @@ class UserInfo(BaseModel):
     tenant_nombre: str | None = None
     role: UserRole | None = None
     empleado_id: int | None = None
-   
+    numero_identificacion: str | None = None
+
 class LoginResponse(BaseModel):
     access_token: str | None = None
     token_type: str | None = None

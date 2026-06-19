@@ -135,6 +135,7 @@ def me(current_user: dict = Depends(get_current_user_from_token), db: Session = 
         tenant_id=user.tenant_id,
         tenant_nombre=user.tenant.nombre if user.tenant else None,
         role=user.role,
-        empleado_id=user.empleado_id
+        empleado_id=user.empleado_id,
+        numero_identificacion=user.numero_identificacion
     )
 
