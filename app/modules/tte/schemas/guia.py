@@ -31,6 +31,7 @@ class GuiaCreateRequest(BaseModel):
     vr_recaudo: float = 0.0
     estado_recogido: bool
     estado_ingreso: bool
+    devolver_documento_cliente: bool = False
     liquidar: bool = False
     condicion: Optional[int] = None
     precio: Optional[int] = None
@@ -65,6 +66,7 @@ class GuiaCreateResponse(BaseModel):
     tipo_liquidacion: Optional[str] = None
     estado_recogido: bool
     estado_ingreso: bool
+    devolver_documento_cliente: bool
 
     class Config:
         from_attributes = True
