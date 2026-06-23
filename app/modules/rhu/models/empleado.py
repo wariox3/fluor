@@ -7,7 +7,7 @@ class Empleado(Base):
     __tablename__ = "rhu_empleado"
 
     codigo_empleado_pk = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    codigo_identificacion_fk = Column(String(3), nullable=True)
+    codigo_identificacion_fk = Column(String(3), ForeignKey("gen_identificacion.codigo_identificacion_pk"), nullable=True)
     codigo_contrato_fk = Column(Integer, nullable=True)
     codigo_cuenta_tipo_fk = Column(String(10), nullable=True)
     codigo_raza_fk = Column(String(10), nullable=True)
@@ -111,3 +111,4 @@ class Empleado(Base):
 
     banco_rel = relationship("Banco", foreign_keys=[codigo_banco_fk])
     zona_rel = relationship("Zona", foreign_keys=[codigo_zona_fk])
+    identificacion_rel = relationship("Identificacion", foreign_keys=[codigo_identificacion_fk])

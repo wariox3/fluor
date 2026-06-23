@@ -6,4 +6,5 @@ class ReclamoConcepto(Base):
 
     codigo_reclamo_concepto_pk = Column(String(10), primary_key=True, index=True)
     nombre = Column(String(80), nullable=False)
+    portal_empleados          = Column(Boolean, default=True)
 
