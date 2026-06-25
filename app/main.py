@@ -44,9 +44,12 @@ setup_logging()
 setup_sentry()
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):    
+async def lifespan(app: FastAPI):
     MasterBase.metadata.create_all(bind=master_engine)
     yield
+    # Cerrar el subproceso de render de PDF (WeasyPrint) al apagar la app
+    from app.core.pdf_template import shutdown_pdf_executor
+    shutdown_pdf_executor()
 
 
 app = FastAPI(title="Semantica ERP API", lifespan=lifespan)

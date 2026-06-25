@@ -29,3 +29,9 @@ ZINC_URL = config("ZINC_URL", default="http://zinc.semantica.com.co")
 TURNSTILE_SECRET_KEY = config("TURNSTILE_SECRET_KEY", default="")
 TURNSTILE_ENABLED = config("TURNSTILE_ENABLED", default=True, cast=bool)
 
+# WeasyPrint (generación de PDF por HTML) corre en un subproceso desechable
+# para contener su fuga de memoria nativa (Pango/cairo/fontconfig): el hijo se
+# recicla cada PDF_WORKER_MAX_TASKS renders y el SO recupera lo filtrado.
+PDF_WORKER_MAX_TASKS = config("PDF_WORKER_MAX_TASKS", default=50, cast=int)
+PDF_RENDER_TIMEOUT = config("PDF_RENDER_TIMEOUT", default=60, cast=int)
+
