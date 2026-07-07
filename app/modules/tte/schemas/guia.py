@@ -37,6 +37,7 @@ class GuiaCreateRequest(BaseModel):
     precio: Optional[int] = None
     zona: Optional[str] = None
     tipo_liquidacion: str = "K"
+    comentario: str
 
 class GuiaCreateResponse(BaseModel):
     codigo_guia_pk: int

@@ -108,6 +108,7 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), curr
         estado_recogido=payload.estado_recogido,
         estado_ingreso=payload.estado_ingreso,
         devolver_documento_cliente=payload.devolver_documento_cliente,
+        comentario=payload.comentario,
         ui="API_F",
         estado_impreso=True,
         estado_aprobado=True,
