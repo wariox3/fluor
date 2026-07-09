@@ -238,7 +238,6 @@ def imprimir_rotulo(
         headers={"Content-Disposition": f"inline; filename=rotulos_{numero_desde}_{numero_hasta}.pdf"},
     )
 
-
 @router.get("/imprimir-guia")
 def imprimir_guia(
     numero_desde: int,
@@ -286,7 +285,6 @@ def imprimir_guia(
         headers={"Content-Disposition": f"inline; filename=guias_{numero_desde}_{numero_hasta}.pdf"},
     )
 
-
 @router.patch("/corregir/{codigo_guia_pk}", response_model=GuiaCorreccionResponse)
 def corregir(codigo_guia_pk: int, payload: GuiaCorreccionRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     guia = db.query(Guia).filter(Guia.codigo_guia_pk == codigo_guia_pk).first()
@@ -304,7 +302,6 @@ def corregir(codigo_guia_pk: int, payload: GuiaCorreccionRequest, db: Session = 
     db.refresh(guia)
 
     return guia
-
 
 @router.post("/liquidar", response_model=LiquidarResponse)
 def liquidar(payload: LiquidarRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
