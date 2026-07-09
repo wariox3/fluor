@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 from sqlalchemy import select, func
@@ -167,6 +167,32 @@ def estado(guia: int, db: Session = Depends(get_tenant_db), current_user: dict =
 @router.post("/estado-masivo", response_model=List[GuiaEstadoResponse])
 def estado_masivo(payload: GuiasMasivoRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     resultados = db.query(Guia).filter(Guia.codigo_guia_pk.in_(payload.guias)).all()
+
+    if not resultados:
+        raise HTTPException(status_code=404, detail="Ninguna guía encontrada")
+
+    return resultados
+
+@router.get("/estado-por-fecha", response_model=List[GuiaEstadoResponse])
+def estado_por_fecha(
+    fecha_desde: date,
+    fecha_hasta: date,
+    db: Session = Depends(get_tenant_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if fecha_hasta < fecha_desde:
+        raise HTTPException(status_code=400, detail="fecha_hasta debe ser mayor o igual a fecha_desde")
+
+    stmt = (
+        select(Guia)
+        .where(
+            Guia.fecha_ingreso >= fecha_desde,
+            Guia.fecha_ingreso < fecha_hasta + timedelta(days=1),
+        )
+        .order_by(Guia.fecha_ingreso)
+        .limit(1000)
+    )
+    resultados = db.execute(stmt).scalars().all()
 
     if not resultados:
         raise HTTPException(status_code=404, detail="Ninguna guía encontrada")
