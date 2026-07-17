@@ -14,8 +14,9 @@ from app.modules.tte.models.guia import Guia
 from app.modules.tte.models.guia_tipo import GuiaTipo
 from app.modules.tte.models.operacion import Operacion
 from app.modules.tte.models.producto import Producto
+from app.modules.tte.models.seguimiento import Seguimiento
 from app.modules.tte.models.servicio import Servicio
-from app.modules.tte.schemas.guia import GuiaCreateRequest, GuiaCreateResponse, GuiaCorreccionRequest, GuiaCorreccionResponse, GuiaListResponse, GuiaEstadoResponse, GuiasMasivoRequest, LiquidarRequest, LiquidarResponse
+from app.modules.tte.schemas.guia import GuiaCreateRequest, GuiaCreateResponse, GuiaCorreccionRequest, GuiaCorreccionResponse, GuiaListResponse, GuiaEstadoResponse, GuiaRecogidoRequest, GuiaRecogidoResponse, GuiaIngresoRequest, GuiaIngresoResponse, GuiasMasivoRequest, LiquidarRequest, LiquidarResponse
 from app.modules.tte.services import guia as guia_service
 
 router = APIRouter()
@@ -323,6 +324,67 @@ def corregir(codigo_guia_pk: int, payload: GuiaCorreccionRequest, db: Session = 
     guia.peso_volumen = payload.peso_volumen
     guia.peso_facturado = payload.peso_facturado
     guia.correccion = True
+
+    db.commit()
+    db.refresh(guia)
+
+    return guia
+
+@router.post("/recogido", response_model=GuiaRecogidoResponse)
+def recogido(payload: GuiaRecogidoRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    guia = db.query(Guia).filter(Guia.codigo_guia_pk == payload.guia).first()
+
+    if not guia:
+        raise HTTPException(status_code=404, detail="Guía no encontrada")
+
+    if guia.estado_recogido:
+        raise HTTPException(status_code=409, detail="La guía ya se encuentra recogida")
+
+    ahora = datetime.now()
+    guia.estado_recogido = True
+    guia.fecha_recogido = ahora
+
+    seguimiento = Seguimiento(
+        codigo_guia_fk=guia.codigo_guia_pk,
+        codigo_seguimiento_tipo_fk="RECOGIDO",
+        fecha=ahora,
+        fecha_seguimiento=ahora,
+        usuario=current_user["sub"],
+        comentario="CAPA API-KEY",
+    )
+    db.add(seguimiento)
+
+    db.commit()
+    db.refresh(guia)
+
+    return guia
+
+@router.post("/ingreso", response_model=GuiaIngresoResponse)
+def ingreso(payload: GuiaIngresoRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    guia = db.query(Guia).filter(Guia.codigo_guia_pk == payload.guia).first()
+
+    if not guia:
+        raise HTTPException(status_code=404, detail="Guía no encontrada")
+
+    if not guia.estado_recogido:
+        raise HTTPException(status_code=409, detail="La guía no ha sido recogida")
+
+    if guia.estado_ingreso:
+        raise HTTPException(status_code=409, detail="La guía ya tiene ingreso")
+
+    ahora = datetime.now()
+    guia.estado_ingreso = True
+    guia.fecha_ingreso_operacion = ahora
+
+    seguimiento = Seguimiento(
+        codigo_guia_fk=guia.codigo_guia_pk,
+        codigo_seguimiento_tipo_fk="INGRESO",
+        fecha=ahora,
+        fecha_seguimiento=ahora,
+        usuario=current_user["sub"],
+        comentario="CAPA API-KEY",
+    )
+    db.add(seguimiento)
 
     db.commit()
     db.refresh(guia)

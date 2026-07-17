@@ -90,6 +90,30 @@ class GuiaCorreccionResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class GuiaRecogidoRequest(BaseModel):
+    guia: int
+
+
+class GuiaRecogidoResponse(BaseModel):
+    codigo_guia_pk: int
+    estado_recogido: bool
+    fecha_recogido: Optional[datetime]
+
+    model_config = {"from_attributes": True}
+
+
+class GuiaIngresoRequest(BaseModel):
+    guia: int
+
+
+class GuiaIngresoResponse(BaseModel):
+    codigo_guia_pk: int
+    estado_ingreso: bool
+    fecha_ingreso_operacion: Optional[datetime]
+
+    model_config = {"from_attributes": True}
+
+
 class GuiasMasivoRequest(BaseModel):
     guias: Annotated[List[int], Field(min_length=1, max_length=1000)]
 
