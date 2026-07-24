@@ -195,3 +195,19 @@ class EstudioCreditoResponse(BaseModel):
     # Score
     score: int
     score_detalle: dict
+
+
+class EmpleadoActualizacionRequest(BaseModel):
+    fecha_acreditacion: date
+    fecha_poligono: date
+    fecha_psicofisico: date
+    codigo_interno: str
+
+class EmpleadoActualizacionResponse(BaseModel):
+    codigo_empleado_pk: int
+    fecha_acreditacion: date
+    fecha_poligono: date
+    fecha_psicofisico: date
+    codigo_interno: str
+
+    model_config = {"from_attributes": True}    

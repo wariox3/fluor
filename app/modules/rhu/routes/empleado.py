@@ -10,7 +10,7 @@ from app.modules.rhu.models.contrato import Contrato
 from app.modules.rhu.models.pago import Pago
 from app.modules.rhu.models.credito import Credito
 from app.modules.rhu.models.embargo import Embargo
-from app.modules.rhu.schemas.empleado import EmpleadoDetalleResponse, EmpleadoDetalleVencimientoResponse, EmpleadoListResponse, EstudioCreditoResponse, CuotasPorPlazo, PlazoCredito
+from app.modules.rhu.schemas.empleado import EmpleadoActualizacionRequest, EmpleadoDetalleResponse, EmpleadoDetalleVencimientoResponse, EmpleadoListResponse, EstudioCreditoResponse, CuotasPorPlazo, PlazoCredito, EmpleadoActualizacionResponse
 
 router = APIRouter()
 
@@ -238,3 +238,20 @@ def estudio_credito(
         score=score,
         score_detalle=score_detalle,
     )
+
+@router.patch("/actualizar/{codigo_empleado_pk}", response_model=EmpleadoActualizacionResponse)
+def actualizar(codigo_empleado_pk: int, payload: EmpleadoActualizacionRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    empleado = db.query(Empleado).filter(Empleado.codigo_empleado_pk == codigo_empleado_pk).first()
+
+    if not empleado:
+        raise HTTPException(status_code=404, detail="Empleado no encontrado")
+
+    empleado.fecha_acreditacion = payload.fecha_acreditacion
+    empleado.fecha_poligono = payload.fecha_poligono
+    empleado.fecha_psicofisico = payload.fecha_psicofisico
+    empleado.codigo_interno = payload.codigo_interno
+
+    db.commit()
+    db.refresh(empleado)
+
+    return empleado    
