@@ -198,16 +198,15 @@ class EstudioCreditoResponse(BaseModel):
 
 
 class EmpleadoActualizacionRequest(BaseModel):
-    fecha_acreditacion: date
-    fecha_poligono: date
-    fecha_psicofisico: date
-    codigo_interno: str
+    fecha_acreditacion: Optional[date] = None
+    fecha_poligono: Optional[date] = None
+    fecha_psicofisico: Optional[date] = None
+    codigo_interno: Optional[str] = None
 
 class EmpleadoActualizacionResponse(BaseModel):
     codigo_empleado_pk: int
-    fecha_acreditacion: date
-    fecha_poligono: date
-    fecha_psicofisico: date
-    codigo_interno: str
+    fecha_acreditacion: Optional[date] = None 
+    fecha_poligono: Optional[date] = None    
+    fecha_psicofisico: Optional[date] = None   
 
     model_config = {"from_attributes": True}    
