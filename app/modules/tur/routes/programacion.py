@@ -8,6 +8,7 @@ from app.modules.tur.models.programacion import Programacion
 from app.modules.tur.models.pedido import Pedido
 from app.modules.tur.models.pedido_detalle import PedidoDetalle
 from app.modules.tur.models.puesto import Puesto
+from app.modules.rhu.models.contrato import Contrato
 from app.modules.gen.models.configuracion import Configuracion
 from app.modules.tur.schemas.programacion import ProgramacionItem, ProgramacionListResponse, ProgramacionResponse
 
@@ -32,7 +33,9 @@ def lista(page: int = 1, size: int = 50, empleado_id: Optional[int] = None, terc
             joinedload(Programacion.puesto_rel).joinedload(Puesto.zona_rel),
             joinedload(Programacion.puesto_rel).joinedload(Puesto.subzona_rel),
             joinedload(Programacion.empleado_rel),
-            joinedload(Programacion.pedido_detalle_rel).joinedload(PedidoDetalle.pedido_rel),
+            joinedload(Programacion.contrato_rel).joinedload(Contrato.cargo_rel),
+            joinedload(Programacion.contrato_rel).joinedload(Contrato.grupo_rel),
+            joinedload(Programacion.pedido_detalle_rel).joinedload(PedidoDetalle.pedido_rel).joinedload(Pedido.tercero_rel),
         )
         .order_by(Programacion.codigo_programacion_pk.desc())
         .offset(offset)

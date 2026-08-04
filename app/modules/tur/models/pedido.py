@@ -1,4 +1,5 @@
-from sqlalchemy import Boolean, Column, Float, Integer, String, DateTime
+from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String, DateTime
+from sqlalchemy.orm import relationship
 from app.core.tenant_database import Base
 
 
@@ -12,7 +13,7 @@ class Pedido(Base):
     codigo_pedido_clase_fk = Column(String(20), nullable=True)
     codigo_pedido_motivo_fk = Column(String(20), nullable=True)
     codigo_clase_fk = Column(Integer, nullable=True)
-    codigo_tercero_fk = Column(Integer, nullable=True)
+    codigo_tercero_fk = Column(Integer, ForeignKey("gen_tercero.codigo_tercero_pk"), nullable=True)
     codigo_sector_fk = Column(String(10), nullable=True)
     estado_autorizado = Column(Boolean, default=False)
     estado_aprobado = Column(Boolean, default=False)
@@ -38,3 +39,5 @@ class Pedido(Base):
     codigo_empresa_fk = Column(Integer)
     codigo_sucursal_fk = Column(Integer, nullable=True)
     codigo_segmento_fk = Column(String(10), nullable=True)
+
+    tercero_rel = relationship("Tercero", foreign_keys=[codigo_tercero_fk])

@@ -52,9 +52,14 @@ class ProgramacionResponse(BaseModel):
     recursivo: Optional[bool] = None
     puesto_nombre: Optional[str] = None
     empleado_nombre: Optional[str] = None
+    empleado_celular: Optional[str] = None
     codigo_tercero_fk: Optional[int] = None
+    tercero_nombre: Optional[str] = None
     zona_nombre: Optional[str] = None
     subzona_nombre: Optional[str] = None
+    cargo_nombre: Optional[str] = None
+    grupo_nombre: Optional[str] = None
+    estado_contrato: Optional[bool] = None
 
     model_config = {"from_attributes": True}
 
@@ -69,8 +74,17 @@ class ProgramacionResponse(BaseModel):
                 data.subzona_nombre = obj.puesto_rel.subzona_rel.nombre
         if obj.empleado_rel:
             data.empleado_nombre = obj.empleado_rel.nombre_corto
+            data.empleado_celular = obj.empleado_rel.celular
+            data.estado_contrato = obj.empleado_rel.estado_contrato
+        if obj.contrato_rel:
+            if obj.contrato_rel.cargo_rel:
+                data.cargo_nombre = obj.contrato_rel.cargo_rel.nombre
+            if obj.contrato_rel.grupo_rel:
+                data.grupo_nombre = obj.contrato_rel.grupo_rel.nombre
         if obj.pedido_detalle_rel and obj.pedido_detalle_rel.pedido_rel:
             data.codigo_tercero_fk = obj.pedido_detalle_rel.pedido_rel.codigo_tercero_fk
+            if obj.pedido_detalle_rel.pedido_rel.tercero_rel:
+                data.tercero_nombre = obj.pedido_detalle_rel.pedido_rel.tercero_rel.nombre_corto
         return data
 
 
