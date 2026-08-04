@@ -52,6 +52,9 @@ class ProgramacionResponse(BaseModel):
     recursivo: Optional[bool] = None
     puesto_nombre: Optional[str] = None
     empleado_nombre: Optional[str] = None
+    codigo_tercero_fk: Optional[int] = None
+    zona_nombre: Optional[str] = None
+    subzona_nombre: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -60,8 +63,14 @@ class ProgramacionResponse(BaseModel):
         data = cls.model_validate(obj)
         if obj.puesto_rel:
             data.puesto_nombre = obj.puesto_rel.nombre
+            if obj.puesto_rel.zona_rel:
+                data.zona_nombre = obj.puesto_rel.zona_rel.nombre
+            if obj.puesto_rel.subzona_rel:
+                data.subzona_nombre = obj.puesto_rel.subzona_rel.nombre
         if obj.empleado_rel:
             data.empleado_nombre = obj.empleado_rel.nombre_corto
+        if obj.pedido_detalle_rel and obj.pedido_detalle_rel.pedido_rel:
+            data.codigo_tercero_fk = obj.pedido_detalle_rel.pedido_rel.codigo_tercero_fk
         return data
 
 

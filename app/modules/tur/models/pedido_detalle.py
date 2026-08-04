@@ -1,4 +1,5 @@
 from sqlalchemy import Boolean, Column, Float, Integer, String, Time
+from sqlalchemy.orm import relationship
 from app.core.tenant_database import Base
 
 
@@ -71,3 +72,9 @@ class PedidoDetalle(Base):
     carro = Column(Boolean, default=False)
     cuatrimoto = Column(Boolean, default=False)
     codigo_empresa_fk = Column(Integer)
+
+    pedido_rel = relationship(
+        "Pedido",
+        primaryjoin="foreign(PedidoDetalle.codigo_pedido_fk) == Pedido.codigo_pedido_pk",
+        viewonly=True,
+    )
