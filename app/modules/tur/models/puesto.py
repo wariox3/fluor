@@ -14,3 +14,11 @@ class Puesto(Base):
 
     zona_rel = relationship("TurZona", foreign_keys=[codigo_zona_fk])
     subzona_rel = relationship("TurSubzona", foreign_keys=[codigo_subzona_fk])
+
+    @property
+    def zona_nombre(self) -> str | None:
+        return self.zona_rel.nombre if self.zona_rel else None
+
+    @property
+    def subzona_nombre(self) -> str | None:
+        return self.subzona_rel.nombre if self.subzona_rel else None

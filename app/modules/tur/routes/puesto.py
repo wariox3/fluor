@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import Optional
 from app.core.tenant_database import get_tenant_db
@@ -18,7 +18,7 @@ def lista(
     db: Session = Depends(get_tenant_db),
     current_user: dict = Depends(get_current_user),
 ):
-    query = db.query(Puesto)
+    query = db.query(Puesto).options(joinedload(Puesto.zona_rel), joinedload(Puesto.subzona_rel))
     if puesto_id:
         query = query.filter(Puesto.codigo_puesto_pk == puesto_id)
     total = query.with_entities(func.count(Puesto.codigo_puesto_pk)).scalar()
