@@ -10,6 +10,7 @@ from .routes import consigna
 from .routes import factura
 from .routes import zona
 from .routes import subzona
+from .routes import puesto
 
 router = APIRouter(
     prefix="/tur"
@@ -26,3 +27,4 @@ router.include_router(consigna.router, prefix="/consigna", tags=["Turno / Consig
 router.include_router(factura.router, prefix="/factura", tags=["Turno / Factura"])
 router.include_router(zona.router, prefix="/zona", tags=["Turno / Zona"])
 router.include_router(subzona.router, prefix="/subzona", tags=["Turno / Subzona"])
+router.include_router(puesto.router, prefix="/puesto", tags=["Turno / Puesto"])
