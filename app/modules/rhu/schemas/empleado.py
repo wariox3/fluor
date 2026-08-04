@@ -8,6 +8,14 @@ class EmpleadoResponse(BaseModel):
     nombre_corto: Optional[str]
     numero_identificacion: str
     correo: Optional[str]
+    celular: Optional[str] = None
+    direccion: Optional[str] = None
+    barrio: Optional[str] = None
+    codigo_zona_fk: Optional[str] = None
+    codigo_subzona_fk: Optional[str] = None
+    estado_contrato: Optional[bool] = None
+    cargo_nombre: Optional[str] = None
+    grupo_nombre: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

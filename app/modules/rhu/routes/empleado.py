@@ -7,6 +7,8 @@ from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.rhu.models.empleado import Empleado
 from app.modules.rhu.models.contrato import Contrato
+from app.modules.rhu.models.cargo import Cargo
+from app.modules.rhu.models.grupo import Grupo
 from app.modules.rhu.models.pago import Pago
 from app.modules.rhu.models.credito import Credito
 from app.modules.rhu.models.embargo import Embargo
@@ -34,13 +36,40 @@ def _calcular_plazo(cuota_disponible: float, n: int) -> PlazoCredito:
 
 
 @router.get("/lista", response_model=EmpleadoListResponse)
-def lista(page: int = 1, size: int = 50, numero_identificacion: Optional[str] = None, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+def lista(
+    page: int = 1,
+    size: int = 50,
+    numero_identificacion: Optional[str] = None,
+    estado_contrato: Optional[bool] = None,
+    cargo_nombre: Optional[str] = None,
+    grupo_nombre: Optional[str] = None,
+    db: Session = Depends(get_tenant_db),
+    current_user: dict = Depends(get_current_user),
+):
     query = db.query(Empleado)
     if numero_identificacion:
         query = query.filter(Empleado.numero_identificacion.ilike(f"%{numero_identificacion}%"))
+    if estado_contrato is not None:
+        query = query.filter(Empleado.estado_contrato == estado_contrato)
+    if cargo_nombre or grupo_nombre:
+        query = query.join(Contrato, Empleado.codigo_contrato_fk == Contrato.codigo_contrato_pk)
+        if cargo_nombre:
+            query = query.join(Cargo, Contrato.codigo_cargo_fk == Cargo.codigo_cargo_pk).filter(Cargo.nombre.ilike(f"%{cargo_nombre}%"))
+        if grupo_nombre:
+            query = query.join(Grupo, Contrato.codigo_grupo_fk == Grupo.codigo_grupo_pk).filter(Grupo.nombre.ilike(f"%{grupo_nombre}%"))
     total = query.with_entities(func.count(Empleado.codigo_empleado_pk)).scalar()
     offset = (page - 1) * size
-    empleados = query.offset(offset).limit(size).all()
+    empleados = (
+        query
+        .options(
+            joinedload(Empleado.contrato_rel).joinedload(Contrato.cargo_rel),
+            joinedload(Empleado.contrato_rel).joinedload(Contrato.grupo_rel),
+        )
+        .order_by(Empleado.codigo_empleado_pk.desc())
+        .offset(offset)
+        .limit(size)
+        .all()
+    )
     return EmpleadoListResponse(total=total, page=page, size=size, items=empleados)
 
 

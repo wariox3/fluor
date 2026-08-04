@@ -8,7 +8,7 @@ class Empleado(Base):
 
     codigo_empleado_pk = Column(Integer, primary_key=True, index=True, autoincrement=True)
     codigo_identificacion_fk = Column(String(3), ForeignKey("gen_identificacion.codigo_identificacion_pk"), nullable=True)
-    codigo_contrato_fk = Column(Integer, nullable=True)
+    codigo_contrato_fk = Column(Integer, ForeignKey("rhu_contrato.codigo_contrato_pk"), nullable=True)
     codigo_cuenta_tipo_fk = Column(String(10), nullable=True)
     codigo_raza_fk = Column(String(10), nullable=True)
     codigo_contrato_ultimo_fk = Column(Integer, nullable=True)
@@ -112,3 +112,16 @@ class Empleado(Base):
     banco_rel = relationship("Banco", foreign_keys=[codigo_banco_fk])
     zona_rel = relationship("Zona", foreign_keys=[codigo_zona_fk])
     identificacion_rel = relationship("Identificacion", foreign_keys=[codigo_identificacion_fk])
+    contrato_rel = relationship("Contrato", foreign_keys=[codigo_contrato_fk])
+
+    @property
+    def cargo_nombre(self) -> str | None:
+        if self.contrato_rel and self.contrato_rel.cargo_rel:
+            return self.contrato_rel.cargo_rel.nombre
+        return None
+
+    @property
+    def grupo_nombre(self) -> str | None:
+        if self.contrato_rel and self.contrato_rel.grupo_rel:
+            return self.contrato_rel.grupo_rel.nombre
+        return None
