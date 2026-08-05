@@ -15,6 +15,7 @@ from .routes import adicional
 from .routes import concepto
 from .routes import capacitacion_detalle
 from .routes import empleado_actualizacion
+from .routes import zona
 
 router = APIRouter(
     prefix="/rhu"
@@ -36,3 +37,4 @@ router.include_router(adicional.router, prefix="/adicional", tags=["Recurso Huma
 router.include_router(concepto.router, prefix="/concepto", tags=["Recurso Humano / Concepto"])
 router.include_router(capacitacion_detalle.router, prefix="/capacitacion_detalle", tags=["Recurso Humano / Capacitacion Detalle"])
 router.include_router(empleado_actualizacion.router, prefix="/empleado_actualizacion", tags=["Recurso Humano / Empleado Actualizacion"])
+router.include_router(zona.router, prefix="/zona", tags=["Recurso Humano / Zona"])
