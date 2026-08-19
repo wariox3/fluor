@@ -1,4 +1,5 @@
 from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 from app.core.tenant_database import Base
 from app.modules.tte.models.ruta import Ruta
@@ -55,3 +56,7 @@ class Ciudad(Base):
     longitud = Column(String(15), nullable=True)
 
     ruta = relationship(Ruta, foreign_keys=[codigo_ruta_fk], backref="ciudades_ruta")
+
+    @hybrid_property
+    def ruta_nombre(self):
+        return self.ruta.nombre if self.ruta else None

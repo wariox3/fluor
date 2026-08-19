@@ -10,6 +10,8 @@ class CiudadResponse(BaseModel):
     codigo_interface: Optional[str]
     codigo_general: Optional[str]
     estado_inactivo: Optional[bool]
+    codigo_ruta_fk: Optional[str] = None
+    ruta_nombre: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
