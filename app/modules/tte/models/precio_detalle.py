@@ -9,7 +9,7 @@ class PrecioDetalle(Base):
     codigo_precio_fk = Column(Integer, ForeignKey("tte_precio.codigo_precio_pk"), nullable=True)
     codigo_ciudad_origen_fk = Column(String(20), nullable=True)
     codigo_ciudad_destino_fk = Column(String(20), nullable=True)
-    codigo_zona_fk = Column(String(20), nullable=True)
+    codigo_zona_fk = Column(String(20), ForeignKey("tte_zona.codigo_zona_pk"), nullable=True)
     codigo_producto_fk = Column(String(20), nullable=True)
     codigo_cobertura_fk = Column(String(3), nullable=True)
     vr_peso = Column(Float, nullable=False, default=0.0)

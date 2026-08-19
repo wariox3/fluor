@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Float, Integer, String
+from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from app.core.tenant_database import Base
 
 
@@ -10,7 +10,7 @@ class CondicionManejo(Base):
     codigo_tercero_fk = Column(Integer, nullable=True)
     codigo_ciudad_origen_fk = Column(String(20), nullable=True)
     codigo_ciudad_destino_fk = Column(String(20), nullable=True)
-    codigo_zona_fk = Column(String(20), nullable=True)
+    codigo_zona_fk = Column(String(20), ForeignKey("tte_zona.codigo_zona_pk"), nullable=True)
     codigo_cobertura_fk = Column(String(3), nullable=True)
     codigo_pago_fk = Column(String(3), nullable=True)
     porcentaje = Column(Float, nullable=False, default=0.0)

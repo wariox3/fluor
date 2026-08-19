@@ -132,7 +132,7 @@ class Guia(Base):
 
     # Logística / enrutamiento
     codigo_ruta_fk = Column(String(20), nullable=True)
-    codigo_zona_fk = Column(String(20), nullable=True)
+    codigo_zona_fk = Column(String(20), ForeignKey("tte_zona.codigo_zona_pk"), nullable=True)
     orden_ruta = Column(Integer, nullable=True, default=0)
     franja = Column(String(20), nullable=True)
     latitud = Column(Float, nullable=True)

@@ -21,7 +21,7 @@ class Ciudad(Base):
     # FKs sin modelo local
     codigo_departamento_fk = Column(String(2), nullable=True)
     codigo_ruta_fk = Column(String(20), ForeignKey("tte_ruta.codigo_ruta_pk"), nullable=True)
-    codigo_zona_fk = Column(String(20), nullable=True)
+    codigo_zona_fk = Column(String(20), ForeignKey("tte_zona.codigo_zona_pk"), nullable=True)
     codigo_cuenta_industria_comercio_fk = Column(String(20), nullable=True)
     codigo_centro_costo_fk = Column(String(20), nullable=True)
     codigo_empresa_fk = Column(Integer, nullable=False)

@@ -110,7 +110,7 @@ class Empleado(Base):
     codigo_verificacion_correo = Column(String(6), nullable=True)
 
     banco_rel = relationship("Banco", foreign_keys=[codigo_banco_fk])
-    zona_rel = relationship("Zona", foreign_keys=[codigo_zona_fk])
+    zona_rel = relationship("app.modules.rhu.models.zona.Zona", foreign_keys=[codigo_zona_fk])
     identificacion_rel = relationship("Identificacion", foreign_keys=[codigo_identificacion_fk])
     contrato_rel = relationship("Contrato", foreign_keys=[codigo_contrato_fk])
 
