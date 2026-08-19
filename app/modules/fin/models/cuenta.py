@@ -31,12 +31,11 @@ class FinCuenta(Base):
     codigo_medio_valor_fk = Column(String(10), ForeignKey("fin_medio_valor.codigo_medio_valor_pk"), nullable=True)
     codigo_origen_fk = Column(String(30), nullable=True)
     vr_tope = Column(Float, nullable=False, default=0.0)
-    codigo_empresa_fk = Column(Integer, ForeignKey("gen_empresa.codigo_empresa_pk"), nullable=False)
+    codigo_empresa_fk = Column(Integer, nullable=False)
     codigo_interface = Column(String(10), nullable=True)
 
     clasificacion_rel = relationship("FinClasificacion", foreign_keys=[codigo_clasificacion_fk])
     medio_rel = relationship("FinMedio", foreign_keys=[codigo_medio_fk])
     medio_concepto_rel = relationship("FinMedioConcepto", foreign_keys=[codigo_medio_concepto_fk])
     medio_valor_rel = relationship("FinMedioValor", foreign_keys=[codigo_medio_valor_fk])
-    empresa_rel = relationship("GenEmpresa", foreign_keys=[codigo_empresa_fk])
     cuenta_niif_rel = relationship("FinCuentaNiif", foreign_keys=[codigo_cuenta_niif_fk])

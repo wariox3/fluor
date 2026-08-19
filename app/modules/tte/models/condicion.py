@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Float, Integer, String
+from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String
 from app.core.tenant_database import Base
 
 
@@ -7,7 +7,7 @@ class Condicion(Base):
 
     codigo_condicion_pk = Column(Integer, primary_key=True, index=True)
     nombre = Column(String(150), nullable=True)
-    codigo_precio_fk = Column(Integer, nullable=True)
+    codigo_precio_fk = Column(Integer, ForeignKey("tte_precio.codigo_precio_pk"), nullable=True)
     porcentaje_manejo = Column(Float, nullable=False, default=0.0)
     manejo_minimo_unidad = Column(Float, nullable=False, default=0.0)
     manejo_minimo_despacho = Column(Float, nullable=False, default=0.0)

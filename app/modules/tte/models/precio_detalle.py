@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Float, Integer, String
+from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from app.core.tenant_database import Base
 
 
@@ -6,7 +6,7 @@ class PrecioDetalle(Base):
     __tablename__ = "tte_precio_detalle"
 
     codigo_precio_detalle_pk = Column(Integer, primary_key=True, index=True)
-    codigo_precio_fk = Column(Integer, nullable=True)
+    codigo_precio_fk = Column(Integer, ForeignKey("tte_precio.codigo_precio_pk"), nullable=True)
     codigo_ciudad_origen_fk = Column(String(20), nullable=True)
     codigo_ciudad_destino_fk = Column(String(20), nullable=True)
     codigo_zona_fk = Column(String(20), nullable=True)

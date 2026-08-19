@@ -4,6 +4,7 @@ from app.core.tenant_database import Base
 from sqlalchemy.orm import relationship
 from app.modules.gen.models.ciudad import Ciudad
 from app.modules.gen.models.asesor import Asesor
+from app.modules.tte.models.condicion import Condicion
 
 class Tercero(Base):
     __tablename__ = "gen_tercero"
@@ -24,9 +25,11 @@ class Tercero(Base):
     codigo_ciudad_fk = Column(String(20), ForeignKey("gen_ciudad.codigo_ciudad_pk"))
     codigo_forma_pago_fk = Column(String(10), nullable=True)
     codigo_asesor_fk = Column(Integer, ForeignKey("gen_asesor.codigo_asesor_pk"), nullable=True)
+    codigo_condicion_fk = Column(Integer, ForeignKey("tte_condicion.codigo_condicion_pk"), nullable=True)
 
     ciudad = relationship(Ciudad, foreign_keys=[codigo_ciudad_fk], backref="terceros_ciudad_rel")
     asesor = relationship(Asesor, foreign_keys=[codigo_asesor_fk], backref="terceros_asesor_rel")
+    condicion = relationship(Condicion, foreign_keys=[codigo_condicion_fk], backref="terceros_condicion_rel")
 
     @hybrid_property
     def ciudad_nombre(self):
@@ -35,3 +38,11 @@ class Tercero(Base):
     @hybrid_property
     def asesor_nombre(self):
         return self.asesor.nombre if self.asesor else None
+
+    @hybrid_property
+    def condicion_nombre(self):
+        return self.condicion.nombre if self.condicion else None
+
+    @hybrid_property
+    def condicion_codigo_precio_fk(self):
+        return self.condicion.codigo_precio_fk if self.condicion else None

@@ -19,6 +19,9 @@ class TerceroResponse(BaseModel):
     ciudad_nombre: Optional[str] = None
     codigo_asesor_fk: Optional[int] = None
     asesor_nombre: Optional[str] = None
+    codigo_condicion_fk: Optional[int] = None
+    condicion_nombre: Optional[str] = None
+    condicion_codigo_precio_fk: Optional[int] = None
 
     model_config = {"from_attributes": True}
 
