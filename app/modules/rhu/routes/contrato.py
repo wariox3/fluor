@@ -118,7 +118,7 @@ def imprimir_certificado_laboral(contrato_id: int, db: Session = Depends(get_ten
         "EMPRESA_IDENTIFICACION":       f"{nit}-{dv}",
         "EMPRESA_TELEFONO":             getattr(config, "telefono",  "") if config else "",
         "EMPRESA_EMAIL":                getattr(config, "correo",    "") if config else "",
-        "EMPRESA_ DIRECCION":           getattr(config, "direccion", "") if config else "",
+        "EMPRESA_DIRECCION":           getattr(config, "direccion", "") if config else "",
         "EMPRESA_CIUDAD":               ciudad_rel.nombre if ciudad_rel else "",                
         "EMPLEADO_NOMBRE":              empleado_rel.nombre_corto.upper() if empleado_rel else "",
         "EMPLEADO_IDENTIFICACION":      empleado_rel.numero_identificacion.upper() if empleado_rel else "",
