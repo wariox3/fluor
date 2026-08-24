@@ -133,6 +133,7 @@ def imprimir_certificado_laboral(contrato_id: int, db: Session = Depends(get_ten
         "CIUDAD_CONTRATACION":          ciudad_contrato_rel.nombre if ciudad_contrato_rel else "",
         "AUXILIO_TRANSPORTE":           fmt_numero(vr_auxilio_transporte),
         "ADICIONAL_CONTRATO":           fmt_numero(contrato.vr_adicional) if contrato.vr_adicional else "0",
+        "DEVENGADO_PACTADO":            fmt_numero(contrato.vr_devengado_pactado) if contrato.vr_devengado_pactado else "0",
         "SALARIO_EN_LETRAS":            salario_en_letras,
         "TIPO_IDENTIFICACION":          identificacion_rel.nombre.upper() if identificacion_rel else "",
     }
