@@ -199,5 +199,6 @@ class GuiaEstadoResponse(BaseModel):
     fecha_cumplido: Optional[datetime]
     estado_novedad: bool
     estado_novedad_solucion: bool
+    estado_anulado: bool
 
     model_config = {"from_attributes": True}
