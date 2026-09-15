@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+from datetime import time, timedelta
 from typing import List, Optional
 
 
@@ -135,3 +136,37 @@ class ProgramacionItem(BaseModel):
     dia_29: Optional[str] = None
     dia_30: Optional[str] = None
     dia_31: Optional[str] = None
+
+
+class ProgramacionDiaItem(BaseModel):
+    codigo_programacion_pk: int
+    codigo_empleado_fk: Optional[int] = None
+    empleado_nombre: Optional[str] = None
+    empleado_numero_identificacion: Optional[str] = None
+    empleado_celular: Optional[str] = None
+    codigo_contrato_fk: Optional[int] = None
+    codigo_cargo_fk: Optional[str] = None
+    cargo_nombre: Optional[str] = None
+    codigo_grupo_fk: Optional[str] = None
+    grupo_nombre: Optional[str] = None
+    codigo_puesto_fk: Optional[int] = None
+    puesto_nombre: Optional[str] = None
+    codigo_zona_fk: Optional[str] = None
+    zona_nombre: Optional[str] = None
+    tercero_nombre_corto: Optional[str] = None
+    codigo_turno: Optional[str] = None
+    turno_nombre: Optional[str] = None
+    hora_desde: Optional[time] = None
+    hora_hasta: Optional[time] = None
+    horas: Optional[float] = None
+    complementario: Optional[bool] = None
+    adicional: Optional[bool] = None
+
+    @field_validator("hora_desde", "hora_hasta", mode="before")
+    @classmethod
+    def timedelta_a_time(cls, v):
+        # En SQL directo el driver de MySQL entrega las columnas TIME como timedelta
+        if isinstance(v, timedelta):
+            segundos = int(v.total_seconds()) % 86400
+            return time(segundos // 3600, segundos % 3600 // 60, segundos % 60)
+        return v
