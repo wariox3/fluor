@@ -7,7 +7,7 @@ Guía para instalar y actualizar **Semántica ERP API** en un servidor Linux. Es
 - [Arquitectura de producción](#arquitectura-de-producción)
 - [1. Preparación del servidor (una sola vez)](#1-preparación-del-servidor-una-sola-vez)
 - [2. Base de datos](#2-base-de-datos)
-- [3. Estructura de directorios y releases](#3-estructura-de-directorios-y-releases)
+- [3. Instalación del código](#3-instalación-del-código)
 - [4. Variables de entorno](#4-variables-de-entorno)
 - [5. Servicio systemd](#5-servicio-systemd)
 - [6. Nginx y HTTPS](#6-nginx-y-https)
@@ -25,7 +25,7 @@ Guía para instalar y actualizar **Semántica ERP API** en un servidor Linux. Es
 
 ```
 Internet ──443──▶ Nginx (TLS, proxy inverso)
-                    │  http://127.0.0.1:8000
+                    │  http://127.0.0.1:8010
                     ▼
                  systemd: fluor.service
                  uvicorn (N workers)
@@ -41,8 +41,8 @@ Principios:
 - La aplicación **nunca corre como root**; usa el usuario de sistema `fluor`.
 - Uvicorn solo escucha en `127.0.0.1`; el único punto de entrada público es Nginx.
 - MySQL **no se expone** a Internet.
-- Cada despliegue crea un **release inmutable** en su propio directorio (con su propio entorno virtual). El release activo es el que apunta el enlace simbólico `current`, así que un rollback solo consiste en cambiar ese enlace.
-- Los secretos viven fuera del repositorio, en `shared/.env`.
+- El código es un clon del repositorio en `/opt/fluor`. Actualizar es mover el clon a otro commit; un rollback es volver al commit anterior.
+- Los secretos viven en `/opt/fluor/.env`, que está en `.gitignore` y nunca se sube al repositorio.
 
 ---
 
@@ -65,7 +65,7 @@ sudo apt install -y \
 | `libpango-*`, `libharfbuzz-subset0` | Librerías nativas que necesita WeasyPrint para generar PDF |
 | `libmagic1` | La usa `python-magic` para detectar el tipo de archivo en `doc/fichero` |
 | `fonts-liberation` | Fuentes con las mismas métricas que Arial (las plantillas PDF usan `Arial, sans-serif`) |
-| `mysql-client` | `mysqldump` para backups antes de migrar |
+| `mysql-client` | Cliente `mysql` para aplicar scripts SQL a los tenants ([sección 10](#10-cambios-en-las-bases-de-tenant)) |
 
 ### Firewall
 
@@ -75,12 +75,12 @@ sudo ufw allow 'Nginx Full'
 sudo ufw enable
 ```
 
-No abras el puerto 8000 ni el 3306.
+No abras el puerto 8010 ni el 3306.
 
 ### Usuario de la aplicación
 
 ```bash
-sudo adduser --system --group --home /srv/fluor --shell /usr/sbin/nologin fluor
+sudo adduser --system --group --home /opt/fluor --shell /usr/sbin/nologin fluor
 ```
 
 Los despliegues se hacen como `fluor` con `sudo -u fluor ...`. Solo reiniciar el servicio necesita `sudo`.
@@ -122,36 +122,53 @@ La zona horaria de cada conexión la fija la aplicación (`DB_TIME_ZONE`, `-05:0
 
 ---
 
-## 3. Estructura de directorios y releases
+## 3. Instalación del código
 
 ```
-/srv/fluor/
-├── repo.git/                        # clon bare, solo para hacer fetch
-├── releases/
-│   ├── 20260915-1402-3453acd/       # código + .venv propio
-│   └── 20260917-0930-9f0c2b1/
-├── current -> releases/20260917-0930-9f0c2b1
-├── shared/
-│   └── .env                         # secretos (chmod 600)
-└── backups/                         # dumps previos a cada migración
+/opt/fluor/                 # clon del repositorio (propietario fluor)
+├── app/
+├── migrations_master/
+├── requirements.txt
+├── .venv/                  # entorno virtual (ignorado por git)
+└── .env                    # secretos, chmod 600 (ignorado por git)
 ```
 
 ```bash
-sudo -u fluor mkdir -p /srv/fluor/{releases,shared,backups}
-sudo -u fluor git clone --bare <url-del-repo> /srv/fluor/repo.git
+# /opt pertenece a root: crea la carpeta con sudo y dásela a fluor
+sudo install -d -o fluor -g fluor -m 750 /opt/fluor
+
+# Clonar (la carpeta debe estar vacía)
+sudo -u fluor git clone https://github.com/wariox3/fluor.git /opt/fluor
+
+# Entorno virtual
+sudo -u fluor python3.12 -m venv /opt/fluor/.venv
+sudo -u fluor /opt/fluor/.venv/bin/pip install --upgrade pip
+sudo -u fluor /opt/fluor/.venv/bin/pip install -r /opt/fluor/requirements.txt
 ```
 
-Para que el servidor pueda leer el repositorio, usa una **deploy key de solo lectura** (clave SSH del usuario `fluor` registrada en el repo), no credenciales personales.
+El repositorio es público, así que el clon por HTTPS no necesita credenciales. Si pasa a ser privado, no uses credenciales personales: registra en GitHub una **deploy key de solo lectura** (clave SSH del usuario `fluor`) y cambia la URL a SSH:
+
+```bash
+sudo -u fluor git -C /opt/fluor remote set-url origin git@github.com:wariox3/fluor.git
+```
+
+Como `/opt/fluor` también es el home de `fluor`, ahí aparecerá la caché de pip. Exclúyela de git para que `git status` quede limpio:
+
+```bash
+sudo -u fluor sh -c 'printf ".cache/\n" >> /opt/fluor/.git/info/exclude'
+```
+
+> **No edites archivos en el servidor.** Cualquier cambio local en `/opt/fluor` bloquea las actualizaciones. Todo cambio entra por el repositorio.
 
 ---
 
 ## 4. Variables de entorno
 
-Crea `/srv/fluor/shared/.env`:
+Crea `/opt/fluor/.env`:
 
 ```bash
-sudo -u fluor install -m 600 /dev/null /srv/fluor/shared/.env
-sudo -u fluor nano /srv/fluor/shared/.env
+sudo -u fluor install -m 600 /dev/null /opt/fluor/.env
+sudo -u fluor nano /opt/fluor/.env
 ```
 
 ```env
@@ -207,7 +224,7 @@ PDF_RENDER_TIMEOUT=60
 | `TURNSTILE_*` | Recomendada | Protección anti-bots en login/registro. |
 | `B2_*` | Si se usa `doc` | |
 
-Cada release enlaza este archivo en su raíz (`python-decouple` busca el `.env` desde el paquete `app/` hacia arriba).
+`python-decouple` lo encuentra en la raíz del proyecto, igual que en desarrollo.
 
 ---
 
@@ -225,9 +242,9 @@ Wants=network-online.target
 Type=simple
 User=fluor
 Group=fluor
-WorkingDirectory=/srv/fluor/current
-ExecStart=/srv/fluor/current/.venv/bin/uvicorn app.main:app \
-    --host 127.0.0.1 --port 8000 \
+WorkingDirectory=/opt/fluor
+ExecStart=/opt/fluor/.venv/bin/uvicorn app.main:app \
+    --host 127.0.0.1 --port 8010 \
     --workers 4 \
     --proxy-headers --forwarded-allow-ips 127.0.0.1 \
     --no-server-header \
@@ -269,7 +286,7 @@ fluor ALL=(root) NOPASSWD: /usr/bin/systemctl restart fluor, /usr/bin/systemctl 
 
 ```nginx
 upstream fluor_api {
-    server 127.0.0.1:8000;
+    server 127.0.0.1:8010;
     keepalive 32;
 }
 
@@ -321,15 +338,19 @@ Las cookies de sesión se emiten con `Secure` y `SameSite=None`, así que **HTTP
 ## 7. Primer despliegue
 
 1. Completa las secciones 1 a 6.
-2. Crea el primer release con los pasos 1 y 2 de la [sección 8](#8-procedimiento-de-actualización).
-3. Aplica las migraciones de la Master DB desde el release: `alembic upgrade head`.
-4. Crea el enlace `current` y arranca el servicio:
+2. Comprueba que la app importa con la configuración real:
 
    ```bash
-   sudo -u fluor ln -sfn /srv/fluor/releases/$REL /srv/fluor/current
-   sudo systemctl start fluor
+   cd /opt/fluor && sudo -u fluor .venv/bin/python -c "import app.main"
    ```
 
+3. Aplica las migraciones de la Master DB:
+
+   ```bash
+   cd /opt/fluor && sudo -u fluor .venv/bin/alembic upgrade head
+   ```
+
+4. Arranca el servicio: `sudo systemctl start fluor`.
 5. Verifica: `curl -fsS https://api.semanticaapi.com.co/health` → `{"status":"ok","database":"ok"}`.
 
 > Ejecuta siempre `alembic upgrade head` **antes** de arrancar la app. Al iniciar, la app ejecuta `create_all()` sobre la Master DB, que crea las tablas que falten pero no las registra en Alembic; si arranca primero, las migraciones posteriores pueden fallar porque la tabla ya existe.
@@ -353,70 +374,52 @@ Ejecutar como `fluor` (`sudo -u fluor -s`):
 
 ```bash
 set -euo pipefail
-cd /srv/fluor
-REF=main                                   # o un tag: v2026.09.17
-DB_MASTER_HOST=<host-mysql>                # el mismo valor que en shared/.env
+cd /opt/fluor
+REF=origin/main                            # o un tag: v2026.09.17
 
-# 1. Obtener el código en un release nuevo
-git --git-dir=repo.git fetch origin "+refs/heads/*:refs/heads/*" --tags --prune
-SHA=$(git --git-dir=repo.git rev-parse --short "$REF")
-REL="$(date +%Y%m%d-%H%M)-$SHA"
-mkdir "releases/$REL"
-git --git-dir=repo.git archive "$REF" | tar -x -C "releases/$REL"
-echo "$SHA" > "releases/$REL/REVISION"
+# 1. Traer los cambios
+test -z "$(git status --porcelain --untracked-files=no)"   # falla si hay cambios locales
+git log -1 --oneline                       # commit actual, por si hay que volver
+git fetch origin --tags --prune
+git log --oneline HEAD.."$REF"             # revisa qué entra
 
-# 2. Entorno virtual propio e instalación de dependencias
-python3.12 -m venv "releases/$REL/.venv"
-"releases/$REL/.venv/bin/pip" install --upgrade pip
-"releases/$REL/.venv/bin/pip" install -r "releases/$REL/requirements.txt"
-ln -s /srv/fluor/shared/.env "releases/$REL/.env"
+# 2. Cambiar el código y actualizar dependencias
+git -c advice.detachedHead=false checkout --detach "$REF"
+.venv/bin/pip install -r requirements.txt
 
-# 3. Comprobación: la app importa sin errores con la configuración real
-(cd "releases/$REL" && .venv/bin/python -c "import app.main")
+# 3. Comprobación: la app importa sin errores
+.venv/bin/python -c "import app.main"
 
-# 4. Backup de la Master DB (solo si hay migraciones pendientes)
-(cd "releases/$REL" && .venv/bin/alembic current && .venv/bin/alembic heads)
-mysqldump --single-transaction --routines --triggers \
-    -h "$DB_MASTER_HOST" -u fluor_master -p bdfluor \
-    | gzip > "backups/bdfluor-$REL.sql.gz"
+# 4. Migraciones
+.venv/bin/alembic upgrade head
 
-# 5. Migraciones (la versión anterior sigue atendiendo tráfico)
-(cd "releases/$REL" && .venv/bin/alembic upgrade head)
-
-# 6. Activar el release (cambio atómico del enlace)
-ln -sfn "/srv/fluor/releases/$REL" /srv/fluor/current.tmp
-mv -Tf /srv/fluor/current.tmp /srv/fluor/current
-
-# 7. Reiniciar y verificar
+# 5. Reiniciar y verificar
 sudo systemctl restart fluor
 sleep 5
-curl -fsS http://127.0.0.1:8000/health
+curl -fsS http://127.0.0.1:8010/health
 journalctl -u fluor --since "2 min ago" --no-pager | tail -50
-
-# 8. Limpieza: conservar los últimos 5 releases
-ls -1dt releases/*/ | tail -n +6 | xargs -r rm -rf
 ```
 
-> Para usar `mysqldump` sin escribir la contraseña, crea `~fluor/.my.cnf` con `chmod 600`.
+Haz los pasos 2 a 5 seguidos. Desde el `checkout` los archivos del disco ya son de la versión nueva, pero los workers siguen corriendo la anterior hasta el reinicio; cualquier módulo o plantilla que se cargue en ese intervalo (por ejemplo, el subproceso de PDF) puede mezclar versiones.
 
-Si falla algún paso entre el 1 y el 4, **no pasa nada en producción**: se borra el release a medias y se corrige. Si falla el 5, ve al [rollback](#9-rollback).
+Si falla el paso 1, producción no se ha tocado. Si falla el 2, 3 o 4, ve al [rollback](#9-rollback) **antes** de reiniciar.
 
 ### Después de desplegar
 
 - Prueba manualmente un flujo crítico: login, una consulta de tenant y la generación de un PDF.
 - Revisa que Sentry no reciba errores nuevos durante los siguientes 15 minutos.
-- Avisa al equipo qué commit o tag quedó en producción (`cat /srv/fluor/current/REVISION`).
+- Avisa al equipo qué commit o tag quedó en producción (`git -C /opt/fluor log -1 --oneline`).
 
 ### Migraciones compatibles
 
-Durante el paso 5 la versión anterior del código sigue corriendo contra la base ya migrada. Para que eso no rompa nada, las migraciones deben ser **compatibles con el código anterior** (patrón *expand / contract*):
+Entre el paso 4 y el reinicio, la versión anterior del código sigue corriendo contra la base ya migrada. Para que eso no rompa nada, las migraciones deben ser **compatibles con el código anterior** (patrón *expand / contract*):
 
 - ✅ Agregar tablas, agregar columnas que acepten `NULL` o tengan valor por defecto, agregar índices.
 - ❌ Borrar o renombrar columnas o tablas que el código actual todavía usa.
 
 Para borrar o renombrar: primero despliega el código que ya no las usa y, **en un despliegue posterior**, la migración que las elimina.
 
-Si un cambio no puede ser compatible, programa una ventana de mantenimiento: `sudo systemctl stop fluor`, migra, activa el release y arranca.
+Si un cambio no puede ser compatible, programa una ventana de mantenimiento: `sudo systemctl stop fluor`, haz los pasos 2 a 4 y arranca el servicio.
 
 ---
 
@@ -424,29 +427,32 @@ Si un cambio no puede ser compatible, programa una ventana de mantenimiento: `su
 
 ### Solo código (no hubo migraciones, o son compatibles)
 
+Como `fluor`:
+
 ```bash
-cd /srv/fluor
-ls -1dt releases/*/                            # confirma cuál es el release anterior
-PREV=$(ls -1dt releases/*/ | sed -n 2p)        # asume que el actual es el más reciente
-ls -l current && echo "Volviendo a: $PREV"
-ln -sfn "/srv/fluor/$PREV" current.tmp && mv -Tf current.tmp current
+cd /opt/fluor
+git reflog -5                                  # confirma cuál era el commit anterior
+PREV=$(git rev-parse --short 'HEAD@{1}')       # posición de HEAD antes del último checkout
+git log -1 --oneline "$PREV" && echo "Volviendo a: $PREV"
+git -c advice.detachedHead=false checkout --detach "$PREV"
+.venv/bin/pip install -r requirements.txt
 sudo systemctl restart fluor
-curl -fsS http://127.0.0.1:8000/health
+curl -fsS http://127.0.0.1:8010/health
 ```
 
-Tarda unos segundos, porque el release anterior ya tiene su entorno virtual instalado.
+`pip install` reinstala las versiones del commit anterior, pero no desinstala paquetes que haya agregado la versión nueva; normalmente no molestan.
 
 ### Código y base de datos
 
-1. Revierte la migración **desde el release nuevo**: los archivos de la migración solo existen ahí.
+1. Revierte la migración **antes** de volver al commit anterior: los archivos de la migración solo existen en la versión nueva.
 
    ```bash
-   (cd /srv/fluor/releases/<release-nuevo> && .venv/bin/alembic downgrade <revision-anterior>)
+   cd /opt/fluor && .venv/bin/alembic downgrade <revision-anterior>
    ```
 
 2. Haz el rollback de código descrito arriba.
 
-Si el `downgrade` no es viable (por ejemplo, la migración borró datos), detén el servicio, restaura el backup `backups/bdfluor-<release>.sql.gz` y activa el release anterior. **Restaurar el backup borra lo que se escribió después de hacerlo**; hazlo solo si no queda otra opción.
+Si el `downgrade` no es viable (por ejemplo, la migración borró datos), la única salida es restaurar el último backup de la base ([sección 11](#backups)), perdiendo lo que se escribió después.
 
 ---
 
@@ -455,7 +461,7 @@ Si el `downgrade` no es viable (por ejemplo, la migración borró datos), detén
 Alembic **solo** gestiona la Master DB. La aplicación **no** crea ni modifica tablas en las bases de tenant (`create_all()` solo se ejecuta sobre la Master DB). Por lo tanto:
 
 - Todo cambio en `app/modules/*/models/` que afecte a una tabla de tenant necesita un script SQL que se aplique **a cada base de tenant**.
-- Aplica ese SQL **antes** de activar el release que lo necesita, respetando las mismas reglas de [compatibilidad](#migraciones-compatibles).
+- Aplica ese SQL **antes** de desplegar el código que lo necesita, respetando las mismas reglas de [compatibilidad](#migraciones-compatibles).
 - Guarda los scripts versionados (por ejemplo `sql/tenant/2026-09-17_agregar_columna_x.sql`) para poder aplicarlos a tenants nuevos y saber cuáles ya se ejecutaron.
 
 Ejemplo para aplicar un script a todos los tenants registrados:
@@ -500,7 +506,7 @@ Los logs de Nginx están en `/var/log/nginx/` y logrotate los rota automáticame
 - Programa un `mysqldump --single-transaction` diario de la Master DB **y de todas las bases de tenant**, con retención (por ejemplo 7 diarios y 4 semanales).
 - Guarda una copia **fuera del servidor** (por ejemplo, un bucket B2 distinto del de documentos).
 - **Prueba la restauración** en otro entorno al menos una vez por trimestre. Un backup que nunca se ha restaurado no garantiza nada.
-- Respalda también `/srv/fluor/shared/.env` en el gestor de secretos del equipo.
+- Respalda también `/opt/fluor/.env` en el gestor de secretos del equipo.
 
 ---
 
