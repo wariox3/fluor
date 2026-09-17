@@ -24,6 +24,7 @@ API multi-tenant para un ERP empresarial, construida con **FastAPI**, **SQLAlche
 - [Autenticación](#autenticación)
 - [Estructura del proyecto](#estructura-del-proyecto)
 - [Agregar un módulo nuevo](#agregar-un-módulo-nuevo)
+- [Despliegue en producción](docs/despliegue.md)
 
 ---
 
@@ -145,6 +146,8 @@ B2_BUCKET_NAME=
 uvicorn app.main:app --reload
 ```
 
+Para producción consulta la guía [docs/despliegue.md](docs/despliegue.md).
+
 Una vez levantado, la documentación interactiva queda disponible en:
 
 - **Swagger UI** → http://localhost:8000/docs
@@ -154,7 +157,7 @@ Una vez levantado, la documentación interactiva queda disponible en:
 
 ## Migraciones
 
-Alembic está configurado **únicamente para la Master DB** (`migrations_master/`). Las tablas de las Tenant DB se crean automáticamente vía `Base.metadata.create_all()` al conectarse, por lo que **no requieren migración**.
+Alembic está configurado **únicamente para la Master DB** (`migrations_master/`). La aplicación **no** crea ni modifica tablas en las Tenant DB: los cambios de esquema de tenant se aplican con SQL a cada base (ver [Despliegue en producción](docs/despliegue.md#10-cambios-en-las-bases-de-tenant)).
 
 ```bash
 # Aplicar migraciones a la Master DB
@@ -215,4 +218,4 @@ app/
 2. Añadir el import wildcard en `app/main.py` (p. ej. `from app.modules.<nombre> import models`) para que SQLAlchemy registre los modelos.
 3. Incluir el router en `app/main.py` con `app.include_router(...)`.
 4. Usar `Depends(get_tenant_db)` para datos de empresa o `Depends(get_master_db)` para datos master.
-5. Si los modelos pertenecen a la **Master DB**, importarlos en `migrations_master/env.py` y ejecutar `alembic revision --autogenerate`. Si son de Tenant DB, se crean automáticamente vía `create_all()` — sin migración.
+5. Si los modelos pertenecen a la **Master DB**, importarlos en `migrations_master/env.py` y ejecutar `alembic revision --autogenerate`. Si son de Tenant DB, prepara el script SQL para aplicarlo en cada base de tenant (ver [docs/despliegue.md](docs/despliegue.md#10-cambios-en-las-bases-de-tenant)).
