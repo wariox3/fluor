@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, LargeBinary, ForeignKey, Numeric
+from sqlalchemy import Boolean, Column, Integer, String, LargeBinary, ForeignKey, Numeric
 from sqlalchemy.orm import relationship
 from app.core.tenant_database import Base
 from app.modules.gen.models.ciudad import Ciudad
@@ -22,5 +22,6 @@ class Configuracion(Base):
     ruta_almacenamiento_servicio = Column(String(200), nullable=True)
     mostrar_programacion_impresion_pago = Column(Integer, nullable=True, default=1)
     mostrar_programacion = Column(Integer, nullable=True, default=1)
+    omitir_porcentaje_formato_pago = Column(Boolean, nullable=False, default=False)
 
     ciudad_rel = relationship(Ciudad, foreign_keys=[codigo_ciudad_fk])

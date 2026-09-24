@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String
+from sqlalchemy import Boolean, Column, String
 from app.core.tenant_database import Base
 
 class GuiaTipo(Base):
@@ -6,3 +6,4 @@ class GuiaTipo(Base):
 
     codigo_guia_tipo_pk = Column(String(20), primary_key=True, index=True)            
     nombre = Column(String)
+    genera_cobro = Column(Boolean, nullable=True, default=False)

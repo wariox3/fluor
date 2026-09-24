@@ -73,18 +73,32 @@ class GuiaCreateResponse(BaseModel):
         from_attributes = True
 
 class GuiaCorreccionRequest(BaseModel):
-    unidades: float
-    peso_real: float
-    peso_volumen: float
-    peso_facturado: float
+    unidades: Optional[float] = Field(default=None, ge=0)
+    peso_real: Optional[float] = Field(default=None, ge=0)
+    peso_volumen: Optional[float] = Field(default=None, ge=0)
+    peso_facturado: Optional[float] = Field(default=None, ge=0)
+    vr_declara: Optional[float] = Field(default=None, ge=0)
+    vr_flete: Optional[float] = Field(default=None, ge=0)
+    vr_manejo: Optional[float] = Field(default=None, ge=0)
+    vr_recaudo: Optional[float] = Field(default=None, ge=0)
+    cortesia: Optional[bool] = None
+    codigo_ciudad_destino_fk: Optional[str] = None
 
 
 class GuiaCorreccionResponse(BaseModel):
     codigo_guia_pk: int
+    codigo_ciudad_destino_fk: Optional[str]
+    codigo_ruta_fk: Optional[str]
     unidades: float
     peso_real: float
     peso_volumen: float
     peso_facturado: float
+    vr_declara: float
+    vr_flete: float
+    vr_manejo: float
+    vr_recaudo: float
+    vr_cobro_entrega: float
+    cortesia: bool
     correccion: bool
 
     model_config = {"from_attributes": True}
@@ -138,6 +152,24 @@ class LiquidarResponse(BaseModel):
     flete: float
     manejo: float
     peso_facturado: float
+
+
+class ReliquidarRequest(BaseModel):
+    codigo_guia_pk: int
+    zona: Optional[str] = None
+    tipo_liquidacion: Optional[str] = None
+
+
+class ReliquidarResponse(BaseModel):
+    codigo_guia_pk: int
+    tipo_liquidacion: Optional[str]
+    peso_facturado: float
+    vr_flete: float
+    vr_manejo: float
+    vr_cobro_entrega: float
+    correccion: bool
+
+    model_config = {"from_attributes": True}
 
 
 class GuiaResponse(BaseModel):

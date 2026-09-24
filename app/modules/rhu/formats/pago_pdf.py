@@ -115,7 +115,7 @@ def _seccion_programacion(pago, programacion: list) -> list:
     return [Spacer(1, 0.3 * cm), tbl]
 
 
-def generar(pago, detalles, db=None, programacion=None, mostrar_programacion=1) -> bytes:
+def generar(pago, detalles, db=None, programacion=None, mostrar_programacion=1, omitir_porcentaje=False) -> bytes:
     empleado = pago.empleado
     contrato = pago.contrato_rel
 
@@ -193,7 +193,7 @@ def generar(pago, detalles, db=None, programacion=None, mostrar_programacion=1) 
             _p(d.detalle or "", "td"),
             _p(_fmt_horas(d.horas) if d.horas else "", "td_c"),
             _p(_fmt(d.dias) if d.dias else "", "td_c"),
-            _p(_fmt(d.porcentaje) if d.porcentaje else "", "td_c"),
+            _p(_fmt(d.porcentaje) if d.porcentaje and not omitir_porcentaje else "", "td_c"),
             _p(_fmt(d.vr_devengado), "td_r"),
             _p(_fmt(d.vr_deduccion), "td_r"),
         ]

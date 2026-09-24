@@ -8,6 +8,7 @@ from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.core.config import DEFAULT_EMPRESA_ID
 from app.modules.gen.models.tercero import Tercero
+from app.modules.tte.models.cierre import Cierre
 from app.modules.tte.models.ciudad import Ciudad
 from app.modules.tte.models.empaque import Empaque
 from app.modules.tte.models.guia import Guia
@@ -16,7 +17,7 @@ from app.modules.tte.models.operacion import Operacion
 from app.modules.tte.models.producto import Producto
 from app.modules.tte.models.seguimiento import Seguimiento
 from app.modules.tte.models.servicio import Servicio
-from app.modules.tte.schemas.guia import GuiaCreateRequest, GuiaCreateResponse, GuiaCorreccionRequest, GuiaCorreccionResponse, GuiaListResponse, GuiaEstadoResponse, GuiaRecogidoRequest, GuiaRecogidoResponse, GuiaIngresoRequest, GuiaIngresoResponse, GuiasMasivoRequest, LiquidarRequest, LiquidarResponse
+from app.modules.tte.schemas.guia import GuiaCreateRequest, GuiaCreateResponse, GuiaCorreccionRequest, GuiaCorreccionResponse, GuiaListResponse, GuiaEstadoResponse, GuiaRecogidoRequest, GuiaRecogidoResponse, GuiaIngresoRequest, GuiaIngresoResponse, GuiasMasivoRequest, LiquidarRequest, LiquidarResponse, ReliquidarRequest, ReliquidarResponse
 from app.modules.tte.services import guia as guia_service
 
 router = APIRouter()
@@ -315,14 +316,43 @@ def imprimir_guia(
 @router.patch("/corregir/{codigo_guia_pk}", response_model=GuiaCorreccionResponse)
 def corregir(codigo_guia_pk: int, payload: GuiaCorreccionRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     guia = db.query(Guia).filter(Guia.codigo_guia_pk == codigo_guia_pk).first()
-
     if not guia:
         raise HTTPException(status_code=404, detail="Guía no encontrada")
 
-    guia.unidades = payload.unidades
-    guia.peso_real = payload.peso_real
-    guia.peso_volumen = payload.peso_volumen
-    guia.peso_facturado = payload.peso_facturado
+    if guia.estado_facturado:
+        raise HTTPException(status_code=409, detail="La guía se encuentra facturada, no se puede editar")
+
+    if not guia.fecha_ingreso:
+        raise HTTPException(status_code=409, detail="La guía no tiene fecha de ingreso, no se puede validar el periodo de cierre")
+
+    anio = guia.fecha_ingreso.year
+    mes = guia.fecha_ingreso.month
+    cierre = db.query(Cierre).filter(Cierre.anio == anio, Cierre.mes == mes).first()
+    if not cierre:
+        raise HTTPException(status_code=409, detail=f"No existe el periodo de cierre {anio} {mes}")
+    if cierre.estado_autorizado:
+        raise HTTPException(status_code=409, detail=f"El cierre {anio} {mes} ya esta autorizado y no se puede editar la guía")
+
+    cambios = payload.model_dump(exclude_unset=True, exclude_none=True)
+
+    codigo_ciudad_destino = cambios.pop("codigo_ciudad_destino_fk", None)
+    if codigo_ciudad_destino is not None:
+        ciudad_destino = db.query(Ciudad).filter(Ciudad.codigo_ciudad_pk == codigo_ciudad_destino).first()
+        if not ciudad_destino:
+            raise HTTPException(status_code=404, detail="La ciudad destino ingresada no existe, por favor validar")
+        guia.codigo_ciudad_destino_fk = ciudad_destino.codigo_ciudad_pk
+
+    for campo, valor in cambios.items():
+        setattr(guia, campo, valor)
+
+    if guia.cortesia:
+        guia.vr_flete = 0
+        guia.vr_manejo = 0
+
+    cobro_entrega = guia.vr_recaudo or 0
+    if guia.guia_tipo and guia.guia_tipo.genera_cobro:
+        cobro_entrega += (guia.vr_flete or 0) + (guia.vr_manejo or 0)
+    guia.vr_cobro_entrega = cobro_entrega
     guia.correccion = True
 
     db.commit()
@@ -409,3 +439,52 @@ def liquidar(payload: LiquidarRequest, db: Session = Depends(get_tenant_db), cur
         declarado=payload.declarado,
     )
     return LiquidarResponse(**resultado)
+
+@router.post("/reliquidar", response_model=ReliquidarResponse)
+def reliquidar(payload: ReliquidarRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    guia = db.query(Guia).filter(Guia.codigo_guia_pk == payload.codigo_guia_pk).first()
+    if not guia:
+        raise HTTPException(status_code=404, detail="Guía no encontrada")
+
+    if guia.estado_facturado:
+        raise HTTPException(status_code=409, detail="La guía se encuentra facturada, no se puede reliquidar")
+
+    if not guia.fecha_ingreso:
+        raise HTTPException(status_code=409, detail="La guía no tiene fecha de ingreso, no se puede validar el periodo de cierre")
+
+    anio = guia.fecha_ingreso.year
+    mes = guia.fecha_ingreso.month
+    cierre = db.query(Cierre).filter(Cierre.anio == anio, Cierre.mes == mes).first()
+    if not cierre:
+        raise HTTPException(status_code=409, detail=f"No existe el periodo de cierre {anio} {mes}")
+    if cierre.estado_autorizado:
+        raise HTTPException(status_code=409, detail=f"El cierre {anio} {mes} ya esta autorizado y no se puede reliquidar la guía")
+
+    tipo_liquidacion = payload.tipo_liquidacion or guia.tipo_liquidacion or "K"
+    tercero = guia.tercero
+    resultado = guia_service.liquidar(
+        db,
+        tercero=guia.codigo_tercero_fk,
+        condicion_id=tercero.codigo_condicion_fk if tercero else None,
+        precio=tercero.condicion_codigo_precio_fk if tercero else None,
+        origen=guia.codigo_ciudad_origen_fk,
+        destino=guia.codigo_ciudad_destino_fk,
+        producto=guia.codigo_producto_fk,
+        zona=payload.zona or guia.codigo_zona_fk,
+        tipo_liquidacion=tipo_liquidacion,
+        unidades=guia.unidades,
+        peso=guia.peso_real,
+        volumen=guia.peso_volumen,
+        declarado=guia.vr_declara,
+    )
+
+    guia.tipo_liquidacion = tipo_liquidacion
+    guia.peso_facturado = resultado["peso_facturado"]
+    guia.vr_flete = resultado["flete"]
+    guia.vr_manejo = resultado["manejo"]
+    guia.correccion = True
+
+    db.commit()
+    db.refresh(guia)
+
+    return guia

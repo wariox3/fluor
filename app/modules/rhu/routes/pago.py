@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, contains_eager
 from typing import Optional
 from sqlalchemy import func
 from io import BytesIO
@@ -10,6 +10,7 @@ from app.modules.rhu.formats import pago_pdf
 from app.modules.rhu.models.pago import Pago
 from app.modules.rhu.models.pago_tipo import PagoTipo
 from app.modules.rhu.models.pago_detalle import PagoDetalle
+from app.modules.rhu.models.concepto import Concepto
 from app.modules.rhu.models.contrato import Contrato
 from app.modules.rhu.models.empleado import Empleado
 from app.modules.gen.models.configuracion import Configuracion
@@ -78,9 +79,10 @@ def imprimir(pago_id: int, db: Session = Depends(get_tenant_db), current_user: d
         raise HTTPException(status_code=404, detail="Pago no encontrado")
     detalles = (
         db.query(PagoDetalle)
-        .options(joinedload(PagoDetalle.concepto))
+        .outerjoin(PagoDetalle.concepto)
+        .options(contains_eager(PagoDetalle.concepto))
         .filter(PagoDetalle.codigo_pago_fk == pago_id)
-        .order_by(PagoDetalle.codigo_concepto_fk)
+        .order_by(Concepto.orden.asc(), PagoDetalle.codigo_concepto_fk)
         .all()
     )
     programacion = []
@@ -91,11 +93,12 @@ def imprimir(pago_id: int, db: Session = Depends(get_tenant_db), current_user: d
             .all()
         )
     config = (
-        db.query(Configuracion.mostrar_programacion_impresion_pago)
+        db.query(Configuracion.mostrar_programacion_impresion_pago, Configuracion.omitir_porcentaje_formato_pago)
         .first()
     )
     mostrar_prog = config[0] if config else 1
-    pdf_bytes = pago_pdf.generar(pago, detalles, db, programacion, mostrar_prog)
+    omitir_porcentaje = bool(config[1]) if config else False
+    pdf_bytes = pago_pdf.generar(pago, detalles, db, programacion, mostrar_prog, omitir_porcentaje)
     return StreamingResponse(
         BytesIO(pdf_bytes),
         media_type="application/pdf",
