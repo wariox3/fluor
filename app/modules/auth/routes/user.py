@@ -1,6 +1,6 @@
 import logging
 from app.core.rate_limit import limiter
-from fastapi import APIRouter, HTTPException, status, Depends, Request
+from fastapi import APIRouter, HTTPException, status, Depends, Request, Response
 from sqlalchemy.orm import Session, sessionmaker
 from typing import Optional
 from app.core.security import require_admin, get_current_user
@@ -54,7 +54,7 @@ def detalle(db: Session = Depends(get_master_db), current_user: dict = Depends(g
 
 @router.post("/nuevo", response_model=UserResponse, include_in_schema=False)
 @limiter.limit("5/minute")
-def nuevo(request: Request, data: UserCreate, db: Session = Depends(get_master_db), _: dict = Depends(require_admin)):
+def nuevo(request: Request, response: Response, data: UserCreate, db: Session = Depends(get_master_db), _: dict = Depends(require_admin)):
     existing_user = db.query(User).filter((User.email == data.email)).first()
     if existing_user:
         raise HTTPException(
@@ -76,7 +76,7 @@ def nuevo(request: Request, data: UserCreate, db: Session = Depends(get_master_d
 
 @router.post("/registrar", response_model=RegisterResponse, include_in_schema=False)
 @limiter.limit("3/minute")
-def registrar(request: Request, data: RegisterRequest, db: Session = Depends(get_master_db)):
+def registrar(request: Request, response: Response, data: RegisterRequest, db: Session = Depends(get_master_db)):
     verify_turnstile(data.turnstile_token)
 
     existing_user = db.query(User).filter(User.email == data.email).first()
@@ -124,7 +124,7 @@ def registrar(request: Request, data: RegisterRequest, db: Session = Depends(get
 
 @router.post("/recuperar-clave", include_in_schema=False)
 @limiter.limit("3/minute")
-def recuperar_clave(request: Request, data: RecuperarClaveRequest, db: Session = Depends(get_master_db)):
+def recuperar_clave(request: Request, response: Response, data: RecuperarClaveRequest, db: Session = Depends(get_master_db)):
     verify_turnstile(data.turnstile_token)
 
     user = db.query(User).filter(User.email == data.email).first()
@@ -162,7 +162,7 @@ def recuperar_clave(request: Request, data: RecuperarClaveRequest, db: Session =
 
 @router.post("/restablecer-clave", include_in_schema=False)
 @limiter.limit("5/minute")
-def restablecer_clave(request: Request, data: RestablecerClaveRequest, db: Session = Depends(get_master_db)):
+def restablecer_clave(request: Request, response: Response, data: RestablecerClaveRequest, db: Session = Depends(get_master_db)):
     verify_turnstile(data.turnstile_token)
 
     verificacion = db.query(Verificacion).filter(
@@ -184,7 +184,7 @@ def restablecer_clave(request: Request, data: RestablecerClaveRequest, db: Sessi
 
 @router.get("/verificar", include_in_schema=False)
 @limiter.limit("10/minute")
-def verificar(request: Request, token: str, db: Session = Depends(get_master_db)):
+def verificar(request: Request, response: Response, token: str, db: Session = Depends(get_master_db)):
     verificacion = db.query(Verificacion).filter(
         Verificacion.token == token,
         Verificacion.tipo.in_(TIPOS_VERIFICACION),
@@ -205,7 +205,7 @@ def verificar(request: Request, token: str, db: Session = Depends(get_master_db)
 
 @router.post("/reenviar-verificacion", include_in_schema=False)
 @limiter.limit("1/minute")
-def reenviar_verificacion(request: Request, data: ReenviarVerificacionRequest, db: Session = Depends(get_master_db)):
+def reenviar_verificacion(request: Request, response: Response, data: ReenviarVerificacionRequest, db: Session = Depends(get_master_db)):
     verify_turnstile(data.turnstile_token)
 
     user = db.query(User).filter(User.email == data.email).first()
@@ -233,7 +233,7 @@ def reenviar_verificacion(request: Request, data: ReenviarVerificacionRequest, d
 
 @router.post("/asociar", include_in_schema=False)
 @limiter.limit("10/minute")
-def asociar(request: Request, data: AsociarRequest, db: Session = Depends(get_master_db), current_user: dict = Depends(get_current_user),):
+def asociar(request: Request, response: Response, data: AsociarRequest, db: Session = Depends(get_master_db), current_user: dict = Depends(get_current_user),):
     if int(current_user.get("sub")) != data.usuario_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Estas tratando de cambiar informacion de otro usuario")
 

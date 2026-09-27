@@ -1,6 +1,6 @@
 from typing import List, Optional
 from app.core.rate_limit import limiter
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 from app.core.security import require_admin_control
 from app.modules.auth.schemas.api_key import ApiKeyCreate, ApiKeyResponse
@@ -12,7 +12,7 @@ router = APIRouter()
 
 @router.post("/nuevo", include_in_schema=False)
 @limiter.limit("5/minute")
-def nuevo(request: Request, data: ApiKeyCreate, db: Session = Depends(get_master_db), _: dict = Depends(require_admin_control)):
+def nuevo(request: Request, response: Response, data: ApiKeyCreate, db: Session = Depends(get_master_db), _: dict = Depends(require_admin_control)):
     prefix, api_key = generate_api_key()
     key = ApiKey(
         name=data.name,
@@ -41,7 +41,7 @@ def lista(page: int = 1, size: int = 50, tenant_id: Optional[str] = None, db: Se
 
 @router.delete("/eliminar/{api_key_id}", include_in_schema=False)
 @limiter.limit("5/minute")
-def eliminar(request: Request, api_key_id: int, db: Session = Depends(get_master_db), _: dict = Depends(require_admin_control)):
+def eliminar(request: Request, response: Response, api_key_id: int, db: Session = Depends(get_master_db), _: dict = Depends(require_admin_control)):
     key = db.query(ApiKey).filter(ApiKey.id == api_key_id).first()
     if not key:
         raise HTTPException(status_code=404, detail="API Key no encontrada")

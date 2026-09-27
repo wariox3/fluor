@@ -1,4 +1,4 @@
-from app.core.rate_limit import limiter
+from app.core.rate_limit import limiter, login_bloqueado, registrar_login_fallido, reiniciar_login_fallido
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from sqlalchemy.orm import Session
 from app.core.security import verify_password, create_access_token, create_refresh_token, decode_refresh_token, get_current_user_from_token
@@ -13,15 +13,24 @@ router = APIRouter()
 @router.post("/login", response_model=LoginResponse, response_model_exclude_none=True, include_in_schema=False)
 @limiter.limit("5/minute")
 def login(request: Request, data: LoginRequest, response: Response, db: Session = Depends(get_master_db)):    
+    if login_bloqueado(data.email):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiados intentos fallidos para esta cuenta. Intenta de nuevo en unos minutos."
+        )
+
     if data.client_type not in ("integration", "api"):
         verify_turnstile(data.turnstile_token)
 
     user = db.query(User).options(joinedload(User.tenant)).filter(User.email == data.email).first()
     if not user or not verify_password(data.password, user.password_hash):
+        registrar_login_fallido(data.email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales inválidas"
         )
+
+    reiniciar_login_fallido(data.email)
 
     if not user.is_verified:
         raise HTTPException(
