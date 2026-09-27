@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.core.master_database import get_master_db
 from app.core.rate_limit import limiter
+from app.core.security import require_admin_control
 from app.modules.auth.models.tenant import Tenant
 from app.modules.auth.schemas.tenant import TenantResponse, TenantListResponse
 
@@ -11,7 +12,7 @@ router = APIRouter()
 
 
 @router.get("/lista", response_model=TenantListResponse, include_in_schema=False)
-def lista(page: int = 1, size: int = 50, db: Session = Depends(get_master_db)):
+def lista(page: int = 1, size: int = 50, db: Session = Depends(get_master_db), _: dict = Depends(require_admin_control)):
     query = db.query(Tenant)
     total = query.with_entities(func.count(Tenant.id)).scalar()
     offset = (page - 1) * size

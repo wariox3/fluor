@@ -31,7 +31,7 @@ def nuevo(request: Request, data: ApiKeyCreate, db: Session = Depends(get_master
     }
 
 @router.get("/lista", response_model=List[ApiKeyResponse], include_in_schema=False)
-def lista(page: int = 1, size: int = 50, tenant_id: Optional[str] = None, db: Session = Depends(get_master_db)):
+def lista(page: int = 1, size: int = 50, tenant_id: Optional[str] = None, db: Session = Depends(get_master_db), _: dict = Depends(require_admin_control)):
     offset = (page - 1) * size
     query = db.query(ApiKey)    
     if tenant_id:
