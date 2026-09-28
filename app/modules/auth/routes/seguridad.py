@@ -38,6 +38,12 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
             detail={"message": "Cuenta no verificada", "is_verified": False}
         )
 
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Usuario inactivo"
+        )
+
     token_data = {
         "sub": str(user.id),
         "tenant_id": user.tenant_id,
@@ -89,7 +95,7 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
 
 @router.post("/refresh", include_in_schema=False)
 @limiter.limit("10/minute")
-def refresh(request: Request, response: Response):
+def refresh(request: Request, response: Response, db: Session = Depends(get_master_db)):
     token = request.cookies.get("refresh_token")
     if not token:
         raise HTTPException(
@@ -99,10 +105,18 @@ def refresh(request: Request, response: Response):
 
     payload = decode_refresh_token(token)
 
+    user = db.query(User).filter(User.id == int(payload["sub"])).first()
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuario inactivo"
+        )
+
     token_data = {
-        "sub": payload["sub"],
-        "tenant_id": payload.get("tenant_id"),
-        "role": payload.get("role"),
+        "sub": str(user.id),
+        "tenant_id": user.tenant_id,
+        "role": user.role,
+        "empleado_id": user.empleado_id
     }
 
     new_access_token = create_access_token(token_data)

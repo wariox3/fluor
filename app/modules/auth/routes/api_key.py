@@ -12,11 +12,12 @@ router = APIRouter()
 
 @router.post("/nuevo", include_in_schema=False)
 @limiter.limit("5/minute")
-def nuevo(request: Request, response: Response, data: ApiKeyCreate, db: Session = Depends(get_master_db), _: dict = Depends(require_admin_control)):
+def nuevo(request: Request, response: Response, data: ApiKeyCreate, db: Session = Depends(get_master_db), current_user: dict = Depends(require_admin_control)):
     prefix, api_key = generate_api_key()
     key = ApiKey(
         name=data.name,
         tenant_id=data.tenant_id,
+        usuario_id=int(current_user["sub"]),
         prefix=prefix,
         key_hash=hash_api_key(api_key)
     )

@@ -16,6 +16,7 @@ class ApiKey(Base):
     expires_at = Column(DateTime(timezone=True), nullable=True)
     last_used_at = Column(DateTime(timezone=True), nullable=True)
     tenant_id = Column(Integer, ForeignKey("tenant.id"), nullable=False)
+    usuario_id = Column(Integer, ForeignKey("user.id"), nullable=True)
 
     tenant = relationship(Tenant, back_populates="api_keys")
 
