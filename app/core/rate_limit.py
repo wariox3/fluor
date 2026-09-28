@@ -9,7 +9,7 @@ from slowapi import Limiter
 from sqlalchemy import or_
 from starlette.requests import Request
 
-from app.core.config import ALGORITHM, SECRET_KEY
+from app.core.config import ALGORITHM, REDIS_KEY_PREFIX, REDIS_URL, SECRET_KEY
 from app.core.master_database import SessionLocal
 from app.modules.auth.models.api_key import ApiKey
 
@@ -85,9 +85,33 @@ def get_rate_limit_key(request: Request) -> str:
     return f"ip:{get_client_ip(request)}"
 
 
+LIMITE_POR_DEFECTO = "10/minute"
+
+
+def _storage_config() -> tuple[str, dict]:
+    if not REDIS_URL:
+        return "memory://", {}
+    return REDIS_URL, {
+        # Quedan como "<prefijo>:ratelimit:LIMITS/...", aisladas de otros proyectos y entornos
+        "key_prefix": f"{REDIS_KEY_PREFIX}:ratelimit",
+        # Si Redis no responde rápido se pasa al respaldo en memoria en vez de colgar la petición
+        "socket_connect_timeout": 1,
+        "socket_timeout": 1,
+        "health_check_interval": 30,
+    }
+
+
+_storage_uri, _storage_options = _storage_config()
+
 limiter = Limiter(
     key_func=get_rate_limit_key,
-    default_limits=["10/minute"],
+    default_limits=[LIMITE_POR_DEFECTO],
+    storage_uri=_storage_uri,
+    storage_options=_storage_options,
+    # Si Redis cae, slowapi cuenta en memoria del proceso con este límite (ignora los
+    # límites propios de cada ruta) y reintenta Redis periódicamente hasta que vuelva.
+    in_memory_fallback_enabled=bool(REDIS_URL),
+    in_memory_fallback=[LIMITE_POR_DEFECTO] if REDIS_URL else [],
     # Agrega X-RateLimit-* a las respuestas y Retry-After a los 429. Las rutas con
     # @limiter.limit deben recibir `response: Response` para poder inyectarlos.
     headers_enabled=True,
@@ -103,13 +127,25 @@ def _email_normalizado(email: str) -> str:
     return email.strip().lower()
 
 
+# Si el almacenamiento falla (p. ej. Redis caído) no se bloquea el login: el límite
+# por IP de la ruta sigue activo vía el respaldo en memoria de slowapi.
 def login_bloqueado(email: str) -> bool:
-    return not limiter.limiter.test(LOGIN_FALLIDOS_LIMITE, "login_fallido", _email_normalizado(email))
+    try:
+        return not limiter.limiter.test(LOGIN_FALLIDOS_LIMITE, "login_fallido", _email_normalizado(email))
+    except Exception:
+        logger.warning("No se pudo consultar el contador de logins fallidos", exc_info=True)
+        return False
 
 
 def registrar_login_fallido(email: str) -> None:
-    limiter.limiter.hit(LOGIN_FALLIDOS_LIMITE, "login_fallido", _email_normalizado(email))
+    try:
+        limiter.limiter.hit(LOGIN_FALLIDOS_LIMITE, "login_fallido", _email_normalizado(email))
+    except Exception:
+        logger.warning("No se pudo registrar el login fallido", exc_info=True)
 
 
 def reiniciar_login_fallido(email: str) -> None:
-    limiter.limiter.clear(LOGIN_FALLIDOS_LIMITE, "login_fallido", _email_normalizado(email))
+    try:
+        limiter.limiter.clear(LOGIN_FALLIDOS_LIMITE, "login_fallido", _email_normalizado(email))
+    except Exception:
+        logger.warning("No se pudo reiniciar el contador de logins fallidos", exc_info=True)

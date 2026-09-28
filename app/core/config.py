@@ -26,7 +26,15 @@ DB_TIME_ZONE = config("DB_TIME_ZONE", default="-05:00")
 
 ZINC_URL = config("ZINC_URL", default="http://zinc.semantica.com.co")
 
-TURNSTILE_SECRET_KEY = config("TURNSTILE_SECRET_KEY", default="")
+# Redis (servicio gestionado) para el almacenamiento del rate limit.
+# Vacío = memoria local del proceso (solo desarrollo: cada worker cuenta por separado).
+# Con TLS usar rediss://usuario:clave@host:puerto/db
+REDIS_URL = config("REDIS_URL", default="")
+# La instancia de Redis es compartida con otros proyectos y entre pruebas/producción:
+# todas las claves de este proyecto llevan este prefijo para no chocar entre sí.
+REDIS_KEY_PREFIX = config("REDIS_KEY_PREFIX", default=f"fluor:{ENVIRONMENT}")
+
+TURNSTILE_SECRET_KEY =config("TURNSTILE_SECRET_KEY", default="")
 TURNSTILE_ENABLED = config("TURNSTILE_ENABLED", default=True, cast=bool)
 
 # WeasyPrint (generación de PDF por HTML) corre en un subproceso desechable
