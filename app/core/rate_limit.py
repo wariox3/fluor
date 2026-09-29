@@ -106,6 +106,9 @@ _storage_uri, _storage_options = _storage_config()
 limiter = Limiter(
     key_func=get_rate_limit_key,
     default_limits=[LIMITE_POR_DEFECTO],
+    # Cuenta por función de la ruta y no por URL: con "url" cada ID (/descargar/1, /descargar/2...)
+    # abría un contador propio y el límite no frenaba recorridos por ID.
+    key_style="endpoint",
     storage_uri=_storage_uri,
     storage_options=_storage_options,
     # Si Redis cae, slowapi cuenta en memoria del proceso con este límite (ignora los
