@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from typing import List
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.core.backblaze import b2_client
@@ -39,7 +38,7 @@ def lista(page: int = 1, size: int = 50, db: Session = Depends(get_tenant_db), c
     )
     return FicheroListResponse(total=total, page=page, size=size, items=ficheros)
 
-@router.get("/modelo/{codigo_modelo}/{codigo}", response_model=List[FicheroResponse])
+@router.get("/modelo/{codigo_modelo}/{codigo}", response_model=list[FicheroResponse])
 def modelo(codigo_modelo: str, codigo: str, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     ficheros = (
         db.query(Fichero)

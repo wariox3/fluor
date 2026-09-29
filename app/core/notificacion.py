@@ -1,10 +1,9 @@
 import asyncio
-from typing import Dict
 from sqlalchemy.orm import Session
 from app.modules.auth.models.notificacion import Notificacion
 
 # Colas SSE por usuario_id
-_colas: Dict[int, asyncio.Queue] = {}
+_colas: dict[int, asyncio.Queue] = {}
 
 
 def registrar_cola(usuario_id: int) -> asyncio.Queue:

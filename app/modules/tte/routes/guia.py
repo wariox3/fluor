@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session, joinedload
-from typing import List, Optional
+from typing import Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.core.config import DEFAULT_EMPRESA_ID
@@ -166,7 +166,7 @@ def estado(guia: int, db: Session = Depends(get_tenant_db), current_user: dict =
 
     return guia
 
-@router.post("/estado-masivo", response_model=List[GuiaEstadoResponse])
+@router.post("/estado-masivo", response_model=list[GuiaEstadoResponse])
 def estado_masivo(payload: GuiasMasivoRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     resultados = db.query(Guia).filter(Guia.codigo_guia_pk.in_(payload.guias)).all()
 
@@ -175,7 +175,7 @@ def estado_masivo(payload: GuiasMasivoRequest, db: Session = Depends(get_tenant_
 
     return resultados
 
-@router.get("/estado-por-fecha", response_model=List[GuiaEstadoResponse])
+@router.get("/estado-por-fecha", response_model=list[GuiaEstadoResponse])
 def estado_por_fecha(
     fecha_desde: date,
     fecha_hasta: date,
@@ -220,7 +220,7 @@ def estado_documento(codigo_tercero: int, documento_cliente: str, db: Session = 
 
     return guia
 
-@router.post("/estado-documento-masivo", response_model=List[GuiaEstadoResponse])
+@router.post("/estado-documento-masivo", response_model=list[GuiaEstadoResponse])
 def estado_documento_masivo(payload: GuiasDocumentoMasivoRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     stmt = (
         select(Guia)

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional, Annotated
+from typing import Optional, Annotated
 
 from pydantic import BaseModel, Field
 
@@ -129,12 +129,12 @@ class GuiaIngresoResponse(BaseModel):
 
 
 class GuiasMasivoRequest(BaseModel):
-    guias: Annotated[List[int], Field(min_length=1, max_length=1000)]
+    guias: Annotated[list[int], Field(min_length=1, max_length=1000)]
 
 
 class GuiasDocumentoMasivoRequest(BaseModel):
     codigo_tercero: int
-    documentos: Annotated[List[str], Field(min_length=1, max_length=1000)]
+    documentos: Annotated[list[str], Field(min_length=1, max_length=1000)]
 
 
 class LiquidarRequest(BaseModel):
@@ -217,7 +217,7 @@ class GuiaListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[GuiaResponse]
+    items: list[GuiaResponse]
 
 
 class GuiaEstadoResponse(BaseModel):

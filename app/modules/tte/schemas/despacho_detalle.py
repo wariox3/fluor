@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -41,7 +41,7 @@ class DespachoDetalleListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[DespachoDetalleResponse]
+    items: list[DespachoDetalleResponse]
 
 
 class DespachoDetalleGuiaResponse(BaseModel):

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import Optional
 from datetime import datetime, date
 from typing import Literal
 
@@ -28,7 +28,7 @@ class MovimientoDetalleListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[MovimientoDetalleResponse]
+    items: list[MovimientoDetalleResponse]
 
 class MovimientoDetalleCreate(BaseModel):
     codigo_item_fk: Optional[int] = None

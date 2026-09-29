@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from typing import List
 
 
 class CiudadResponse(BaseModel):
@@ -13,5 +12,5 @@ class CiudadListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[CiudadResponse]
+    items: list[CiudadResponse]
        

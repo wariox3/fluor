@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session, aliased
-from typing import List, Optional
+from typing import Optional
 
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
@@ -55,7 +55,7 @@ def detalle(codigo_despacho_detalle_pk: int, db: Session = Depends(get_tenant_db
     return despacho_detalle
 
 
-@router.get("/guia/{codigo_guia_fk}", response_model=List[DespachoDetalleGuiaResponse])
+@router.get("/guia/{codigo_guia_fk}", response_model=list[DespachoDetalleGuiaResponse])
 def guia(codigo_guia_fk: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     ciudad_origen = aliased(Ciudad)
     ciudad_destino = aliased(Ciudad)

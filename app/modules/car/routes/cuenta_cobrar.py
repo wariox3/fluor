@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from typing import List, Optional
+from typing import Optional
 from datetime import date
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user

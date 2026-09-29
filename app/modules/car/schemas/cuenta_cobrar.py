@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 from datetime import datetime
 
 
@@ -13,13 +13,13 @@ class CuentaCobrarListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[CuentaCobrarResponse]
+    items: list[CuentaCobrarResponse]
 
 class CuentaCobrarPendienteResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List["CuentaCobrarItem"]
+    items: list["CuentaCobrarItem"]
 
 
 class CuentaCobrarItem(BaseModel):

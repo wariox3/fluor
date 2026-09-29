@@ -1,6 +1,6 @@
 from pydantic import BaseModel, field_validator
 from datetime import time, timedelta
-from typing import List, Optional
+from typing import Optional
 
 
 class ProgramacionResponse(BaseModel):
@@ -93,7 +93,7 @@ class ProgramacionListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[ProgramacionResponse]
+    items: list[ProgramacionResponse]
 
 
 class ProgramacionItem(BaseModel):

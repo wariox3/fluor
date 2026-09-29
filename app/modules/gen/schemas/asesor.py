@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 
 
 class AsesorResponse(BaseModel):
@@ -18,4 +18,4 @@ class AsesorListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[AsesorResponse]
+    items: list[AsesorResponse]

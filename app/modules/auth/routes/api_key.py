@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 from app.core.rate_limit import limiter
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.orm import Session
@@ -31,7 +31,7 @@ def nuevo(request: Request, response: Response, data: ApiKeyCreate, db: Session 
         "warning": "Guarda esta API Key, no podrá ser recuperada después"
     }
 
-@router.get("/lista", response_model=List[ApiKeyResponse], include_in_schema=False)
+@router.get("/lista", response_model=list[ApiKeyResponse], include_in_schema=False)
 def lista(page: int = 1, size: int = 50, tenant_id: Optional[str] = None, db: Session = Depends(get_master_db), _: dict = Depends(require_admin_control)):
     offset = (page - 1) * size
     query = db.query(ApiKey)    

@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 from datetime import datetime
 
 
@@ -37,7 +37,7 @@ class ProgramacionReporteListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[ProgramacionReporteResponse]
+    items: list[ProgramacionReporteResponse]
 
 class ProgramacionReporteItem(BaseModel):
     codigo_programacion_reporte_pk: int

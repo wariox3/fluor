@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 
 
 class FormatoContenidoUpdate(BaseModel):
@@ -36,4 +36,4 @@ class FormatoListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[FormatoResponse]
+    items: list[FormatoResponse]

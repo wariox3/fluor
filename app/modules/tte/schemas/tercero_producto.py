@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -17,4 +17,4 @@ class TerceroProductoListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[TerceroProductoResponse]
+    items: list[TerceroProductoResponse]

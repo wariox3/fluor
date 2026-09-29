@@ -1,5 +1,5 @@
 from pydantic import BaseModel, model_validator
-from typing import Any, List, Optional
+from typing import Any, Optional
 from datetime import datetime
 from app.modules.gen.schemas.enlace import EnlaceResponse
 from app.modules.doc.schemas.fichero import FicheroResponse
@@ -14,8 +14,8 @@ class CapacitacionDetalleResponse(BaseModel):
     capacitacion_fecha_capacitacion: Optional[datetime] = None
     capacitacion_lugar: Optional[str] = None
     capacitacion_contenido: Optional[str] = None
-    enlaces: List[EnlaceResponse] = []
-    ficheros: List[FicheroResponse] = []
+    enlaces: list[EnlaceResponse] = []
+    ficheros: list[FicheroResponse] = []
 
     model_config = {"from_attributes": True}
 
@@ -37,4 +37,4 @@ class CapacitacionDetalleListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[CapacitacionDetalleResponse]
+    items: list[CapacitacionDetalleResponse]

@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 
 class PagoBase(BaseModel):
     codigo_empleado_fk: int
@@ -32,4 +32,4 @@ class PagoListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[PagoResponse]       
+    items: list[PagoResponse]       

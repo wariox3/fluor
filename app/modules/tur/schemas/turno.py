@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 from datetime import time
 
 
@@ -43,8 +43,8 @@ class TurnoListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[TurnoResponse]
+    items: list[TurnoResponse]
 
 
 class TurnoProgramacionRequest(BaseModel):
-    turnos: List[str]
+    turnos: list[str]

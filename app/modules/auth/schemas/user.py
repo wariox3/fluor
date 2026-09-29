@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, field_validator
-from typing import Literal, Optional, List
+from typing import Literal, Optional
 
 from app.modules.auth.models.user import UserRole
 
@@ -105,4 +105,4 @@ class UserListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[UserResponse]        
+    items: list[UserResponse]        

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 import calendar
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import text, func
-from typing import List, Optional
+from typing import Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.tur.models.programacion import Programacion
@@ -51,7 +51,7 @@ def lista(page: int = 1, size: int = 50, empleado_id: Optional[int] = None, terc
     )
 
 
-@router.get("/empleado", response_model=List[ProgramacionItem])
+@router.get("/empleado", response_model=list[ProgramacionItem])
 def empleado(empleado_id: int, anio: int, mes: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user),):
     mostrar_programacion = db.query(Configuracion.mostrar_programacion).scalar()
     if not mostrar_programacion:
@@ -80,7 +80,7 @@ def empleado(empleado_id: int, anio: int, mes: int, db: Session = Depends(get_te
 
 
 
-@router.get("/dia", response_model=List[ProgramacionDiaItem])
+@router.get("/dia", response_model=list[ProgramacionDiaItem])
 def dia(anio: int, mes: int = Query(..., ge=1, le=12), dia: int = Query(..., ge=1, le=31), codigo_zona_fk: Optional[str] = None, codigo_cargo_fk: Optional[str] = None, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     if dia > calendar.monthrange(anio, mes)[1]:
         raise HTTPException(status_code=400, detail=f"El mes {mes} de {anio} no tiene dia {dia}")

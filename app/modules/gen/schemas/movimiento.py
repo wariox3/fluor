@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import Optional
 from datetime import datetime, date
 from typing import Literal, Optional
 from app.modules.gen.schemas.movimiento_detalle import MovimientoDetalleCreate, MovimientoDetalleResponse
@@ -82,14 +82,14 @@ class MovimientoResponse(BaseModel):
     vr_base_impuesto_industria_comercio: Optional[float] = 0.0
     codigo_empresa_fk: int
     codigo_interface: Optional[str] = None
-    detalles: Optional[List[MovimientoDetalleResponse]] = None
+    detalles: Optional[list[MovimientoDetalleResponse]] = None
 
 
 class MovimientoListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[MovimientoResponse]
+    items: list[MovimientoResponse]
 
 class MovimientoCreate(BaseModel):
     codigo_tercero_fk: int
@@ -104,7 +104,7 @@ class MovimientoCreate(BaseModel):
     plazo_pago: int
     fecha: datetime
     fecha_vence: date
-    detalles: List[MovimientoDetalleCreate] = []
+    detalles: list[MovimientoDetalleCreate] = []
 
 class MovimientoActualizarInterface(BaseModel):
     codigo_interface: str | None = None    

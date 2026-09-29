@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from typing import List
 
 
 class ProgramacionReporteTipoResponse(BaseModel):
@@ -14,4 +13,4 @@ class ProgramacionReporteTipoListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[ProgramacionReporteTipoResponse]
+    items: list[ProgramacionReporteTipoResponse]

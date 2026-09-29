@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 from datetime import datetime
 
 
@@ -28,5 +28,5 @@ class FicheroListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[FicheroResponse]
+    items: list[FicheroResponse]
        

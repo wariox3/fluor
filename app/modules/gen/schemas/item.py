@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import Optional
 
 
 class ItemResponse(BaseModel):
@@ -72,7 +72,7 @@ class ItemListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[ItemResponse]
+    items: list[ItemResponse]
 
 
 class ItemCreate(BaseModel):

@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 from datetime import date
 
 
@@ -24,7 +24,7 @@ class EmpleadoListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[EmpleadoResponse]
+    items: list[EmpleadoResponse]
 
 
 class EmpleadoDetalleVencimientoResponse(BaseModel):

@@ -1,6 +1,6 @@
 from datetime import date
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 
 
 class CreditoResponse(BaseModel):
@@ -45,4 +45,4 @@ class CreditoListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[CreditoResponse]
+    items: list[CreditoResponse]

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import Optional
 from datetime import datetime, date
 from typing import Literal, Optional
 from app.modules.gen.schemas.movimiento_detalle import MovimientoDetalleCreate, MovimientoDetalleResponse
@@ -13,7 +13,7 @@ class MovimientoTipoListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: List[MovimientoTipoResponse]
+    items: list[MovimientoTipoResponse]
 
 class MovimientoTipoCreate(BaseModel):
     codigo_movimiento_clase_fk: str

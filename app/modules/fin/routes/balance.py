@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from typing import List
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.fin.schemas.balance import CuentaBalanceItem, CentroCostoBalanceItem
@@ -62,13 +61,13 @@ SQL_BALANCE_CENTRO_COSTO = text("""
 """)
 
 
-@router.get("/centro-costo", response_model=List[CentroCostoBalanceItem])
+@router.get("/centro-costo", response_model=list[CentroCostoBalanceItem])
 def centro_costo(periodo_inicio: int, periodo_fin: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     rows = db.execute(SQL_BALANCE_CENTRO_COSTO, {"periodo_inicio": periodo_inicio, "periodo_fin": periodo_fin}).mappings().all()
     return [CentroCostoBalanceItem(**row) for row in rows]
 
 
-@router.get("/cuenta", response_model=List[CuentaBalanceItem])
+@router.get("/cuenta", response_model=list[CuentaBalanceItem])
 def cuenta(periodo_inicio: int, periodo_fin: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user),):
     rows = db.execute(SQL_BALANCE_CUENTA, {"periodo_inicio": periodo_inicio, "periodo_fin": periodo_fin}).mappings().all()
     return [CuentaBalanceItem(**row) for row in rows]
