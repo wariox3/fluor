@@ -17,7 +17,7 @@ from app.modules.tte.models.operacion import Operacion
 from app.modules.tte.models.producto import Producto
 from app.modules.tte.models.seguimiento import Seguimiento
 from app.modules.tte.models.servicio import Servicio
-from app.modules.tte.schemas.guia import GuiaCreateRequest, GuiaCreateResponse, GuiaCorreccionRequest, GuiaCorreccionResponse, GuiaListResponse, GuiaEstadoResponse, GuiaRecogidoRequest, GuiaRecogidoResponse, GuiaIngresoRequest, GuiaIngresoResponse, GuiasMasivoRequest, LiquidarRequest, LiquidarResponse, ReliquidarRequest, ReliquidarResponse
+from app.modules.tte.schemas.guia import GuiaCreateRequest, GuiaCreateResponse, GuiaCorreccionRequest, GuiaCorreccionResponse, GuiaListResponse, GuiaEstadoResponse, GuiaRecogidoRequest, GuiaRecogidoResponse, GuiaIngresoRequest, GuiaIngresoResponse, GuiasMasivoRequest, GuiasDocumentoMasivoRequest, LiquidarRequest, LiquidarResponse, ReliquidarRequest, ReliquidarResponse
 from app.modules.tte.services import guia as guia_service
 
 router = APIRouter()
@@ -219,6 +219,23 @@ def estado_documento(codigo_tercero: int, documento_cliente: str, db: Session = 
         raise HTTPException(status_code=404, detail="Guía no encontrada")
 
     return guia
+
+@router.post("/estado-documento-masivo", response_model=List[GuiaEstadoResponse])
+def estado_documento_masivo(payload: GuiasDocumentoMasivoRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    stmt = (
+        select(Guia)
+        .where(
+            Guia.codigo_tercero_fk == payload.codigo_tercero,
+            Guia.documento_cliente.in_(payload.documentos)
+        )
+        .order_by(Guia.codigo_guia_pk)
+    )
+    resultados = db.execute(stmt).scalars().all()
+
+    if not resultados:
+        raise HTTPException(status_code=404, detail="Ninguna guía encontrada")
+
+    return resultados
 
 @router.get("/imprimir-rotulo")
 def imprimir_rotulo(

@@ -132,6 +132,11 @@ class GuiasMasivoRequest(BaseModel):
     guias: Annotated[List[int], Field(min_length=1, max_length=1000)]
 
 
+class GuiasDocumentoMasivoRequest(BaseModel):
+    codigo_tercero: int
+    documentos: Annotated[List[str], Field(min_length=1, max_length=1000)]
+
+
 class LiquidarRequest(BaseModel):
     tercero: int
     condicion: Optional[int] = None

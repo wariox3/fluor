@@ -1,6 +1,7 @@
 import ipaddress
 import logging
 import time
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from threading import Lock
 
@@ -85,6 +86,10 @@ def get_rate_limit_key(request: Request) -> str:
     Solo se usa una identidad verificada (firma del JWT o prefijo activo); si no,
     se cae a la IP para que tokens o prefijos inventados no abran contadores nuevos.
     """
+    # Ya calculada por identificar_cliente; evita decodificar el JWT dos veces
+    identidad = getattr(request.state, "rate_limit_key", None)
+    if identidad:
+        return identidad
     authorization = request.headers.get("Authorization", "")
     if authorization.lower().startswith("bearer "):
         sub = _sub_desde_jwt(authorization[7:].strip())
@@ -106,7 +111,36 @@ def get_rate_limit_key(request: Request) -> str:
     return f"ip:{_ip_para_limite(get_client_ip(request))}"
 
 
-LIMITE_POR_DEFECTO = "10/minute"
+# Límite por defecto según la identidad: las peticiones anónimas cuentan por IP y se
+# frenan más; los usuarios y API keys verificados necesitan margen para integraciones
+# que consultan en lote (p. ej. estado de guías desde Apps Script o PHP).
+LIMITE_ANONIMO = "10/minute"
+LIMITE_AUTENTICADO = "120/minute"
+
+_identidad_actual: ContextVar[str] = ContextVar("rate_limit_identidad", default="")
+
+
+async def identificar_cliente(request: Request, call_next):
+    """Middleware que calcula la identidad antes de SlowAPIMiddleware.
+
+    slowapi 0.1.9 no le pasa el request a los límites por defecto dinámicos, así que
+    _limite_por_defecto la lee de este ContextVar. Debe registrarse después de
+    SlowAPIMiddleware para quedar por fuera de él.
+    """
+    identidad = get_rate_limit_key(request)
+    request.state.rate_limit_key = identidad
+    token = _identidad_actual.set(identidad)
+    try:
+        return await call_next(request)
+    finally:
+        _identidad_actual.reset(token)
+
+
+def _limite_por_defecto() -> str:
+    # Sin identidad (middleware no registrado) se aplica el límite más estricto
+    if _identidad_actual.get().startswith(("user:", "apikey:")):
+        return LIMITE_AUTENTICADO
+    return LIMITE_ANONIMO
 
 
 def _storage_config() -> tuple[str, dict]:
@@ -126,7 +160,7 @@ _storage_uri, _storage_options = _storage_config()
 
 limiter = Limiter(
     key_func=get_rate_limit_key,
-    default_limits=[LIMITE_POR_DEFECTO],
+    default_limits=[_limite_por_defecto],
     # Cuenta por función de la ruta y no por URL: con "url" cada ID (/descargar/1, /descargar/2...)
     # abría un contador propio y el límite no frenaba recorridos por ID.
     key_style="endpoint",
@@ -135,7 +169,7 @@ limiter = Limiter(
     # Si Redis cae, slowapi cuenta en memoria del proceso con este límite (ignora los
     # límites propios de cada ruta) y reintenta Redis periódicamente hasta que vuelva.
     in_memory_fallback_enabled=bool(REDIS_URL),
-    in_memory_fallback=[LIMITE_POR_DEFECTO] if REDIS_URL else [],
+    in_memory_fallback=[_limite_por_defecto] if REDIS_URL else [],
     # Agrega X-RateLimit-* a las respuestas y Retry-After a los 429. Las rutas con
     # @limiter.limit deben recibir `response: Response` para poder inyectarlos.
     headers_enabled=True,
