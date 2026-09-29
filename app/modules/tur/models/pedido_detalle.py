@@ -78,3 +78,9 @@ class PedidoDetalle(Base):
         primaryjoin="foreign(PedidoDetalle.codigo_pedido_fk) == Pedido.codigo_pedido_pk",
         viewonly=True,
     )
+
+    modalidad_rel = relationship(
+        "Modalidad",
+        primaryjoin="foreign(PedidoDetalle.codigo_modalidad_fk) == Modalidad.codigo_modalidad_pk",
+        viewonly=True,
+    )

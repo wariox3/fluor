@@ -39,6 +39,7 @@ def lista(page: int = 1, size: int = 50, empleado_id: Optional[int] = None, terc
             joinedload(Programacion.contrato_rel).joinedload(Contrato.cargo_rel),
             joinedload(Programacion.contrato_rel).joinedload(Contrato.grupo_rel),
             joinedload(Programacion.pedido_detalle_rel).joinedload(PedidoDetalle.pedido_rel).joinedload(Pedido.tercero_rel),
+            joinedload(Programacion.pedido_detalle_rel).joinedload(PedidoDetalle.modalidad_rel),
         )
         .order_by(Programacion.codigo_programacion_pk.desc())
         .offset(offset)

@@ -61,6 +61,8 @@ class ProgramacionResponse(BaseModel):
     cargo_nombre: Optional[str] = None
     grupo_nombre: Optional[str] = None
     estado_contrato: Optional[bool] = None
+    codigo_modalidad_fk: Optional[str] = None
+    modalidad_nombre: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -82,6 +84,10 @@ class ProgramacionResponse(BaseModel):
                 data.cargo_nombre = obj.contrato_rel.cargo_rel.nombre
             if obj.contrato_rel.grupo_rel:
                 data.grupo_nombre = obj.contrato_rel.grupo_rel.nombre
+        if obj.pedido_detalle_rel:
+            data.codigo_modalidad_fk = obj.pedido_detalle_rel.codigo_modalidad_fk
+            if obj.pedido_detalle_rel.modalidad_rel:
+                data.modalidad_nombre = obj.pedido_detalle_rel.modalidad_rel.nombre
         if obj.pedido_detalle_rel and obj.pedido_detalle_rel.pedido_rel:
             data.codigo_tercero_fk = obj.pedido_detalle_rel.pedido_rel.codigo_tercero_fk
             if obj.pedido_detalle_rel.pedido_rel.tercero_rel:
