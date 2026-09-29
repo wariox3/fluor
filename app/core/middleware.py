@@ -18,7 +18,7 @@ _STATUS_CODES = {
 }
 
 
-def _error_response(status_code: int, detail, request_id: str) -> JSONResponse:
+def _error_response(status_code: int, detail, request_id: str, headers: dict | None = None) -> JSONResponse:
     code = _STATUS_CODES.get(status_code, "ERROR")
 
     if isinstance(detail, dict):
@@ -32,6 +32,7 @@ def _error_response(status_code: int, detail, request_id: str) -> JSONResponse:
     return JSONResponse(
         status_code=status_code,
         content={"success": False, "error": error, "request_id": request_id},
+        headers=headers,
     )
 
 
@@ -40,7 +41,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
     logger.warning(
         f"HTTP {exc.status_code} | {request.method} {request.url} | {exc.detail} | request_id={request_id}"
     )
-    return _error_response(exc.status_code, exc.detail, request_id)
+    return _error_response(exc.status_code, exc.detail, request_id, getattr(exc, "headers", None))
 
 
 class ErrorHandlingMiddleware:

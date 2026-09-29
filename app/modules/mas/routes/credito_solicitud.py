@@ -4,7 +4,7 @@ from sqlalchemy import func
 from datetime import date
 from typing import Optional
 from app.core.master_database import get_master_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user, get_current_user_from_token
 from app.modules.mas.models.credito_solicitud import CreditoSolicitud
 from app.modules.mas.schemas.credito_solicitud import (
     CreditoSolicitudListResponse,
@@ -42,7 +42,7 @@ def lista_portal(
     page: int = 1,
     size: int = 50,
     db: Session = Depends(get_master_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_from_token),
 ):
     usuario_id = int(current_user["sub"])
     query = db.query(CreditoSolicitud).filter(CreditoSolicitud.usuario_id == usuario_id)
@@ -68,7 +68,7 @@ def detalle(
 def nuevo(
     datos: CreditoSolicitudCrear,
     db: Session = Depends(get_master_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_from_token),
 ):
     solicitud = CreditoSolicitud(
         usuario_id=int(current_user["sub"]),

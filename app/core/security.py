@@ -84,7 +84,11 @@ def get_current_user(
         if not key or not verify_api_key(api_key, key.key_hash):
             raise HTTPException(status_code=401, detail="API Key inválida")
 
-        if key.expires_at and key.expires_at < datetime.now(timezone.utc):
+        # MySQL devuelve DATETIME sin zona horaria; el valor se guarda en UTC
+        expires_at = key.expires_at
+        if expires_at and expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if expires_at and expires_at < datetime.now(timezone.utc):
             raise HTTPException(status_code=401, detail="API Key expirada")
 
         key.last_used_at = datetime.now(timezone.utc)

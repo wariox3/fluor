@@ -5,7 +5,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.core.master_database import get_master_db
-from app.core.security import get_current_user, require_admin
+from app.core.security import get_current_user_from_token, require_admin
 from app.core.notificacion import registrar_cola, eliminar_cola, crear_notificacion
 from app.modules.auth.models.notificacion import Notificacion
 from app.modules.auth.schemas.notificacion import (
@@ -36,7 +36,7 @@ def crear(
 
 
 @router.get("/stream", include_in_schema=False)
-async def stream(current_user: dict = Depends(get_current_user)):
+async def stream(current_user: dict = Depends(get_current_user_from_token)):
     usuario_id = int(current_user["sub"])
     cola = registrar_cola(usuario_id)
 
@@ -69,7 +69,7 @@ def lista(
     size: int = 20,
     solo_no_leidas: bool = False,
     db: Session = Depends(get_master_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_from_token),
 ):
     usuario_id = int(current_user["sub"])
     query = db.query(Notificacion).filter(Notificacion.usuario_id == usuario_id)
@@ -84,7 +84,7 @@ def lista(
 @router.get("/contador", response_model=ContadorResponse, include_in_schema=False)
 def contador(
     db: Session = Depends(get_master_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_from_token),
 ):
     usuario_id = int(current_user["sub"])
     no_leidas = (
@@ -99,7 +99,7 @@ def contador(
 def leer(
     notificacion_id: int,
     db: Session = Depends(get_master_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_from_token),
 ):
     usuario_id = int(current_user["sub"])
     notif = db.query(Notificacion).filter(
@@ -117,7 +117,7 @@ def leer(
 @router.patch("/leer-todas", include_in_schema=False)
 def leer_todas(
     db: Session = Depends(get_master_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_from_token),
 ):
     usuario_id = int(current_user["sub"])
     db.query(Notificacion).filter(

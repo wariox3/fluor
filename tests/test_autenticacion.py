@@ -33,7 +33,6 @@ def test_sin_credenciales(client):
     assert client.get(ME).status_code == 401
 
 
-@pytest.mark.xfail(strict=True, reason="http_exception_handler descarta los headers de la HTTPException")
 def test_sin_credenciales_indica_www_authenticate(client):
     assert client.get(ME).headers.get("WWW-Authenticate") == "Bearer"
 
@@ -99,15 +98,36 @@ def test_api_key_inactiva(api_key_client, db, tenant):
     assert api_key_client.get("/protegida", headers={"X-API-Key": api_key}).status_code == 401
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=TypeError,
-    reason="MySQL/SQLite devuelven expires_at sin zona horaria y se compara con un datetime aware",
-)
 def test_api_key_expirada(api_key_client, db, tenant):
     api_key = crear_api_key(db, tenant, expires_at=datetime.now(timezone.utc) - timedelta(days=1))
     response = api_key_client.get("/protegida", headers={"X-API-Key": api_key})
     assert response.status_code == 401
+    assert response.json()["detail"] == "API Key expirada"
+
+
+def test_api_key_con_vencimiento_futuro(api_key_client, db, tenant):
+    api_key = crear_api_key(db, tenant, expires_at=datetime.now(timezone.utc) + timedelta(days=1))
+    assert api_key_client.get("/protegida", headers={"X-API-Key": api_key}).status_code == 200
+
+
+@pytest.mark.parametrize("metodo,ruta", [
+    ("get", "/auth/notificacion/lista"),
+    ("get", "/auth/notificacion/contador"),
+    ("patch", "/auth/notificacion/leer-todas"),
+    ("get", "/mas/credito-solicitud/lista-portal"),
+])
+def test_rutas_por_usuario_rechazan_api_key(client, db, tenant, metodo, ruta):
+    """Una API key no representa a un usuario: antes estas rutas fallaban con 500 en int(sub)."""
+    api_key = crear_api_key(db, tenant)
+    response = getattr(client, metodo)(ruta, headers={"X-API-Key": api_key})
+    assert response.status_code == 401
+
+
+def test_rutas_por_usuario_aceptan_jwt(client, db, tenant):
+    user = crear_usuario(db, tenant=tenant)
+    response = client.get("/auth/notificacion/contador", headers=auth_header(user))
+    assert response.status_code == 200
+    assert response.json() == {"no_leidas": 0}
 
 
 @pytest.mark.parametrize("role,esperado", [
