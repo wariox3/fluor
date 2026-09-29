@@ -232,7 +232,7 @@ def reenviar_verificacion(request: Request, response: Response, data: ReenviarVe
 
 
 @router.post("/asociar", include_in_schema=False)
-@limiter.limit("10/minute")
+@limiter.limit("20/minute")
 def asociar(request: Request, response: Response, data: AsociarRequest, db: Session = Depends(get_master_db), current_user: dict = Depends(get_current_user),):
     if int(current_user.get("sub")) != data.usuario_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Estas tratando de cambiar informacion de otro usuario")
