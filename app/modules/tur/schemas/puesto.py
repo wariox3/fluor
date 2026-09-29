@@ -8,6 +8,8 @@ class PuestoResponse(BaseModel):
     nombre_corto: Optional[str]
     zona_nombre: Optional[str]
     subzona_nombre: Optional[str]
+    area_nombre: Optional[str]
+    subarea_nombre: Optional[str]
 
     model_config = {"from_attributes": True}
 

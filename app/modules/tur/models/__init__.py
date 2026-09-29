@@ -7,3 +7,5 @@ from .programacion_respaldo import ProgramacionRespaldo
 from .factura import Factura
 from .factura_tipo import FacturaTipo
 from .modalidad import Modalidad
+from .area import TurArea
+from .subarea import TurSubarea

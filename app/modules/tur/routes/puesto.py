@@ -18,7 +18,12 @@ def lista(
     db: Session = Depends(get_tenant_db),
     current_user: dict = Depends(get_current_user),
 ):
-    query = db.query(Puesto).options(joinedload(Puesto.zona_rel), joinedload(Puesto.subzona_rel))
+    query = db.query(Puesto).options(
+        joinedload(Puesto.zona_rel),
+        joinedload(Puesto.subzona_rel),
+        joinedload(Puesto.area_rel),
+        joinedload(Puesto.subarea_rel),
+    )
     if puesto_id:
         query = query.filter(Puesto.codigo_puesto_pk == puesto_id)
     total = query.with_entities(func.count(Puesto.codigo_puesto_pk)).scalar()

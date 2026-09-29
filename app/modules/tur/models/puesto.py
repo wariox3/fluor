@@ -11,9 +11,13 @@ class Puesto(Base):
     nombre_corto = Column(String(300))
     codigo_zona_fk = Column(String(20), ForeignKey("tur_zona.codigo_zona_pk"), nullable=True)
     codigo_subzona_fk = Column(String(20), ForeignKey("tur_subzona.codigo_subzona_pk"), nullable=True)
+    codigo_area_fk = Column(String(20), ForeignKey("tur_area.codigo_area_pk"), nullable=True)
+    codigo_subarea_fk = Column(String(10), ForeignKey("tur_subarea.codigo_subarea_pk"), nullable=True)
 
     zona_rel = relationship("TurZona", foreign_keys=[codigo_zona_fk])
     subzona_rel = relationship("TurSubzona", foreign_keys=[codigo_subzona_fk])
+    area_rel = relationship("TurArea", foreign_keys=[codigo_area_fk])
+    subarea_rel = relationship("TurSubarea", foreign_keys=[codigo_subarea_fk])
 
     @property
     def zona_nombre(self) -> str | None:
@@ -22,3 +26,11 @@ class Puesto(Base):
     @property
     def subzona_nombre(self) -> str | None:
         return self.subzona_rel.nombre if self.subzona_rel else None
+
+    @property
+    def area_nombre(self) -> str | None:
+        return self.area_rel.nombre if self.area_rel else None
+
+    @property
+    def subarea_nombre(self) -> str | None:
+        return self.subarea_rel.nombre if self.subarea_rel else None
