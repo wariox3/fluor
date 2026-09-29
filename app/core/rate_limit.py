@@ -1,3 +1,4 @@
+import ipaddress
 import logging
 import time
 from datetime import datetime, timezone
@@ -28,6 +29,26 @@ def get_client_ip(request: Request) -> str:
     if forwarded_for:
         return forwarded_for.split(",")[0].strip()
     return request.client.host
+
+
+def _ip_para_limite(ip: str) -> str:
+    """IP normalizada para la clave del rate limit.
+
+    Las IPv6 se agrupan por su /64: los proveedores entregan un bloque completo por
+    cliente y, contando por dirección, bastaría rotar dentro del bloque para evadir
+    el límite. Los ':' se reemplazan por '-' porque en Redis son separador de
+    niveles y cada bloque de la IPv6 aparecía como una carpeta en RedisInsight.
+    """
+    try:
+        direccion = ipaddress.ip_address(ip)
+    except ValueError:
+        return ip.replace(":", "-")
+    if direccion.version == 6 and direccion.ipv4_mapped:
+        return str(direccion.ipv4_mapped)
+    if direccion.version == 6:
+        red = ipaddress.ip_network(f"{direccion}/64", strict=False)
+        return str(red).replace(":", "-").replace("/", "_")
+    return str(direccion)
 
 
 def _get_prefijos_activos() -> frozenset:
@@ -82,7 +103,7 @@ def get_rate_limit_key(request: Request) -> str:
         if sub:
             return f"user:{sub}"
 
-    return f"ip:{get_client_ip(request)}"
+    return f"ip:{_ip_para_limite(get_client_ip(request))}"
 
 
 LIMITE_POR_DEFECTO = "10/minute"
