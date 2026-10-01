@@ -45,6 +45,7 @@ def lista(page: int = 1, size: int = 50, empleado_id: Optional[int] = None, db: 
             codigo_empleado_fk=c.codigo_empleado_fk,
             codigo_tercero_fk=c.codigo_tercero_fk,
             codigo_contrato_tipo_fk=c.codigo_contrato_tipo_fk,
+            codigo_puesto_fk=c.codigo_puesto_fk,
             fecha_desde=c.fecha_desde,
             fecha_hasta=c.fecha_hasta,
             vr_salario=c.vr_salario,

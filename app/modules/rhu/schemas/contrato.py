@@ -17,6 +17,7 @@ class ContratoResponse(BaseModel):
     codigo_empleado_fk: int
     codigo_tercero_fk: Optional[int] = None
     codigo_contrato_tipo_fk: Optional[str] = None
+    codigo_puesto_fk: Optional[int] = None
     fecha_desde: Optional[date]
     fecha_hasta: Optional[date]
     vr_salario: Optional[float]
