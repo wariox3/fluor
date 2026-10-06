@@ -22,6 +22,7 @@ class TerceroResponse(BaseModel):
     codigo_condicion_fk: Optional[int] = None
     condicion_nombre: Optional[str] = None
     condicion_codigo_precio_fk: Optional[int] = None
+    codigo_operacion_fk: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

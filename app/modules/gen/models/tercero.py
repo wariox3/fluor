@@ -26,6 +26,7 @@ class Tercero(Base):
     codigo_forma_pago_fk = Column(String(10), nullable=True)
     codigo_asesor_fk = Column(Integer, ForeignKey("gen_asesor.codigo_asesor_pk"), nullable=True)
     codigo_condicion_fk = Column(Integer, ForeignKey("tte_condicion.codigo_condicion_pk"), nullable=True)
+    codigo_operacion_fk = Column(String(20), nullable=True)
 
     ciudad = relationship(Ciudad, foreign_keys=[codigo_ciudad_fk], backref="terceros_ciudad_rel")
     asesor = relationship(Asesor, foreign_keys=[codigo_asesor_fk], backref="terceros_asesor_rel")
