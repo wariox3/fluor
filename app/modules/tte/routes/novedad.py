@@ -1,9 +1,10 @@
 from datetime import date
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import Optional
 
+from app.core.rate_limit import limiter
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.tte.models.novedad import Novedad
@@ -14,7 +15,10 @@ router = APIRouter()
 
 
 @router.get("/lista", response_model=NovedadListResponse)
+@limiter.limit("10/minute")
 def lista(
+    request: Request,
+    response: Response,
     page: int = 1,
     size: int = 50,
     codigo_novedad_tipo_fk: Optional[str] = None,
