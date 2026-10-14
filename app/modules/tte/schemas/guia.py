@@ -237,5 +237,7 @@ class GuiaEstadoResponse(BaseModel):
     estado_novedad: bool
     estado_novedad_solucion: bool
     estado_anulado: bool
+    vr_recaudo: float
+    vr_cobro_entrega: float
 
     model_config = {"from_attributes": True}
