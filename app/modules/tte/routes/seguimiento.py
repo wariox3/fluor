@@ -11,11 +11,12 @@ from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.doc.models.fichero import Fichero
 from app.modules.tte.models.ciudad import Ciudad
+from app.modules.tte.models.despacho import Despacho
 from app.modules.tte.models.guia import Guia
 from app.modules.tte.models.operacion import Operacion
 from app.modules.tte.models.seguimiento import Seguimiento
 from app.modules.tte.models.seguimiento_tipo import SeguimientoTipo
-from app.modules.tte.schemas.seguimiento import SeguimientoCreateRequest, SeguimientoActualizarInterfaceRequest, SeguimientoResponse, SeguimientoListResponse, SeguimientoDetalleGuiaResponse, SeguimientoDetalleArchivoResponse
+from app.modules.tte.schemas.seguimiento import SeguimientoCreateRequest, SeguimientoActualizarInterfaceRequest, SeguimientoResponse, SeguimientoListItemResponse, SeguimientoListResponse, SeguimientoDetalleGuiaResponse, SeguimientoDetalleArchivoResponse
 
 router = APIRouter()
 
@@ -88,8 +89,35 @@ def lista(
         query = query.filter(Seguimiento.fecha_seguimiento < fecha_hasta + timedelta(days=1))
     total = query.with_entities(func.count(Seguimiento.codigo_seguimiento_pk)).scalar()
     offset = (page - 1) * size
-    seguimientos = query.order_by(Seguimiento.codigo_seguimiento_pk.desc()).offset(offset).limit(size).all()
-    return SeguimientoListResponse(total=total, page=page, size=size, items=seguimientos)
+    rows = (
+        query.add_columns(
+            SeguimientoTipo.nombre.label("seguimiento_tipo_nombre"),
+            Guia.fecha_ingreso.label("guia_fecha_ingreso"),
+            Guia.fecha_ingreso_operacion.label("guia_fecha_ingreso_operacion"),
+            Guia.documento_cliente.label("guia_documento_cliente"),
+            Guia.documento_cliente_tipo.label("guia_documento_cliente_tipo"),
+            Guia.nombre_destinatario.label("guia_nombre_destinatario"),
+            Guia.telefono_destinatario.label("guia_telefono_destinatario"),
+            Guia.codigo_tercero_operacion_fk.label("guia_codigo_tercero_operacion_fk"),
+            Guia.estado_interface_soporte.label("guia_estado_interface_soporte"),
+            Despacho.fecha_salida.label("guia_despacho_fecha_salida"),
+        )
+        .outerjoin(SeguimientoTipo, Seguimiento.codigo_seguimiento_tipo_fk == SeguimientoTipo.codigo_seguimiento_tipo_pk)
+        .outerjoin(Guia, Seguimiento.codigo_guia_fk == Guia.codigo_guia_pk)
+        .outerjoin(Despacho, Guia.codigo_despacho_fk == Despacho.codigo_despacho_pk)
+        .order_by(Seguimiento.codigo_seguimiento_pk.desc())
+        .offset(offset)
+        .limit(size)
+        .all()
+    )
+    items = [
+        SeguimientoListItemResponse(
+            **SeguimientoResponse.model_validate(row.Seguimiento).model_dump(),
+            **{campo: valor for campo, valor in row._mapping.items() if campo != "Seguimiento"},
+        )
+        for row in rows
+    ]
+    return SeguimientoListResponse(total=total, page=page, size=size, items=items)
 
 
 @router.get("/detalle/{codigo_seguimiento_pk}", response_model=SeguimientoResponse)

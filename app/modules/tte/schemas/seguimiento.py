@@ -37,11 +37,24 @@ class SeguimientoResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class SeguimientoListItemResponse(SeguimientoResponse):
+    seguimiento_tipo_nombre: Optional[str] = None
+    guia_fecha_ingreso: Optional[datetime] = None
+    guia_fecha_ingreso_operacion: Optional[datetime] = None
+    guia_documento_cliente: Optional[str] = None
+    guia_documento_cliente_tipo: Optional[str] = None
+    guia_nombre_destinatario: Optional[str] = None
+    guia_telefono_destinatario: Optional[str] = None
+    guia_codigo_tercero_operacion_fk: Optional[int] = None
+    guia_estado_interface_soporte: Optional[bool] = None
+    guia_despacho_fecha_salida: Optional[datetime] = None
+
+
 class SeguimientoListResponse(BaseModel):
     total: int
     page: int
     size: int
-    items: list[SeguimientoResponse]
+    items: list[SeguimientoListItemResponse]
 
 
 class SeguimientoDetalleGuiaResponse(BaseModel):
