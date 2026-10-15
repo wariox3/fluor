@@ -1,14 +1,18 @@
-from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
+from datetime import date, datetime, timedelta
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from sqlalchemy import func
 from sqlalchemy.orm import Session
+from typing import Optional
 
+from app.core.rate_limit import limiter
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
+from app.modules.tte.models.ciudad import Ciudad
 from app.modules.tte.models.guia import Guia
 from app.modules.tte.models.operacion import Operacion
 from app.modules.tte.models.seguimiento import Seguimiento
 from app.modules.tte.models.seguimiento_tipo import SeguimientoTipo
-from app.modules.tte.schemas.seguimiento import SeguimientoCreateRequest, SeguimientoResponse
+from app.modules.tte.schemas.seguimiento import SeguimientoCreateRequest, SeguimientoResponse, SeguimientoListResponse, SeguimientoDetalleGuiaResponse
 
 router = APIRouter()
 
@@ -44,3 +48,83 @@ def nuevo(payload: SeguimientoCreateRequest, db: Session = Depends(get_tenant_db
     db.refresh(seguimiento)
 
     return seguimiento
+
+
+@router.get("/lista", response_model=SeguimientoListResponse)
+@limiter.limit("10/minute")
+def lista(
+    request: Request,
+    response: Response,
+    page: int = 1,
+    size: int = 50,
+    codigo_guia_fk: Optional[int] = None,
+    codigo_seguimiento_tipo_fk: Optional[str] = None,
+    codigo_operacion_fk: Optional[str] = None,
+    estado_interface: Optional[bool] = None,
+    estado_descartado: Optional[bool] = None,
+    fecha_desde: Optional[date] = None,
+    fecha_hasta: Optional[date] = None,
+    db: Session = Depends(get_tenant_db),
+    current_user: dict = Depends(get_current_user),
+):
+    query = db.query(Seguimiento)
+    if codigo_guia_fk is not None:
+        query = query.filter(Seguimiento.codigo_guia_fk == codigo_guia_fk)
+    if codigo_seguimiento_tipo_fk is not None:
+        query = query.filter(Seguimiento.codigo_seguimiento_tipo_fk == codigo_seguimiento_tipo_fk)
+    if codigo_operacion_fk is not None:
+        query = query.filter(Seguimiento.codigo_operacion_fk == codigo_operacion_fk)
+    if estado_interface is not None:
+        query = query.filter(Seguimiento.estado_interface == estado_interface)
+    if estado_descartado is not None:
+        query = query.filter(Seguimiento.estado_descartado == estado_descartado)
+    if fecha_desde is not None:
+        query = query.filter(Seguimiento.fecha_seguimiento >= fecha_desde)
+    if fecha_hasta is not None:
+        # fecha_seguimiento es DateTime: se incluye el día completo de fecha_hasta
+        query = query.filter(Seguimiento.fecha_seguimiento < fecha_hasta + timedelta(days=1))
+    total = query.with_entities(func.count(Seguimiento.codigo_seguimiento_pk)).scalar()
+    offset = (page - 1) * size
+    seguimientos = query.order_by(Seguimiento.codigo_seguimiento_pk.desc()).offset(offset).limit(size).all()
+    return SeguimientoListResponse(total=total, page=page, size=size, items=seguimientos)
+
+
+@router.get("/detalle/{codigo_seguimiento_pk}", response_model=SeguimientoResponse)
+def detalle(codigo_seguimiento_pk: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    seguimiento = db.query(Seguimiento).filter(Seguimiento.codigo_seguimiento_pk == codigo_seguimiento_pk).first()
+
+    if not seguimiento:
+        raise HTTPException(status_code=404, detail="Seguimiento no encontrado")
+
+    return seguimiento
+
+
+@router.get("/detalle-guia/{codigo_seguimiento_pk}", response_model=SeguimientoDetalleGuiaResponse)
+def detalle_guia(codigo_seguimiento_pk: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    seguimiento = (
+        db.query(
+            Seguimiento.codigo_seguimiento_pk,
+            Seguimiento.codigo_seguimiento_tipo_fk,
+            Seguimiento.codigo_guia_fk,
+            Seguimiento.fecha,
+            Seguimiento.fecha_seguimiento,
+            Seguimiento.usuario,
+            Seguimiento.codigo_operacion_fk,
+            Seguimiento.comentario,
+            Seguimiento.datos,
+            Guia.documento_cliente.label("guia_documento_cliente"),
+            Guia.fecha_entrega.label("guia_fecha_entrega"),
+            SeguimientoTipo.nombre.label("seguimiento_tipo_nombre"),
+            Ciudad.codigo_municipio.label("ciudad_destino_codigo_municipio"),
+        )
+        .outerjoin(SeguimientoTipo, Seguimiento.codigo_seguimiento_tipo_fk == SeguimientoTipo.codigo_seguimiento_tipo_pk)
+        .outerjoin(Guia, Seguimiento.codigo_guia_fk == Guia.codigo_guia_pk)
+        .outerjoin(Ciudad, Guia.codigo_ciudad_destino_fk == Ciudad.codigo_ciudad_pk)
+        .filter(Seguimiento.codigo_seguimiento_pk == codigo_seguimiento_pk)
+        .first()
+    )
+
+    if not seguimiento:
+        raise HTTPException(status_code=404, detail="Seguimiento no encontrado")
+
+    return SeguimientoDetalleGuiaResponse(**seguimiento._mapping)

@@ -31,3 +31,26 @@ class SeguimientoResponse(BaseModel):
     longitud: Optional[float]
 
     model_config = {"from_attributes": True}
+
+
+class SeguimientoListResponse(BaseModel):
+    total: int
+    page: int
+    size: int
+    items: list[SeguimientoResponse]
+
+
+class SeguimientoDetalleGuiaResponse(BaseModel):
+    codigo_seguimiento_pk: int
+    codigo_seguimiento_tipo_fk: Optional[str]
+    codigo_guia_fk: Optional[int]
+    fecha: Optional[datetime]
+    fecha_seguimiento: Optional[datetime]
+    usuario: Optional[str]
+    codigo_operacion_fk: Optional[str]
+    comentario: Optional[str]
+    datos: Optional[str]
+    guia_documento_cliente: Optional[str]
+    guia_fecha_entrega: Optional[datetime]
+    seguimiento_tipo_nombre: Optional[str]
+    ciudad_destino_codigo_municipio: Optional[str]
