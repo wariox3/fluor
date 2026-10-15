@@ -54,3 +54,8 @@ class SeguimientoDetalleGuiaResponse(BaseModel):
     guia_fecha_entrega: Optional[datetime]
     seguimiento_tipo_nombre: Optional[str]
     ciudad_destino_codigo_municipio: Optional[str]
+
+
+class SeguimientoDetalleArchivoResponse(BaseModel):
+    seguimiento: SeguimientoResponse
+    base64: Optional[str]

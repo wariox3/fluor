@@ -1,18 +1,21 @@
+import base64
 from datetime import date, datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import Optional
 
+from app.core.backblaze import b2_client
 from app.core.rate_limit import limiter
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
+from app.modules.doc.models.fichero import Fichero
 from app.modules.tte.models.ciudad import Ciudad
 from app.modules.tte.models.guia import Guia
 from app.modules.tte.models.operacion import Operacion
 from app.modules.tte.models.seguimiento import Seguimiento
 from app.modules.tte.models.seguimiento_tipo import SeguimientoTipo
-from app.modules.tte.schemas.seguimiento import SeguimientoCreateRequest, SeguimientoResponse, SeguimientoListResponse, SeguimientoDetalleGuiaResponse
+from app.modules.tte.schemas.seguimiento import SeguimientoCreateRequest, SeguimientoResponse, SeguimientoListResponse, SeguimientoDetalleGuiaResponse, SeguimientoDetalleArchivoResponse
 
 router = APIRouter()
 
@@ -128,3 +131,30 @@ def detalle_guia(codigo_seguimiento_pk: int, db: Session = Depends(get_tenant_db
         raise HTTPException(status_code=404, detail="Seguimiento no encontrado")
 
     return SeguimientoDetalleGuiaResponse(**seguimiento._mapping)
+
+
+@router.get("/detalle-archivo/{codigo_seguimiento_pk}", response_model=SeguimientoDetalleArchivoResponse)
+def detalle_archivo(codigo_seguimiento_pk: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    seguimiento = db.query(Seguimiento).filter(Seguimiento.codigo_seguimiento_pk == codigo_seguimiento_pk).first()
+
+    if not seguimiento:
+        raise HTTPException(status_code=404, detail="Seguimiento no encontrado")
+
+    archivo_base64 = None
+    if seguimiento.codigo_guia_fk is not None:
+        fichero = (
+            db.query(Fichero)
+            .filter(Fichero.codigo_modelo_fk == "TteGuia", Fichero.codigo == str(seguimiento.codigo_guia_fk))
+            .order_by(Fichero.codigo_fichero_pk.desc())
+            .first()
+        )
+        if fichero:
+            directorio = {"F": "firma", "I": "imagen", "G": "fichero"}.get(fichero.codigo_fichero_tipo_fk, "fichero")
+            ruta = f"{fichero.directorio_base}/{directorio}/{fichero.codigo_fichero_pk}.{fichero.extension}"
+            try:
+                contenido, _ = b2_client.download_file(ruta)
+            except Exception:
+                raise HTTPException(status_code=502, detail="Error al descargar el fichero desde el almacenamiento")
+            archivo_base64 = f"data:{fichero.tipo};base64,{base64.b64encode(contenido).decode()}"
+
+    return SeguimientoDetalleArchivoResponse(seguimiento=seguimiento, base64=archivo_base64)
