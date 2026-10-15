@@ -15,6 +15,10 @@ class SeguimientoCreateRequest(BaseModel):
     longitud: float = 0.0
 
 
+class SeguimientoActualizarInterfaceRequest(BaseModel):
+    actualizar_guia: bool = False
+
+
 class SeguimientoResponse(BaseModel):
     codigo_seguimiento_pk: int
     codigo_guia_fk: Optional[int]

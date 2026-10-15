@@ -15,7 +15,7 @@ from app.modules.tte.models.guia import Guia
 from app.modules.tte.models.operacion import Operacion
 from app.modules.tte.models.seguimiento import Seguimiento
 from app.modules.tte.models.seguimiento_tipo import SeguimientoTipo
-from app.modules.tte.schemas.seguimiento import SeguimientoCreateRequest, SeguimientoResponse, SeguimientoListResponse, SeguimientoDetalleGuiaResponse, SeguimientoDetalleArchivoResponse
+from app.modules.tte.schemas.seguimiento import SeguimientoCreateRequest, SeguimientoActualizarInterfaceRequest, SeguimientoResponse, SeguimientoListResponse, SeguimientoDetalleGuiaResponse, SeguimientoDetalleArchivoResponse
 
 router = APIRouter()
 
@@ -158,3 +158,29 @@ def detalle_archivo(codigo_seguimiento_pk: int, db: Session = Depends(get_tenant
             archivo_base64 = f"data:{fichero.tipo};base64,{base64.b64encode(contenido).decode()}"
 
     return SeguimientoDetalleArchivoResponse(base64=archivo_base64)
+
+
+@router.patch("/{codigo_seguimiento_pk}/actualizar-interface", response_model=SeguimientoResponse)
+def actualizar_interface(
+    codigo_seguimiento_pk: int,
+    payload: SeguimientoActualizarInterfaceRequest,
+    db: Session = Depends(get_tenant_db),
+    current_user: dict = Depends(get_current_user),
+):
+    seguimiento = db.query(Seguimiento).filter(Seguimiento.codigo_seguimiento_pk == codigo_seguimiento_pk).first()
+
+    if not seguimiento:
+        raise HTTPException(status_code=404, detail="Seguimiento no encontrado")
+
+    if payload.actualizar_guia:
+        guia = db.query(Guia).filter(Guia.codigo_guia_pk == seguimiento.codigo_guia_fk).first() if seguimiento.codigo_guia_fk is not None else None
+        if not guia:
+            raise HTTPException(status_code=404, detail="Guía no encontrada")
+        guia.estado_interface_soporte = True
+
+    seguimiento.estado_interface = True
+
+    db.commit()
+    db.refresh(seguimiento)
+
+    return seguimiento
