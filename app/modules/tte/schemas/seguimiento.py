@@ -57,5 +57,4 @@ class SeguimientoDetalleGuiaResponse(BaseModel):
 
 
 class SeguimientoDetalleArchivoResponse(BaseModel):
-    seguimiento: SeguimientoResponse
     base64: Optional[str]

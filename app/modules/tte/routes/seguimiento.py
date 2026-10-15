@@ -157,4 +157,4 @@ def detalle_archivo(codigo_seguimiento_pk: int, db: Session = Depends(get_tenant
                 raise HTTPException(status_code=502, detail="Error al descargar el fichero desde el almacenamiento")
             archivo_base64 = f"data:{fichero.tipo};base64,{base64.b64encode(contenido).decode()}"
 
-    return SeguimientoDetalleArchivoResponse(seguimiento=seguimiento, base64=archivo_base64)
+    return SeguimientoDetalleArchivoResponse(base64=archivo_base64)
