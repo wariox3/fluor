@@ -52,6 +52,7 @@ class SeguimientoListItemResponse(SeguimientoResponse):
 
 class SeguimientoListResponse(BaseModel):
     total: int
+    total_exacto: bool
     page: int
     size: int
     items: list[SeguimientoListItemResponse]

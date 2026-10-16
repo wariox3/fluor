@@ -9,6 +9,7 @@ from app.modules.tte.models.guia_tipo import GuiaTipo
 from app.modules.tte.models.operacion import Operacion
 from app.modules.tte.models.producto import Producto
 from app.modules.tte.models.servicio import Servicio
+from app.modules.tte.models.tercero_operacion import TerceroOperacion
 
 
 class Guia(Base):
@@ -126,7 +127,7 @@ class Guia(Base):
     codigo_factura_planilla_fk = Column(Integer, nullable=True)
     codigo_condicion_fk = Column(Integer, nullable=True)
     codigo_movimiento_fk = Column(Integer, nullable=True)
-    codigo_tercero_operacion_fk = Column(Integer, nullable=True)
+    codigo_tercero_operacion_fk = Column(Integer, ForeignKey("tte_tercero_operacion.codigo_tercero_operacion_pk"), nullable=True)
     codigo_cotizacion_detalle_fk = Column(Integer, nullable=True)
     codigo_liquidacion_fk = Column(Integer, nullable=True)
 
@@ -179,3 +180,4 @@ class Guia(Base):
     operacion_cargo = relationship(Operacion, foreign_keys=[codigo_operacion_cargo_fk], backref="guias_operacion_cargo")
     ciudad_origen = relationship(Ciudad, foreign_keys=[codigo_ciudad_origen_fk], backref="guias_ciudad_origen")
     ciudad_destino = relationship(Ciudad, foreign_keys=[codigo_ciudad_destino_fk], backref="guias_ciudad_destino")
+    tercero_operacion = relationship(TerceroOperacion, foreign_keys=[codigo_tercero_operacion_fk], backref="guias_tercero_operacion")

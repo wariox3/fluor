@@ -17,6 +17,8 @@ class GuiaCreateRequest(BaseModel):
     codigo_ciudad_origen_fk: str
     codigo_ciudad_destino_fk: str
     documento_cliente: Optional[str] = None
+    documento_cliente_tipo: Optional[str] = Field(None, max_length=20)
+    codigo_tercero_operacion_fk: Optional[int] = None
     remitente: str
     nombre_destinatario: str
     direccion_destinatario: str

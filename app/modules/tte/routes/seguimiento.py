@@ -1,6 +1,6 @@
 import base64
 from datetime import date, datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -19,6 +19,9 @@ from app.modules.tte.models.seguimiento_tipo import SeguimientoTipo
 from app.modules.tte.schemas.seguimiento import SeguimientoCreateRequest, SeguimientoActualizarInterfaceRequest, SeguimientoResponse, SeguimientoListItemResponse, SeguimientoListResponse, SeguimientoDetalleGuiaResponse, SeguimientoDetalleArchivoResponse
 
 router = APIRouter()
+
+# La tabla supera los 18 millones de registros: el total de la lista se cuenta hasta este tope
+TOPE_CONTEO_LISTA = 10000
 
 
 @router.post("/nuevo", response_model=SeguimientoResponse)
@@ -59,8 +62,8 @@ def nuevo(payload: SeguimientoCreateRequest, db: Session = Depends(get_tenant_db
 def lista(
     request: Request,
     response: Response,
-    page: int = 1,
-    size: int = 50,
+    page: int = Query(1, ge=1),
+    size: int = Query(100, ge=1, le=200),
     codigo_guia_fk: Optional[int] = None,
     codigo_seguimiento_tipo_fk: Optional[str] = None,
     codigo_operacion_fk: Optional[str] = None,
@@ -68,10 +71,35 @@ def lista(
     estado_descartado: Optional[bool] = None,
     fecha_desde: Optional[date] = None,
     fecha_hasta: Optional[date] = None,
+    fecha_desde_ingreso: Optional[date] = None,
+    fecha_hasta_ingreso: Optional[date] = None,
+    fecha_desde_despacho: Optional[date] = None,
+    fecha_hasta_despacho: Optional[date] = None,
+    guia_codigo_tercero_fk: Optional[int] = None,
+    guia_estado_interface_soporte: Optional[bool] = None,
     db: Session = Depends(get_tenant_db),
     current_user: dict = Depends(get_current_user),
 ):
     query = db.query(Seguimiento)
+    # Los filtros por datos de guía o despacho requieren los joins desde el conteo; sin registro asociado no hay coincidencia
+    filtra_despacho = fecha_desde_despacho is not None or fecha_hasta_despacho is not None
+    filtra_guia = filtra_despacho or fecha_desde_ingreso is not None or fecha_hasta_ingreso is not None or guia_codigo_tercero_fk is not None or guia_estado_interface_soporte is not None
+    if filtra_guia:
+        query = query.join(Guia, Seguimiento.codigo_guia_fk == Guia.codigo_guia_pk)
+    if filtra_despacho:
+        query = query.join(Despacho, Guia.codigo_despacho_fk == Despacho.codigo_despacho_pk)
+    if guia_codigo_tercero_fk is not None:
+        query = query.filter(Guia.codigo_tercero_fk == guia_codigo_tercero_fk)
+    if guia_estado_interface_soporte is not None:
+        query = query.filter(Guia.estado_interface_soporte == guia_estado_interface_soporte)
+    if fecha_desde_ingreso is not None:
+        query = query.filter(Guia.fecha_ingreso >= fecha_desde_ingreso)
+    if fecha_hasta_ingreso is not None:
+        query = query.filter(Guia.fecha_ingreso < fecha_hasta_ingreso + timedelta(days=1))
+    if fecha_desde_despacho is not None:
+        query = query.filter(Despacho.fecha_salida >= fecha_desde_despacho)
+    if fecha_hasta_despacho is not None:
+        query = query.filter(Despacho.fecha_salida < fecha_hasta_despacho + timedelta(days=1))
     if codigo_guia_fk is not None:
         query = query.filter(Seguimiento.codigo_guia_fk == codigo_guia_fk)
     if codigo_seguimiento_tipo_fk is not None:
@@ -87,8 +115,15 @@ def lista(
     if fecha_hasta is not None:
         # fecha_seguimiento es DateTime: se incluye el día completo de fecha_hasta
         query = query.filter(Seguimiento.fecha_seguimiento < fecha_hasta + timedelta(days=1))
-    total = query.with_entities(func.count(Seguimiento.codigo_seguimiento_pk)).scalar()
+    subconsulta = query.with_entities(Seguimiento.codigo_seguimiento_pk).limit(TOPE_CONTEO_LISTA + 1).subquery()
+    conteo = db.query(func.count()).select_from(subconsulta).scalar()
+    total_exacto = conteo <= TOPE_CONTEO_LISTA
+    total = min(conteo, TOPE_CONTEO_LISTA)
     offset = (page - 1) * size
+    if not filtra_guia:
+        query = query.outerjoin(Guia, Seguimiento.codigo_guia_fk == Guia.codigo_guia_pk)
+    if not filtra_despacho:
+        query = query.outerjoin(Despacho, Guia.codigo_despacho_fk == Despacho.codigo_despacho_pk)
     rows = (
         query.add_columns(
             SeguimientoTipo.nombre.label("seguimiento_tipo_nombre"),
@@ -103,8 +138,6 @@ def lista(
             Despacho.fecha_salida.label("guia_despacho_fecha_salida"),
         )
         .outerjoin(SeguimientoTipo, Seguimiento.codigo_seguimiento_tipo_fk == SeguimientoTipo.codigo_seguimiento_tipo_pk)
-        .outerjoin(Guia, Seguimiento.codigo_guia_fk == Guia.codigo_guia_pk)
-        .outerjoin(Despacho, Guia.codigo_despacho_fk == Despacho.codigo_despacho_pk)
         .order_by(Seguimiento.codigo_seguimiento_pk.desc())
         .offset(offset)
         .limit(size)
@@ -117,7 +150,7 @@ def lista(
         )
         for row in rows
     ]
-    return SeguimientoListResponse(total=total, page=page, size=size, items=items)
+    return SeguimientoListResponse(total=total, total_exacto=total_exacto, page=page, size=size, items=items)
 
 
 @router.get("/detalle/{codigo_seguimiento_pk}", response_model=SeguimientoResponse)
@@ -207,6 +240,21 @@ def actualizar_interface(
         guia.estado_interface_soporte = True
 
     seguimiento.estado_interface = True
+
+    db.commit()
+    db.refresh(seguimiento)
+
+    return seguimiento
+
+
+@router.patch("/{codigo_seguimiento_pk}/descartar", response_model=SeguimientoResponse)
+def descartar(codigo_seguimiento_pk: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    seguimiento = db.query(Seguimiento).filter(Seguimiento.codigo_seguimiento_pk == codigo_seguimiento_pk).first()
+
+    if not seguimiento:
+        raise HTTPException(status_code=404, detail="Seguimiento no encontrado")
+
+    seguimiento.estado_descartado = True
 
     db.commit()
     db.refresh(seguimiento)

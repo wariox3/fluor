@@ -6,7 +6,7 @@ from typing import Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.tte.models.ciudad import Ciudad
-from app.modules.tte.schemas.ciudad import CiudadListResponse
+from app.modules.tte.schemas.ciudad import CiudadListResponse, CiudadSincronizarResponse
 
 router = APIRouter()
 
@@ -38,3 +38,8 @@ def buscar(
         .all()
     )
     return CiudadListResponse(total=total, page=page, size=size, items=ciudades)
+
+
+@router.get("/lista-sincronizar", response_model=list[CiudadSincronizarResponse])
+def lista_sincronizar(db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    return db.query(Ciudad).order_by(Ciudad.codigo_ciudad_pk.asc()).all()

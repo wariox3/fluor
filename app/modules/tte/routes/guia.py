@@ -17,6 +17,7 @@ from app.modules.tte.models.operacion import Operacion
 from app.modules.tte.models.producto import Producto
 from app.modules.tte.models.seguimiento import Seguimiento
 from app.modules.tte.models.servicio import Servicio
+from app.modules.tte.models.tercero_operacion import TerceroOperacion
 from app.modules.tte.schemas.guia import GuiaCreateRequest, GuiaCreateResponse, GuiaCorreccionRequest, GuiaCorreccionResponse, GuiaListResponse, GuiaEstadoResponse, GuiaRecogidoRequest, GuiaRecogidoResponse, GuiaIngresoRequest, GuiaIngresoResponse, GuiasMasivoRequest, GuiasDocumentoMasivoRequest, LiquidarRequest, LiquidarResponse, ReliquidarRequest, ReliquidarResponse
 from app.modules.tte.services import guia as guia_service
 
@@ -41,6 +42,11 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), curr
     ciudad_destino = db.query(Ciudad).filter(Ciudad.codigo_ciudad_pk == payload.codigo_ciudad_destino_fk).first()
     if not ciudad_destino:
         raise HTTPException(status_code=404, detail="Ciudad destino no encontrada")
+
+    if payload.codigo_tercero_operacion_fk is not None:
+        tercero_operacion = db.query(TerceroOperacion).filter(TerceroOperacion.codigo_tercero_operacion_pk == payload.codigo_tercero_operacion_fk).first()
+        if not tercero_operacion or tercero_operacion.codigo_tercero_fk != payload.codigo_tercero_fk:
+            raise HTTPException(status_code=404, detail="Tercero operación no encontrado")
 
     tercero = db.query(Tercero).filter(Tercero.codigo_tercero_pk == payload.codigo_tercero_fk).first()
     cobro_entrega = 0
@@ -109,12 +115,14 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), curr
         fecha_ingreso_operacion=datetime.now(),
         estado_recogido=payload.estado_recogido,
         estado_ingreso=payload.estado_ingreso,
-        devolver_documento_cliente=payload.devolver_documento_cliente,
+        devolver_documento_cliente=payload.devolver_documento_cliente,        
         comentario=payload.comentario,
         ui="API_F",
         estado_impreso=True,
         estado_aprobado=True,
         estado_autorizado=True,
+        codigo_tercero_operacion_fk=payload.codigo_tercero_operacion_fk,
+        documento_cliente_tipo=payload.documento_cliente_tipo,
     )
 
     db.add(guia)
