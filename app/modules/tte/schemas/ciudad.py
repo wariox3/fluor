@@ -23,6 +23,13 @@ class CiudadListResponse(BaseModel):
     items: list[CiudadResponse]
 
 
+class CiudadDescargarResponse(BaseModel):
+    codigo_ciudad_pk: str
+    nombre: Optional[str]
+
+    model_config = {"from_attributes": True}
+
+
 class CiudadSincronizarResponse(BaseModel):
     codigo_ciudad_pk: str
     nombre: Optional[str]
