@@ -21,5 +21,8 @@ class GuiaTipoDescargarResponse(BaseModel):
     codigo_guia_tipo_pk: str
     nombre: Optional[str]
     codigo_pago_fk: Optional[str] = None
+    codigo_forma_pago: Optional[str] = None
+    validar_flete: Optional[bool] = None
+    genera_cobro: Optional[bool] = None
 
     model_config = {"from_attributes": True}

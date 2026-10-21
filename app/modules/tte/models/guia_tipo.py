@@ -8,3 +8,5 @@ class GuiaTipo(Base):
     nombre = Column(String)
     genera_cobro = Column(Boolean, nullable=True, default=False)
     codigo_pago_fk = Column(String(3), nullable=True)
+    codigo_forma_pago = Column(String(3), nullable=True)
+    validar_flete = Column(Boolean, nullable=True, default=False)
