@@ -6,7 +6,7 @@ from typing import Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.tte.models.servicio import Servicio
-from app.modules.tte.schemas.servicio import ServicioListResponse
+from app.modules.tte.schemas.servicio import ServicioDescargarResponse, ServicioListResponse
 
 router = APIRouter()
 
@@ -32,3 +32,16 @@ def buscar(
     items = query.order_by(Servicio.nombre.asc()).offset(offset).limit(size).all()
 
     return ServicioListResponse(total=total, page=page, size=size, items=items)
+
+
+@router.get(
+    "/descargar",
+    response_model=list[ServicioDescargarResponse],
+    description="Catálogo completo sin paginar (JSON, no archivo) para que la aplicación lo guarde en caché.",
+)
+def descargar(db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    return (
+        db.query(Servicio.codigo_servicio_pk, Servicio.nombre)
+        .order_by(Servicio.codigo_servicio_pk.asc())
+        .all()
+    )

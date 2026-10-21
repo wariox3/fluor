@@ -15,3 +15,10 @@ class EmpaqueListResponse(BaseModel):
     page: int
     size: int
     items: list[EmpaqueResponse]
+
+
+class EmpaqueDescargarResponse(BaseModel):
+    codigo_empaque_pk: str
+    nombre: Optional[str]
+
+    model_config = {"from_attributes": True}

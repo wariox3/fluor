@@ -15,3 +15,10 @@ class GuiaTipoListResponse(BaseModel):
     page: int
     size: int
     items: list[GuiaTipoResponse]
+
+
+class GuiaTipoDescargarResponse(BaseModel):
+    codigo_guia_tipo_pk: str
+    nombre: Optional[str]
+
+    model_config = {"from_attributes": True}

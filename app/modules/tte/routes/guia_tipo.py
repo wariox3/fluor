@@ -6,7 +6,7 @@ from typing import Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.tte.models.guia_tipo import GuiaTipo
-from app.modules.tte.schemas.guia_tipo import GuiaTipoListResponse
+from app.modules.tte.schemas.guia_tipo import GuiaTipoDescargarResponse, GuiaTipoListResponse
 
 router = APIRouter()
 
@@ -32,3 +32,16 @@ def buscar(
     items = query.order_by(GuiaTipo.nombre.asc()).offset(offset).limit(size).all()
 
     return GuiaTipoListResponse(total=total, page=page, size=size, items=items)
+
+
+@router.get(
+    "/descargar",
+    response_model=list[GuiaTipoDescargarResponse],
+    description="Catálogo completo sin paginar (JSON, no archivo) para que la aplicación lo guarde en caché.",
+)
+def descargar(db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    return (
+        db.query(GuiaTipo.codigo_guia_tipo_pk, GuiaTipo.nombre)
+        .order_by(GuiaTipo.codigo_guia_tipo_pk.asc())
+        .all()
+    )

@@ -15,3 +15,10 @@ class ServicioListResponse(BaseModel):
     page: int
     size: int
     items: list[ServicioResponse]
+
+
+class ServicioDescargarResponse(BaseModel):
+    codigo_servicio_pk: str
+    nombre: Optional[str]
+
+    model_config = {"from_attributes": True}

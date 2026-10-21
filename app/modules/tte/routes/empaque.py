@@ -6,7 +6,7 @@ from typing import Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.tte.models.empaque import Empaque
-from app.modules.tte.schemas.empaque import EmpaqueListResponse
+from app.modules.tte.schemas.empaque import EmpaqueDescargarResponse, EmpaqueListResponse
 
 router = APIRouter()
 
@@ -32,3 +32,16 @@ def buscar(
     items = query.order_by(Empaque.nombre.asc()).offset(offset).limit(size).all()
 
     return EmpaqueListResponse(total=total, page=page, size=size, items=items)
+
+
+@router.get(
+    "/descargar",
+    response_model=list[EmpaqueDescargarResponse],
+    description="Catálogo completo sin paginar (JSON, no archivo) para que la aplicación lo guarde en caché.",
+)
+def descargar(db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    return (
+        db.query(Empaque.codigo_empaque_pk, Empaque.nombre)
+        .order_by(Empaque.codigo_empaque_pk.asc())
+        .all()
+    )

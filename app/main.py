@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from fastapi.exceptions import HTTPException
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
@@ -9,7 +10,6 @@ from app.core.observability import setup_sentry
 # Importar modulos para rate limit
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.errors import RateLimitExceeded
-from slowapi import _rate_limit_exceeded_handler
 from app.core.rate_limit import identificar_cliente, limiter
 
 # Importar modulos para CORS
@@ -17,7 +17,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # Importar modulos para control errores
 from app.core.logging import setup_logging
-from app.core.middleware import ErrorHandlingMiddleware, http_exception_handler
+from app.core.middleware import (
+    ErrorHandlingMiddleware,
+    http_exception_handler,
+    rate_limit_exception_handler,
+    validation_exception_handler,
+)
 
 from app.core.master_database import Base as MasterBase, engine as master_engine
 from app.modules.auth.models import *  # noqa: F401,F403 — registra modelos en MasterBase
@@ -57,8 +62,10 @@ app = FastAPI(title="Semantica ERP API", lifespan=lifespan)
 app.middleware("http")(ErrorHandlingMiddleware())
 
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-app.add_exception_handler(HTTPException, http_exception_handler)
+app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
+# Starlette HTTPException cubre también la de FastAPI y los 404/405 del enrutador
+app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_middleware(SlowAPIMiddleware)
 # Registrado después para quedar por fuera de SlowAPIMiddleware y fijar la identidad antes del conteo
 app.middleware("http")(identificar_cliente)

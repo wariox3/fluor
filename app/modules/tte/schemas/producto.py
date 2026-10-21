@@ -15,3 +15,10 @@ class ProductoListResponse(BaseModel):
     page: int
     size: int
     items: list[ProductoResponse]
+
+
+class ProductoDescargarResponse(BaseModel):
+    codigo_producto_pk: str
+    nombre: Optional[str]
+
+    model_config = {"from_attributes": True}
