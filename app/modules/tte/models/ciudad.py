@@ -2,6 +2,7 @@ from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 from app.core.tenant_database import Base
+from app.modules.tte.models.departamento import Departamento
 from app.modules.tte.models.ruta import Ruta
 
 
@@ -20,7 +21,7 @@ class Ciudad(Base):
     nombre_municipio = Column(String(100), nullable=True)
 
     # FKs sin modelo local
-    codigo_departamento_fk = Column(String(2), nullable=True)
+    codigo_departamento_fk = Column(String(2), ForeignKey("tte_departamento.codigo_departamento_pk"), nullable=True)
     codigo_ruta_fk = Column(String(20), ForeignKey("tte_ruta.codigo_ruta_pk"), nullable=True)
     codigo_zona_fk = Column(String(20), ForeignKey("tte_zona.codigo_zona_pk"), nullable=True)
     codigo_cuenta_industria_comercio_fk = Column(String(20), nullable=True)
@@ -56,7 +57,12 @@ class Ciudad(Base):
     longitud = Column(String(15), nullable=True)
 
     ruta = relationship(Ruta, foreign_keys=[codigo_ruta_fk], backref="ciudades_ruta")
+    departamento = relationship(Departamento, foreign_keys=[codigo_departamento_fk], backref="ciudades_departamento")
 
     @hybrid_property
     def ruta_nombre(self):
         return self.ruta.nombre if self.ruta else None
+
+    @hybrid_property
+    def departamento_nombre(self):
+        return self.departamento.nombre if self.departamento else None

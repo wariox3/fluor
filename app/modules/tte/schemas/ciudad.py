@@ -7,6 +7,7 @@ class CiudadResponse(BaseModel):
     codigo_ciudad_pk: str
     nombre: Optional[str]
     codigo_departamento_fk: Optional[str]
+    departamento_nombre: Optional[str] = None
     codigo_interface: Optional[str]
     codigo_general: Optional[str]
     estado_inactivo: Optional[bool]
@@ -26,6 +27,7 @@ class CiudadListResponse(BaseModel):
 class CiudadDescargarResponse(BaseModel):
     codigo_ciudad_pk: str
     nombre: Optional[str]
+    departamento_nombre: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
