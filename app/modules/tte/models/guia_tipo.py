@@ -7,3 +7,4 @@ class GuiaTipo(Base):
     codigo_guia_tipo_pk = Column(String(20), primary_key=True, index=True)            
     nombre = Column(String)
     genera_cobro = Column(Boolean, nullable=True, default=False)
+    codigo_pago_fk = Column(String(3), nullable=True)

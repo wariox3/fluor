@@ -41,7 +41,7 @@ def buscar(
 )
 def descargar(db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     return (
-        db.query(GuiaTipo.codigo_guia_tipo_pk, GuiaTipo.nombre)
+        db.query(GuiaTipo.codigo_guia_tipo_pk, GuiaTipo.nombre, GuiaTipo.codigo_pago_fk)
         .order_by(GuiaTipo.codigo_guia_tipo_pk.asc())
         .all()
     )
