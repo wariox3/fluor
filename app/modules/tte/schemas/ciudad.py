@@ -28,6 +28,10 @@ class CiudadDescargarResponse(BaseModel):
     codigo_ciudad_pk: str
     nombre: Optional[str]
     departamento_nombre: Optional[str] = None
+    codigo_ruta_fk: Optional[str] = None
+    orden_ruta: Optional[int] = None
+    codigo_zona_fk: Optional[str] = None
+    reexpedicion: Optional[bool] = None
 
     model_config = {"from_attributes": True}
 

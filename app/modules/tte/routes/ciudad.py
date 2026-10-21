@@ -48,7 +48,15 @@ def buscar(
 )
 def descargar(db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     return (
-        db.query(Ciudad.codigo_ciudad_pk, Ciudad.nombre, Departamento.nombre.label("departamento_nombre"))
+        db.query(
+            Ciudad.codigo_ciudad_pk,
+            Ciudad.nombre,
+            Departamento.nombre.label("departamento_nombre"),
+            Ciudad.codigo_ruta_fk,
+            Ciudad.orden_ruta,
+            Ciudad.codigo_zona_fk,
+            Ciudad.reexpedicion,
+        )
         .outerjoin(Departamento, Ciudad.codigo_departamento_fk == Departamento.codigo_departamento_pk)
         .order_by(Ciudad.codigo_ciudad_pk.asc())
         .all()
