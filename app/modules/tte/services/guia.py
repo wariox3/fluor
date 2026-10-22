@@ -28,7 +28,7 @@ def _buscar_precio_detalle(db: Session, precio, origen, destino, producto, zona)
     return base.filter(PrecioDetalle.codigo_zona_fk.is_(None)).first()
 
 
-def _buscar_condicion_flete(db: Session, tercero, origen, destino, zona, cobertura, pago=None):
+def buscar_condicion_flete(db: Session, tercero, origen, destino, zona, cobertura, pago=None):
     """Replica TteCondicionFleteRepository::apiWindowsLiquidar."""
     if not tercero:
         return None
@@ -69,6 +69,9 @@ def _buscar_condicion_flete(db: Session, tercero, origen, destino, zona, cobertu
         ).first()
         if cf:
             return cf
+    # Sin origen se omite: "== None" se volvería IS NULL y traería otra condición
+    if not origen:
+        return None
     return base.filter(
         CondicionFlete.codigo_ciudad_origen_fk == origen,
         CondicionFlete.codigo_ciudad_destino_fk.is_(None),
@@ -76,7 +79,7 @@ def _buscar_condicion_flete(db: Session, tercero, origen, destino, zona, cobertu
     ).first()
 
 
-def _buscar_condicion_manejo(db: Session, tercero, origen, destino, zona, cobertura, pago=None):
+def buscar_condicion_manejo(db: Session, tercero, origen, destino, zona, cobertura, pago=None):
     """Replica TteCondicionManejoRepository::apiWindowsLiquidar."""
     if not tercero:
         return None
@@ -117,6 +120,9 @@ def _buscar_condicion_manejo(db: Session, tercero, origen, destino, zona, cobert
         ).first()
         if cm:
             return cm
+    # Sin origen se omite: "== None" se volvería IS NULL y traería otra condición
+    if not origen:
+        return None
     return base.filter(
         CondicionManejo.codigo_ciudad_origen_fk == origen,
         CondicionManejo.codigo_ciudad_destino_fk.is_(None),
@@ -158,7 +164,7 @@ def liquidar(db: Session, tercero, condicion_id, precio, origen, destino, produc
         cobertura = precio_detalle.codigo_cobertura_fk
 
     # Condición flete (sobreescribe descuentos y mínimos)
-    condicion_flete = _buscar_condicion_flete(db, tercero, origen, destino, zona, cobertura)
+    condicion_flete = buscar_condicion_flete(db, tercero, origen, destino, zona, cobertura)
     if condicion_flete:
         descuento_peso = condicion_flete.descuento_peso or 0
         peso_minimo_unidad = condicion_flete.peso_minimo or 0
@@ -188,7 +194,7 @@ def liquidar(db: Session, tercero, condicion_id, precio, origen, destino, produc
             flete = flete_minimo_despacho
 
     # Condición manejo
-    condicion_manejo = _buscar_condicion_manejo(db, tercero, origen, destino, zona, cobertura)
+    condicion_manejo = buscar_condicion_manejo(db, tercero, origen, destino, zona, cobertura)
     if condicion_manejo:
         porcentaje_manejo = condicion_manejo.porcentaje or 0
         manejo_minimo_unidad = condicion_manejo.minimo_unidad or 0
