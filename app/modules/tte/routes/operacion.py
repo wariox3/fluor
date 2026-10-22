@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -6,7 +6,7 @@ from typing import Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.tte.models.operacion import Operacion
-from app.modules.tte.schemas.operacion import OperacionListResponse
+from app.modules.tte.schemas.operacion import OperacionListResponse, OperacionResponse
 
 router = APIRouter()
 
@@ -32,3 +32,13 @@ def buscar(
     items = query.order_by(Operacion.nombre.asc()).offset(offset).limit(size).all()
 
     return OperacionListResponse(total=total, page=page, size=size, items=items)
+
+
+@router.get("/detalle/{codigo_operacion_pk}", response_model=OperacionResponse)
+def detalle(codigo_operacion_pk: str, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    operacion = db.query(Operacion).filter(Operacion.codigo_operacion_pk == codigo_operacion_pk).first()
+
+    if not operacion:
+        raise HTTPException(status_code=404, detail="Operación no encontrada")
+
+    return operacion
