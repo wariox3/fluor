@@ -27,6 +27,14 @@ class TerceroResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class TerceroDetalleResponse(TerceroResponse):
+    guia_pago_credito: Optional[bool] = None
+    guia_pago_contado: Optional[bool] = None
+    guia_pago_destino: Optional[bool] = None
+    guia_pago_cortesia: Optional[bool] = None
+    guia_pago_recogida: Optional[bool] = None
+
+
 class TerceroListResponse(BaseModel):
     total: int
     page: int

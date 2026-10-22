@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from .routes import guia, ciudad, novedad, monitoreo, monitoreo_detalle, seguimiento, producto, empaque, servicio, cliente_condicion, guia_tipo, operacion, zona, despacho, despacho_detalle, tercero_producto, tercero_operacion, destinatario
+from .routes import guia, ciudad, novedad, monitoreo, monitoreo_detalle, seguimiento, producto, empaque, servicio, cliente_condicion, guia_tipo, operacion, zona, despacho, despacho_detalle, tercero_producto, tercero_operacion, destinatario, condicion
 
 router = APIRouter(
     prefix="/tte"
@@ -23,3 +23,4 @@ router.include_router(despacho_detalle.router,prefix="/despacho-detalle",tags=["
 router.include_router(tercero_producto.router,prefix="/tercero-producto",tags=["Transporte y Logística / Tercero Producto"])
 router.include_router(tercero_operacion.router,prefix="/tercero-operacion",tags=["Transporte y Logística / Tercero Operación"])
 router.include_router(destinatario.router,prefix="/destinatario",tags=["Transporte y Logística / Destinatario"])
+router.include_router(condicion.router,prefix="/condicion",tags=["Transporte y Logística / Condición"])

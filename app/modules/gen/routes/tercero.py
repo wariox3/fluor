@@ -5,7 +5,7 @@ from typing import Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.gen.models.tercero import Tercero
-from app.modules.gen.schemas.tercero import TerceroBuscarListResponse, TerceroListResponse, TerceroResponse
+from app.modules.gen.schemas.tercero import TerceroBuscarListResponse, TerceroDetalleResponse, TerceroListResponse
 from app.modules.tte.models.condicion import Condicion
 
 router = APIRouter()
@@ -67,7 +67,7 @@ def buscar(
     return TerceroBuscarListResponse(total=total, page=page, size=size, items=items)
 
 
-@router.get("/detalle/{codigo_tercero_pk}", response_model=TerceroResponse)
+@router.get("/detalle/{codigo_tercero_pk}", response_model=TerceroDetalleResponse)
 def detalle(codigo_tercero_pk: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     tercero = (
         db.query(Tercero)

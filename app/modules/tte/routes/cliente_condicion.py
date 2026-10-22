@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 from typing import Optional
@@ -6,7 +6,7 @@ from typing import Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.tte.models.cliente_condicion import ClienteCondicion
-from app.modules.tte.schemas.cliente_condicion import ClienteCondicionListResponse, ClienteCondicionResponse
+from app.modules.tte.schemas.cliente_condicion import ClienteCondicionListResponse
 
 router = APIRouter()
 
@@ -38,18 +38,3 @@ def buscar(
     )
 
     return ClienteCondicionListResponse(total=total, page=page, size=size, items=items)
-
-
-@router.get("/detalle/{codigo_cliente_condicion_pk}", response_model=ClienteCondicionResponse)
-def detalle(codigo_cliente_condicion_pk: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
-    cliente_condicion = (
-        db.query(ClienteCondicion)
-        .options(joinedload(ClienteCondicion.tercero), joinedload(ClienteCondicion.condicion))
-        .filter(ClienteCondicion.codigo_cliente_condicion_pk == codigo_cliente_condicion_pk)
-        .first()
-    )
-
-    if not cliente_condicion:
-        raise HTTPException(status_code=404, detail="Cliente condición no encontrado")
-
-    return cliente_condicion
