@@ -79,6 +79,9 @@ origins = [
     "https://www.semanticaapi.com.co",
     "https://api.semanticaapi.com.co",
     "https://www.api.semanticaapi.com.co",
+    "https://semanticaerp.com",
+    "https://www.semanticaerp.com",
+    "https://api.semanticaerp.com",
     "https://empleado.co",
     "https://www.empleado.co",
 ]
