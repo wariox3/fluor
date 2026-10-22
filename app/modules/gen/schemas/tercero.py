@@ -33,3 +33,19 @@ class TerceroListResponse(BaseModel):
     size: int
     items: list[TerceroResponse]
        
+
+class TerceroBuscarResponse(BaseModel):
+    codigo_tercero_pk: int
+    numero_identificacion: Optional[str] = None
+    nombre_corto: Optional[str] = None
+    condicion_nombre: Optional[str] = None
+    estado_inactivo: Optional[bool] = None
+
+    model_config = {"from_attributes": True}
+
+
+class TerceroBuscarListResponse(BaseModel):
+    total: int
+    page: int
+    size: int
+    items: list[TerceroBuscarResponse]

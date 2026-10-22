@@ -24,3 +24,10 @@ class TerceroOperacionListResponse(BaseModel):
     page: int
     size: int
     items: list[TerceroOperacionResponse]
+
+
+class TerceroOperacionBuscarListResponse(BaseModel):
+    total: int
+    page: int
+    size: int
+    items: list[TerceroOperacionResponse]

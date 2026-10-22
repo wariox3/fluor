@@ -12,6 +12,7 @@ from app.modules.gen.models.tercero import Tercero
 from app.modules.tte.models.ciudad import Ciudad
 from app.modules.tte.models.destinatario import Destinatario
 from app.modules.tte.schemas.destinatario import (
+    DestinatarioBuscarListResponse,
     DestinatarioCreateRequest,
     DestinatarioListResponse,
     DestinatarioResponse,
@@ -98,3 +99,59 @@ def lista(
         .all()
     )
     return DestinatarioListResponse(total=total, page=page, size=size, items=items)
+
+
+@router.get("/buscar", response_model=DestinatarioBuscarListResponse)
+def buscar(
+    page: int = Query(1, ge=1),
+    numero_identificacion: Optional[str] = None,
+    nombre_corto: Optional[str] = None,
+    codigo_destinatario_pk: Optional[int] = None,
+    db: Session = Depends(get_tenant_db),
+    current_user: dict = Depends(get_current_user),
+):
+    query = db.query(Destinatario)
+    if numero_identificacion:
+        query = query.filter(Destinatario.numero_identificacion.ilike(f"%{numero_identificacion}%"))
+    if nombre_corto:
+        query = query.filter(Destinatario.nombre_corto.ilike(f"%{nombre_corto}%"))
+    if codigo_destinatario_pk is not None:
+        query = query.filter(Destinatario.codigo_destinatario_pk == codigo_destinatario_pk)
+    total = query.with_entities(func.count(Destinatario.codigo_destinatario_pk)).scalar()
+    size = 10
+    offset = (page - 1) * size
+    items = (
+        query.outerjoin(Ciudad, Destinatario.codigo_ciudad_fk == Ciudad.codigo_ciudad_pk)
+        .with_entities(
+            Destinatario.codigo_destinatario_pk,
+            Destinatario.codigo_identificacion_fk,
+            Destinatario.numero_identificacion,
+            Destinatario.nombre_corto,
+            Ciudad.nombre.label("ciudad_nombre"),
+            Destinatario.estado_inactivo,
+        )
+        .order_by(Destinatario.nombre_corto.asc(), Destinatario.codigo_destinatario_pk.asc())
+        .offset(offset)
+        .limit(size)
+        .all()
+    )
+    return DestinatarioBuscarListResponse(total=total, page=page, size=size, items=items)
+
+
+@router.get("/detalle/{codigo_destinatario_pk}", response_model=DestinatarioResponse)
+def detalle(codigo_destinatario_pk: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    destinatario = (
+        db.query(Destinatario)
+        .options(
+            joinedload(Destinatario.identificacion),
+            joinedload(Destinatario.ciudad),
+            joinedload(Destinatario.tercero),
+        )
+        .filter(Destinatario.codigo_destinatario_pk == codigo_destinatario_pk)
+        .first()
+    )
+
+    if not destinatario:
+        raise HTTPException(status_code=404, detail="Destinatario no encontrado")
+
+    return destinatario

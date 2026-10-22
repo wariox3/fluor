@@ -8,6 +8,7 @@ from app.core.security import get_current_user
 from app.modules.gen.models.tercero import Tercero
 from app.modules.tte.models.tercero_operacion import TerceroOperacion
 from app.modules.tte.schemas.tercero_operacion import (
+    TerceroOperacionBuscarListResponse,
     TerceroOperacionCreateRequest,
     TerceroOperacionResponse,
     TerceroOperacionListResponse,
@@ -76,3 +77,42 @@ def detalle(codigo_tercero_operacion_pk: int, db: Session = Depends(get_tenant_d
         raise HTTPException(status_code=404, detail="Tercero operación no encontrado")
 
     return tercero_operacion
+
+
+@router.get("/buscar", response_model=TerceroOperacionBuscarListResponse)
+def buscar(
+    page: int = Query(1, ge=1),
+    codigo_tercero_operacion_pk: Optional[int] = None,
+    codigo_tercero_fk: Optional[int] = None,
+    codigo: Optional[str] = None,
+    nombre: Optional[str] = None,
+    db: Session = Depends(get_tenant_db),
+    current_user: dict = Depends(get_current_user),
+):
+    query = db.query(TerceroOperacion)
+    if codigo_tercero_operacion_pk is not None:
+        query = query.filter(TerceroOperacion.codigo_tercero_operacion_pk == codigo_tercero_operacion_pk)
+    if codigo_tercero_fk is not None:
+        query = query.filter(TerceroOperacion.codigo_tercero_fk == codigo_tercero_fk)
+    if codigo:
+        query = query.filter(TerceroOperacion.codigo.ilike(f"%{codigo}%"))
+    if nombre:
+        query = query.filter(TerceroOperacion.nombre.ilike(f"%{nombre}%"))
+    total = query.with_entities(func.count(TerceroOperacion.codigo_tercero_operacion_pk)).scalar()
+    size = 10
+    offset = (page - 1) * size
+    items = (
+        query.outerjoin(Tercero, TerceroOperacion.codigo_tercero_fk == Tercero.codigo_tercero_pk)
+        .with_entities(
+            TerceroOperacion.codigo_tercero_operacion_pk,
+            TerceroOperacion.codigo_tercero_fk,
+            Tercero.nombre_corto.label("tercero_nombre"),
+            TerceroOperacion.codigo,
+            TerceroOperacion.nombre,
+        )
+        .order_by(TerceroOperacion.nombre.asc(), TerceroOperacion.codigo_tercero_operacion_pk.asc())
+        .offset(offset)
+        .limit(size)
+        .all()
+    )
+    return TerceroOperacionBuscarListResponse(total=total, page=page, size=size, items=items)

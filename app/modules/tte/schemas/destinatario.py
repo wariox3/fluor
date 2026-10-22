@@ -52,3 +52,21 @@ class DestinatarioListResponse(BaseModel):
     page: int
     size: int
     items: list[DestinatarioResponse]
+
+
+class DestinatarioBuscarResponse(BaseModel):
+    codigo_destinatario_pk: int
+    codigo_identificacion_fk: Optional[str] = None
+    numero_identificacion: Optional[str] = None
+    nombre_corto: Optional[str] = None
+    ciudad_nombre: Optional[str] = None
+    estado_inactivo: Optional[bool] = None
+
+    model_config = {"from_attributes": True}
+
+
+class DestinatarioBuscarListResponse(BaseModel):
+    total: int
+    page: int
+    size: int
+    items: list[DestinatarioBuscarResponse]
