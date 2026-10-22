@@ -19,6 +19,13 @@ B2_BUCKET_NAME = config("B2_BUCKET_NAME", default="")
 DEFAULT_EMPRESA_ID = 1
 
 APP_URL = config("APP_URL", default="http://localhost:4200")
+# Frontends que pueden recibir enlaces de verificación/recuperación. El enlace usa el
+# Origin de la petición si está en esta lista; si no, cae en APP_URL.
+FRONTEND_URLS = config(
+    "FRONTEND_URLS",
+    default="https://empleado.co,https://www.empleado.co,https://semanticaerp.com,https://www.semanticaerp.com",
+    cast=lambda v: [u.strip().rstrip("/") for u in v.split(",") if u.strip()],
+)
 
 # Zona horaria fijada en cada conexión MySQL (Colombia, sin horario de verano).
 # Así NOW()/CURRENT_TIMESTAMP y los server_default producen hora local.

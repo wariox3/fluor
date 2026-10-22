@@ -10,7 +10,8 @@ from app.modules.auth.models.tenant import Tenant
 from app.modules.auth.models.verificacion import Verificacion, TipoVerificacion, EstadoVerificacion
 from app.modules.auth.schemas.user import UserCreate, UserResponse, RegisterRequest, RegisterResponse, RecuperarClaveRequest, RestablecerClaveRequest, AsociarRequest, ReenviarVerificacionRequest, ActualizarPerfilRequest, PerfilResponse
 from app.core.security import hash_password, generate_verification_token
-from app.core.config import APP_URL
+from app.core.config import DEBUG
+from app.core.utils import frontend_url
 from app.core.zinc import Zinc
 from app.core.turnstile import verify_turnstile
 from sqlalchemy import func
@@ -74,7 +75,7 @@ def nuevo(request: Request, response: Response, data: UserCreate, db: Session = 
     return new_user
 
 
-@router.post("/registrar", response_model=RegisterResponse, include_in_schema=False)
+@router.post("/registrar", response_model=RegisterResponse, response_model_exclude_none=True, include_in_schema=False)
 @limiter.limit("3/minute")
 def registrar(request: Request, response: Response, data: RegisterRequest, db: Session = Depends(get_master_db)):
     verify_turnstile(data.turnstile_token)
@@ -107,7 +108,7 @@ def registrar(request: Request, response: Response, data: RegisterRequest, db: S
     ))
     db.commit()
 
-    verification_link = f"{APP_URL}/auth/verify-email?token={token}"
+    verification_link = f"{frontend_url(request.headers.get('origin'))}/auth/verify-email?token={token}"
 
     html_content = f"""
         <h1>¡Hola {new_user.nombres}!</h1>
@@ -119,7 +120,10 @@ def registrar(request: Request, response: Response, data: RegisterRequest, db: S
     except Exception as e:
         logger.warning(f"No se pudo enviar correo de verificación a {new_user.email}: {e}")
 
-    return RegisterResponse(user=UserResponse.model_validate(new_user), verification_link=verification_link)
+    return RegisterResponse(
+        user=UserResponse.model_validate(new_user),
+        verification_link=verification_link if DEBUG else None,
+    )
 
 
 @router.post("/recuperar-clave", include_in_schema=False)
@@ -145,7 +149,7 @@ def recuperar_clave(request: Request, response: Response, data: RecuperarClaveRe
             ip=_client_ip(request),
         ))
         db.commit()
-        reset_link = f"{APP_URL}/auth/restablecer-clave?token={token}"
+        reset_link = f"{frontend_url(request.headers.get('origin'))}/auth/restablecer-clave?token={token}"
         html_content = f"""
             <h1>Recuperación de clave</h1>
             <p>Recibimos una solicitud para restablecer la clave de tu cuenta.</p>
@@ -218,7 +222,7 @@ def reenviar_verificacion(request: Request, response: Response, data: ReenviarVe
             ip=_client_ip(request),
         ))
         db.commit()
-        verification_link = f"{APP_URL}/auth/verify-email?token={token}"
+        verification_link = f"{frontend_url(request.headers.get('origin'))}/auth/verify-email?token={token}"
         html_content = f"""
             <h1>¡Hola {user.nombres}!</h1>
             <p>Solicitaste reenviar el correo de verificación. Haz clic en el siguiente enlace para verificar tu cuenta.</p>

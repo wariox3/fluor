@@ -59,7 +59,7 @@ class UserResponse(BaseModel):
 
 class RegisterResponse(BaseModel):
     user: UserResponse
-    verification_link: str
+    verification_link: str | None = None  # solo con DEBUG; en producción va únicamente por correo
 
 class RecuperarClaveRequest(BaseModel):
     email: EmailStr

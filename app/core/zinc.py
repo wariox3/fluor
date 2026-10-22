@@ -20,6 +20,10 @@ class Zinc:
         if respuesta["status"] == 200:
             return {"error": False, "status": respuesta["status"], "datos": respuesta["datos"]}
         else:
+            logger.warning(
+                f"Zinc no envió el correo '{asunto}' a {correo}: "
+                f"status={respuesta['status']} datos={respuesta['datos']}"
+            )
             return {"error": True, "status": respuesta["status"], "datos": respuesta["datos"]}
 
     def _post(self, data: dict, url: str):
