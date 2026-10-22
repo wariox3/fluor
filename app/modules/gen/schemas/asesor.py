@@ -19,3 +19,10 @@ class AsesorListResponse(BaseModel):
     page: int
     size: int
     items: list[AsesorResponse]
+
+
+class AsesorDescargarResponse(BaseModel):
+    codigo_asesor_pk: int
+    nombre: Optional[str] = None
+
+    model_config = {"from_attributes": True}

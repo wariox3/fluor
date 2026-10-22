@@ -8,6 +8,8 @@ from app.core.config import DEFAULT_EMPRESA_ID
 from app.modules.gen.models.asesor import Asesor
 from app.modules.gen.models.ciudad import Ciudad
 from app.modules.gen.models.identificacion import Identificacion
+from app.modules.gen.models.regimen import Regimen
+from app.modules.gen.models.tipo_persona import TipoPersona
 from app.modules.gen.models.tercero import Tercero
 from app.modules.gen.schemas.tercero import TerceroBuscarListResponse, TerceroCreateRequest, TerceroDetalleResponse, TerceroListResponse
 from app.modules.tte.models.condicion import Condicion
@@ -20,6 +22,8 @@ def nuevo(payload: TerceroCreateRequest, db: Session = Depends(get_tenant_db), c
     fks = [
         (Identificacion, Identificacion.codigo_identificacion_pk, payload.codigo_identificacion_fk, "Tipo de identificación no encontrado"),
         (Ciudad, Ciudad.codigo_ciudad_pk, payload.codigo_ciudad_fk, "Ciudad no encontrada"),
+        (TipoPersona, TipoPersona.codigo_tipo_persona_pk, payload.codigo_tipo_persona_fk, "Tipo de persona no encontrado"),
+        (Regimen, Regimen.codigo_regimen_pk, payload.codigo_regimen_fk, "Régimen no encontrado"),
         (Asesor, Asesor.codigo_asesor_pk, payload.codigo_asesor_fk, "Asesor no encontrado"),
         (Condicion, Condicion.codigo_condicion_pk, payload.codigo_condicion_fk, "Condición no encontrada"),
         (Operacion, Operacion.codigo_operacion_pk, payload.codigo_operacion_fk, "Operación no encontrada"),
@@ -119,7 +123,13 @@ def buscar(
 def detalle(codigo_tercero_pk: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     tercero = (
         db.query(Tercero)
-        .options(joinedload(Tercero.ciudad), joinedload(Tercero.asesor), joinedload(Tercero.condicion))
+        .options(
+            joinedload(Tercero.ciudad),
+            joinedload(Tercero.asesor),
+            joinedload(Tercero.condicion),
+            joinedload(Tercero.tipo_persona),
+            joinedload(Tercero.regimen),
+        )
         .filter(Tercero.codigo_tercero_pk == codigo_tercero_pk)
         .first()
     )

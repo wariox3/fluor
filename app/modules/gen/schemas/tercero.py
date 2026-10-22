@@ -8,6 +8,10 @@ class TerceroCreateRequest(BaseModel):
     digito_verificacion: Optional[str] = Field(None, max_length=1)
     codigo_ciudad_fk: int
     nombre_corto: Optional[str] = Field(None, max_length=150)
+    nombre_extendido: Optional[str] = Field(None, max_length=500)
+    codigo_tipo_persona_fk: Optional[str] = Field(None, max_length=3)
+    codigo_regimen_fk: Optional[str] = Field(None, max_length=10)
+    codigo_postal: Optional[str] = Field(None, max_length=20)
     nombre1: Optional[str] = Field(None, max_length=50)
     nombre2: Optional[str] = Field(None, max_length=50)
     apellido1: Optional[str] = Field(None, max_length=50)
@@ -63,6 +67,12 @@ class TerceroResponse(BaseModel):
 class TerceroDetalleResponse(TerceroResponse):
     codigo_identificacion_fk: Optional[str] = None
     digito_verificacion: Optional[str] = None
+    nombre_extendido: Optional[str] = None
+    codigo_tipo_persona_fk: Optional[str] = None
+    tipo_persona_nombre: Optional[str] = None
+    codigo_regimen_fk: Optional[str] = None
+    regimen_nombre: Optional[str] = None
+    codigo_postal: Optional[str] = None
     codigo_ciudad_fk: Optional[int] = None
     nombre1: Optional[str] = None
     nombre2: Optional[str] = None

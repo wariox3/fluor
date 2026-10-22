@@ -5,6 +5,8 @@ from sqlalchemy.orm import relationship
 from app.modules.gen.models.ciudad import Ciudad
 from app.modules.gen.models.asesor import Asesor
 from app.modules.gen.models.identificacion import Identificacion
+from app.modules.gen.models.regimen import Regimen
+from app.modules.gen.models.tipo_persona import TipoPersona
 from app.modules.tte.models.condicion import Condicion
 
 class Tercero(Base):
@@ -16,6 +18,10 @@ class Tercero(Base):
     nombre_corto = Column(String)
     numero_identificacion = Column(String)
     digito_verificacion = Column(String(1), nullable=True)
+    nombre_extendido = Column(String(500), nullable=True)
+    codigo_tipo_persona_fk = Column(String(3), ForeignKey("gen_tipo_persona.codigo_tipo_persona_pk"), nullable=True)
+    codigo_regimen_fk = Column(String(10), ForeignKey("gen_regimen.codigo_regimen_pk"), nullable=True)
+    codigo_postal = Column(String(20), nullable=True)
     nombre1 = Column(String(50), nullable=True)
     nombre2 = Column(String(50), nullable=True)
     apellido1 = Column(String(50), nullable=True)
@@ -46,6 +52,8 @@ class Tercero(Base):
     guia_pago_recogida = Column(Boolean, nullable=True, default=False)
 
     identificacion = relationship(Identificacion, foreign_keys=[codigo_identificacion_fk])
+    tipo_persona = relationship(TipoPersona, foreign_keys=[codigo_tipo_persona_fk], backref="terceros_tipo_persona_rel")
+    regimen = relationship(Regimen, foreign_keys=[codigo_regimen_fk], backref="terceros_regimen_rel")
     ciudad = relationship(Ciudad, foreign_keys=[codigo_ciudad_fk], backref="terceros_ciudad_rel")
     asesor = relationship(Asesor, foreign_keys=[codigo_asesor_fk], backref="terceros_asesor_rel")
     condicion = relationship(Condicion, foreign_keys=[codigo_condicion_fk], backref="terceros_condicion_rel")
@@ -65,3 +73,11 @@ class Tercero(Base):
     @hybrid_property
     def condicion_codigo_precio_fk(self):
         return self.condicion.codigo_precio_fk if self.condicion else None
+
+    @hybrid_property
+    def tipo_persona_nombre(self):
+        return self.tipo_persona.nombre if self.tipo_persona else None
+
+    @hybrid_property
+    def regimen_nombre(self):
+        return self.regimen.nombre if self.regimen else None
