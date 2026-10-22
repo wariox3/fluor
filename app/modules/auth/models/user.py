@@ -25,6 +25,7 @@ class User(Base):
     is_verified = Column(Boolean, nullable=False, default=False)
     is_active = Column(Boolean, nullable=False, default=True, server_default=true())
     empleado_id = Column(Integer, nullable=True)
+    codigo_usuario_fk = Column(String(25), nullable=True)
     fecha_creacion = Column(DateTime, server_default=func.now(), nullable=False)
 
     tenant = relationship(Tenant, back_populates="users")

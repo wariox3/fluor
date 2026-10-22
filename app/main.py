@@ -32,6 +32,7 @@ from app.modules.tte.models import *
 from app.modules.tur.models import *
 from app.modules.gen.models import *
 from app.modules.car.models import *
+from app.modules.seg.models import *
 
 from app.modules.rhu.router import router as rhu_router
 from app.modules.tte.router import router as tte_router
@@ -43,6 +44,7 @@ from app.modules.crm.router import router as crm_router
 from app.modules.car.router import router as car_router
 from app.modules.auth.router import router as auth_router
 from app.modules.mas.router import router as mas_router
+from app.modules.seg.router import router as seg_router
 
 setup_logging()
 # Inicializar Sentry tras el logging y antes de crear la app
@@ -100,6 +102,7 @@ app.include_router(crm_router)
 app.include_router(car_router)
 app.include_router(auth_router)
 app.include_router(mas_router)
+app.include_router(seg_router)
 
 
 @app.get("/health", include_in_schema=False)
