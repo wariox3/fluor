@@ -27,5 +27,10 @@ class Configuracion(Base):
     codigo_precio_general_fk = Column(Integer, nullable=True)
     codigo_condicion_general_fk = Column(Integer, nullable=True)
     codigo_asesor_general_fk = Column(Integer, ForeignKey("gen_asesor.codigo_asesor_pk"), nullable=True)
+    # Impresión de guías
+    codigo_formato_guia_web = Column(String(2), nullable=True)
+    codigo_formato_rotulo = Column(String(2), nullable=True)
+    mostrar_valor_declarado_guia = Column(Boolean, nullable=True, default=False)
+    ocultar_valores_formato_corriente = Column(Boolean, nullable=False, default=False)
 
     ciudad_rel = relationship(Ciudad, foreign_keys=[codigo_ciudad_fk])

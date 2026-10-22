@@ -50,6 +50,8 @@ class Tercero(Base):
     guia_pago_destino = Column(Boolean, nullable=True, default=False)
     guia_pago_cortesia = Column(Boolean, nullable=True, default=False)
     guia_pago_recogida = Column(Boolean, nullable=True, default=False)
+    ocultar_valores_guia = Column(Boolean, nullable=True, default=False)
+    ocultar_valor_declarado = Column(Boolean, nullable=True, default=False)
 
     identificacion = relationship(Identificacion, foreign_keys=[codigo_identificacion_fk])
     tipo_persona = relationship(TipoPersona, foreign_keys=[codigo_tipo_persona_fk], backref="terceros_tipo_persona_rel")

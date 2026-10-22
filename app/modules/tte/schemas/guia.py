@@ -372,3 +372,9 @@ class GuiaDetalleResponse(BaseModel):
     comentario: Optional[str]
 
     model_config = {"from_attributes": True}
+
+
+class GuiaFormatoImpresionResponse(BaseModel):
+    codigo: int
+    nombre: str
+    predeterminado: bool

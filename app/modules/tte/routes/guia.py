@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session, joinedload
-from typing import Optional
+from typing import Literal, Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.core.config import DEFAULT_EMPRESA_ID
@@ -22,8 +22,10 @@ from app.modules.tte.models.ruta import Ruta
 from app.modules.tte.models.seguimiento import Seguimiento
 from app.modules.tte.models.servicio import Servicio
 from app.modules.tte.models.tercero_operacion import TerceroOperacion
-from app.modules.tte.schemas.guia import GuiaCreateRequest, GuiaDetalleResponse, GuiaCreateResponse, GuiaCorreccionRequest, GuiaCorreccionResponse, GuiaListResponse, GuiaEstadoResponse, GuiaRecogidoRequest, GuiaRecogidoResponse, GuiaIngresoRequest, GuiaIngresoResponse, GuiasMasivoRequest, GuiasDocumentoMasivoRequest, LiquidarRequest, LiquidarResponse, ReliquidarRequest, ReliquidarResponse
+from app.modules.tte.schemas.guia import GuiaFormatoImpresionResponse, GuiaCreateRequest, GuiaDetalleResponse, GuiaCreateResponse, GuiaCorreccionRequest, GuiaCorreccionResponse, GuiaListResponse, GuiaEstadoResponse, GuiaRecogidoRequest, GuiaRecogidoResponse, GuiaIngresoRequest, GuiaIngresoResponse, GuiasMasivoRequest, GuiasDocumentoMasivoRequest, LiquidarRequest, LiquidarResponse, ReliquidarRequest, ReliquidarResponse
 from app.modules.tte.services import guia as guia_service
+from app.modules.tte.formats import guia as formatos_guia, rotulo as formatos_rotulo
+from app.modules.tte.formats.datos import MAXIMO_GUIAS, cargar_empresa, cargar_guias, preparar_guias
 
 router = APIRouter()
 
@@ -295,97 +297,81 @@ def estado_documento_masivo(payload: GuiasDocumentoMasivoRequest, db: Session = 
 
     return resultados
 
-@router.get("/imprimir-rotulo")
-def imprimir_rotulo(
-    numero_desde: int,
-    numero_hasta: int,
-    formato: int,
+_IMPRESIONES = {"guia": formatos_guia, "rotulo": formatos_rotulo}
+
+
+@router.get("/formatos-impresion", response_model=list[GuiaFormatoImpresionResponse])
+def formatos_impresion(
+    tipo: Literal["guia", "rotulo"] = "guia",
     db: Session = Depends(get_tenant_db),
     current_user: dict = Depends(get_current_user),
 ):
-    if numero_desde > numero_hasta:
-        raise HTTPException(status_code=400, detail="numero_desde no puede ser mayor que numero_hasta")
+    formatos = _IMPRESIONES[tipo]
+    predeterminado = formatos.resolver_formato(None, cargar_empresa(db))
+    return [
+        GuiaFormatoImpresionResponse(codigo=f.codigo, nombre=f.nombre, predeterminado=f.codigo == predeterminado)
+        for f in formatos.registro.listar()
+    ]
 
-    guias = (
-        db.query(Guia)
-        .options(
-            joinedload(Guia.ciudad_origen),
-            joinedload(Guia.ciudad_destino),
-            joinedload(Guia.tercero),
-            joinedload(Guia.empaque),
-            joinedload(Guia.servicio),
-            joinedload(Guia.producto),
-            joinedload(Guia.guia_tipo),
-        )
-        .filter(Guia.codigo_guia_pk >= numero_desde, Guia.codigo_guia_pk <= numero_hasta)
-        .order_by(Guia.codigo_guia_pk)
-        .limit(31)
-        .all()
-    )
 
-    if not guias:
-        raise HTTPException(status_code=404, detail="No se encontraron guías en el rango indicado")
-
-    if len(guias) > 30:
-        raise HTTPException(status_code=400, detail="El rango contiene más de 30 guías. Ajuste numero_desde y numero_hasta")
-
-    # --- Impresión masiva de rótulos ---
-    from app.modules.tte.formats.rotulo_pdf import generar
-    try:
-        pdf_bytes = generar(guias, formato=formato, db=db)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    return Response(
-        content=pdf_bytes,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f"inline; filename=rotulos_{numero_desde}_{numero_hasta}.pdf"},
-    )
-
-@router.get("/imprimir-guia")
+@router.get(
+    "/imprimir-guia",
+    description=(
+        "PDF de las guías no anuladas del rango (máximo 30). Si no se envía `formato`, se usa "
+        "`codigo_formato_guia_web` de la configuración y, si no hay uno válido, el formato 3."
+    ),
+)
 def imprimir_guia(
     numero_desde: int,
     numero_hasta: int,
-    formato: int,
+    formato: Optional[int] = None,
     db: Session = Depends(get_tenant_db),
     current_user: dict = Depends(get_current_user),
 ):
+    return _imprimir(db, formatos_guia, numero_desde, numero_hasta, formato, "guias")
+
+
+@router.get(
+    "/imprimir-rotulo",
+    description=(
+        "PDF con un rótulo por unidad de las guías no anuladas del rango (máximo 30 guías). Si no se "
+        "envía `formato`, se usa `codigo_formato_rotulo` de la configuración y, si no hay uno válido, el 1."
+    ),
+)
+def imprimir_rotulo(
+    numero_desde: int,
+    numero_hasta: int,
+    formato: Optional[int] = None,
+    db: Session = Depends(get_tenant_db),
+    current_user: dict = Depends(get_current_user),
+):
+    return _imprimir(db, formatos_rotulo, numero_desde, numero_hasta, formato, "rotulos")
+
+
+def _imprimir(db: Session, formatos, numero_desde: int, numero_hasta: int, formato: Optional[int], nombre: str) -> Response:
+    """Valida el rango, elige el formato y genera el PDF (común a guías y rótulos)."""
     if numero_desde > numero_hasta:
         raise HTTPException(status_code=400, detail="numero_desde no puede ser mayor que numero_hasta")
 
-    guias = (
-        db.query(Guia)
-        .options(
-            joinedload(Guia.ciudad_origen),
-            joinedload(Guia.ciudad_destino),
-            joinedload(Guia.tercero),
-            joinedload(Guia.adquiriente),
-            joinedload(Guia.empaque),
-            joinedload(Guia.servicio),
-            joinedload(Guia.producto),
-            joinedload(Guia.guia_tipo),
-            joinedload(Guia.operacion_ingreso),
-        )
-        .filter(Guia.codigo_guia_pk >= numero_desde, Guia.codigo_guia_pk <= numero_hasta)
-        .order_by(Guia.codigo_guia_pk)
-        .limit(31)
-        .all()
-    )
-
-    if not guias:
-        raise HTTPException(status_code=404, detail="No se encontraron guías en el rango indicado")
-
-    if len(guias) > 30:
-        raise HTTPException(status_code=400, detail="El rango contiene más de 30 guías. Ajuste numero_desde y numero_hasta")
-
-    from app.modules.tte.formats.guia_pdf import generar
+    empresa = cargar_empresa(db)
     try:
-        pdf_bytes = generar(guias, formato=formato, db=db)
+        codigo_formato = formatos.resolver_formato(formato, empresa)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+    guias = cargar_guias(db, numero_desde, numero_hasta)
+    if not guias:
+        raise HTTPException(status_code=404, detail="No se encontraron guías en el rango indicado")
+    if len(guias) > MAXIMO_GUIAS:
+        raise HTTPException(status_code=400, detail=f"El rango contiene más de {MAXIMO_GUIAS} guías. Ajuste numero_desde y numero_hasta")
+
+    usa_firma = getattr(formatos.registro.obtener(codigo_formato), "usa_firma", False)
+    documentos = preparar_guias(db, guias, empresa, con_firma=usa_firma)
+    pdf_bytes = formatos.registro.generar(codigo_formato, documentos, empresa)
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f"inline; filename=guias_{numero_desde}_{numero_hasta}.pdf"},
+        headers={"Content-Disposition": f"inline; filename={nombre}_{numero_desde}_{numero_hasta}.pdf"},
     )
 
 @router.patch("/corregir/{codigo_guia_pk}", response_model=GuiaCorreccionResponse)
