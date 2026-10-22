@@ -22,7 +22,7 @@ from app.modules.tte.models.ruta import Ruta
 from app.modules.tte.models.seguimiento import Seguimiento
 from app.modules.tte.models.servicio import Servicio
 from app.modules.tte.models.tercero_operacion import TerceroOperacion
-from app.modules.tte.schemas.guia import GuiaCreateRequest, GuiaCreateResponse, GuiaCorreccionRequest, GuiaCorreccionResponse, GuiaListResponse, GuiaEstadoResponse, GuiaRecogidoRequest, GuiaRecogidoResponse, GuiaIngresoRequest, GuiaIngresoResponse, GuiasMasivoRequest, GuiasDocumentoMasivoRequest, LiquidarRequest, LiquidarResponse, ReliquidarRequest, ReliquidarResponse
+from app.modules.tte.schemas.guia import GuiaCreateRequest, GuiaDetalleResponse, GuiaCreateResponse, GuiaCorreccionRequest, GuiaCorreccionResponse, GuiaListResponse, GuiaEstadoResponse, GuiaRecogidoRequest, GuiaRecogidoResponse, GuiaIngresoRequest, GuiaIngresoResponse, GuiasMasivoRequest, GuiasDocumentoMasivoRequest, LiquidarRequest, LiquidarResponse, ReliquidarRequest, ReliquidarResponse
 from app.modules.tte.services import guia as guia_service
 
 router = APIRouter()
@@ -187,6 +187,32 @@ def lista(
     offset = (page - 1) * size
     guias = query.order_by(Guia.codigo_guia_pk.desc()).offset(offset).limit(size).all()
     return GuiaListResponse(total=total, page=page, size=size, items=guias)
+
+@router.get("/detalle/{codigo_guia_pk}", response_model=GuiaDetalleResponse)
+def detalle(codigo_guia_pk: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    guia = (
+        db.query(Guia)
+        .options(
+            joinedload(Guia.tercero),
+            joinedload(Guia.adquiriente),
+            joinedload(Guia.asesor),
+            joinedload(Guia.guia_tipo),
+            joinedload(Guia.producto),
+            joinedload(Guia.empaque),
+            joinedload(Guia.servicio),
+            joinedload(Guia.operacion_ingreso),
+            joinedload(Guia.operacion_cargo),
+            joinedload(Guia.ciudad_origen),
+            joinedload(Guia.ciudad_destino),
+        )
+        .filter(Guia.codigo_guia_pk == codigo_guia_pk)
+        .first()
+    )
+
+    if not guia:
+        raise HTTPException(status_code=404, detail="Guía no encontrada")
+
+    return guia
 
 @router.get("/estado/{guia}", response_model=GuiaEstadoResponse)
 def estado(guia: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):

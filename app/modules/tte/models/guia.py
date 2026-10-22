@@ -182,3 +182,47 @@ class Guia(Base):
     ciudad_origen = relationship(Ciudad, foreign_keys=[codigo_ciudad_origen_fk], backref="guias_ciudad_origen")
     ciudad_destino = relationship(Ciudad, foreign_keys=[codigo_ciudad_destino_fk], backref="guias_ciudad_destino")
     tercero_operacion = relationship(TerceroOperacion, foreign_keys=[codigo_tercero_operacion_fk], backref="guias_tercero_operacion")
+
+    @property
+    def tercero_nombre(self):
+        return self.tercero.nombre_corto if self.tercero else None
+
+    @property
+    def adquiriente_nombre(self):
+        return self.adquiriente.nombre_corto if self.adquiriente else None
+
+    @property
+    def asesor_nombre(self):
+        return self.asesor.nombre if self.asesor else None
+
+    @property
+    def guia_tipo_nombre(self):
+        return self.guia_tipo.nombre if self.guia_tipo else None
+
+    @property
+    def producto_nombre(self):
+        return self.producto.nombre if self.producto else None
+
+    @property
+    def empaque_nombre(self):
+        return self.empaque.nombre if self.empaque else None
+
+    @property
+    def servicio_nombre(self):
+        return self.servicio.nombre if self.servicio else None
+
+    @property
+    def operacion_ingreso_nombre(self):
+        return self.operacion_ingreso.nombre if self.operacion_ingreso else None
+
+    @property
+    def operacion_cargo_nombre(self):
+        return self.operacion_cargo.nombre if self.operacion_cargo else None
+
+    @property
+    def ciudad_origen_nombre(self):
+        return self.ciudad_origen.nombre if self.ciudad_origen else None
+
+    @property
+    def ciudad_destino_nombre(self):
+        return self.ciudad_destino.nombre if self.ciudad_destino else None
