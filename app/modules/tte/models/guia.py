@@ -4,6 +4,7 @@ from app.core.tenant_database import Base
 from app.modules.gen.models.asesor import Asesor
 from app.modules.gen.models.tercero import Tercero
 from app.modules.tte.models.ciudad import Ciudad
+from app.modules.tte.models.condicion import Condicion
 from app.modules.tte.models.empaque import Empaque
 from app.modules.tte.models.guia_tipo import GuiaTipo
 from app.modules.tte.models.operacion import Operacion
@@ -126,7 +127,7 @@ class Guia(Base):
     codigo_recaudo_cobro_fk = Column(Integer, nullable=True)
     codigo_factura_fk = Column(Integer, nullable=True)
     codigo_factura_planilla_fk = Column(Integer, nullable=True)
-    codigo_condicion_fk = Column(Integer, nullable=True)
+    codigo_condicion_fk = Column(Integer, ForeignKey("tte_condicion.codigo_condicion_pk"), nullable=True)
     codigo_movimiento_fk = Column(Integer, nullable=True)
     codigo_tercero_operacion_fk = Column(Integer, ForeignKey("tte_tercero_operacion.codigo_tercero_operacion_pk"), nullable=True)
     codigo_cotizacion_detalle_fk = Column(Integer, nullable=True)
@@ -181,6 +182,7 @@ class Guia(Base):
     operacion_cargo = relationship(Operacion, foreign_keys=[codigo_operacion_cargo_fk], backref="guias_operacion_cargo")
     ciudad_origen = relationship(Ciudad, foreign_keys=[codigo_ciudad_origen_fk], backref="guias_ciudad_origen")
     ciudad_destino = relationship(Ciudad, foreign_keys=[codigo_ciudad_destino_fk], backref="guias_ciudad_destino")
+    condicion = relationship(Condicion, foreign_keys=[codigo_condicion_fk], backref="guias_condicion")
     tercero_operacion = relationship(TerceroOperacion, foreign_keys=[codigo_tercero_operacion_fk], backref="guias_tercero_operacion")
 
     @property
@@ -226,3 +228,7 @@ class Guia(Base):
     @property
     def ciudad_destino_nombre(self):
         return self.ciudad_destino.nombre if self.ciudad_destino else None
+
+    @property
+    def condicion_nombre(self):
+        return self.condicion.nombre if self.condicion else None

@@ -204,6 +204,7 @@ def detalle(codigo_guia_pk: int, db: Session = Depends(get_tenant_db), current_u
             joinedload(Guia.operacion_cargo),
             joinedload(Guia.ciudad_origen),
             joinedload(Guia.ciudad_destino),
+            joinedload(Guia.condicion),
         )
         .filter(Guia.codigo_guia_pk == codigo_guia_pk)
         .first()

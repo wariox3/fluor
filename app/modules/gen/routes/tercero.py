@@ -33,11 +33,10 @@ def nuevo(payload: TerceroCreateRequest, db: Session = Depends(get_tenant_db), c
             raise HTTPException(status_code=404, detail=mensaje)
 
     existe = db.query(Tercero.codigo_tercero_pk).filter(
-        Tercero.codigo_identificacion_fk == payload.codigo_identificacion_fk,
         Tercero.numero_identificacion == payload.numero_identificacion,
     ).first()
     if existe:
-        raise HTTPException(status_code=409, detail="Ya existe un tercero con ese tipo y número de identificación")
+        raise HTTPException(status_code=409, detail=f"Ya existe un tercero con el número de identificación {payload.numero_identificacion}")
 
     # Si no llega nombre_corto se arma con los nombres y apellidos (persona natural)
     nombre_corto = payload.nombre_corto or " ".join(

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 
 
@@ -37,6 +37,14 @@ class TerceroCreateRequest(BaseModel):
     guia_pago_cortesia: bool = False
     guia_pago_recogida: bool = False
     comentario: Optional[str] = Field(None, max_length=2000)
+
+    @field_validator("numero_identificacion")
+    @classmethod
+    def limpiar_numero_identificacion(cls, valor: str) -> str:
+        valor = valor.strip()
+        if not valor:
+            raise ValueError("El número de identificación no puede estar vacío")
+        return valor
 
 
 class TerceroResponse(BaseModel):

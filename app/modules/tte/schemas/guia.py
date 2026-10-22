@@ -304,7 +304,9 @@ class GuiaDetalleResponse(BaseModel):
     orden_ruta: Optional[int]
     codigo_despacho_fk: Optional[int]
     codigo_condicion_fk: Optional[int]
+    condicion_nombre: Optional[str] = None
     codigo_factura_fk: Optional[int]
+    numero_factura: Optional[int]
 
     documento_cliente: Optional[str]
     documento_cliente_tipo: Optional[str]
@@ -358,6 +360,7 @@ class GuiaDetalleResponse(BaseModel):
     estado_novedad_solucion: bool
     estado_devolucion: bool
 
+    factura: bool
     cortesia: bool
     correccion: bool
     reexpedicion: bool
