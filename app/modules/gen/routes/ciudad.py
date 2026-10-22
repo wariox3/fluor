@@ -5,7 +5,7 @@ from typing import Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.gen.models.ciudad import Ciudad
-from app.modules.gen.schemas.ciudad import CiudadListResponse
+from app.modules.gen.schemas.ciudad import CiudadDescargarResponse, CiudadListResponse
 
 router = APIRouter()
 
@@ -27,3 +27,16 @@ def lista(
     offset = (page - 1) * size
     ciudades = query.offset(offset).limit(size).all()
     return CiudadListResponse(total=total, page=page, size=size, items=ciudades)
+
+
+@router.get(
+    "/descargar",
+    response_model=list[CiudadDescargarResponse],
+    description="Catálogo completo sin paginar (JSON, no archivo) para que la aplicación lo guarde en caché.",
+)
+def descargar(db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    return (
+        db.query(Ciudad.codigo_ciudad_pk, Ciudad.nombre)
+        .order_by(Ciudad.nombre.asc())
+        .all()
+    )

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -14,3 +16,10 @@ class CiudadListResponse(BaseModel):
     size: int
     items: list[CiudadResponse]
        
+
+
+class CiudadDescargarResponse(BaseModel):
+    codigo_ciudad_pk: int
+    nombre: Optional[str] = None
+
+    model_config = {"from_attributes": True}
