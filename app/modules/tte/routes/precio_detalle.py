@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, aliased
 from app.core.security import get_current_user
 from app.core.tenant_database import get_tenant_db
 from app.modules.tte.models.ciudad import Ciudad
+from app.modules.tte.models.precio import Precio
 from app.modules.tte.models.precio_detalle import PrecioDetalle
 from app.modules.tte.models.producto import Producto
 from app.modules.tte.models.zona import Zona
@@ -44,13 +45,15 @@ def lista(
     ciudad_destino = aliased(Ciudad)
     offset = (page - 1) * size
     items = (
-        query.outerjoin(ciudad_origen, PrecioDetalle.codigo_ciudad_origen_fk == ciudad_origen.codigo_ciudad_pk)
+        query.outerjoin(Precio, PrecioDetalle.codigo_precio_fk == Precio.codigo_precio_pk)
+        .outerjoin(ciudad_origen, PrecioDetalle.codigo_ciudad_origen_fk == ciudad_origen.codigo_ciudad_pk)
         .outerjoin(ciudad_destino, PrecioDetalle.codigo_ciudad_destino_fk == ciudad_destino.codigo_ciudad_pk)
         .outerjoin(Zona, PrecioDetalle.codigo_zona_fk == Zona.codigo_zona_pk)
         .outerjoin(Producto, PrecioDetalle.codigo_producto_fk == Producto.codigo_producto_pk)
         .with_entities(
             PrecioDetalle.codigo_precio_detalle_pk,
             PrecioDetalle.codigo_precio_fk,
+            Precio.omitir_descuento,
             PrecioDetalle.codigo_ciudad_origen_fk,
             ciudad_origen.nombre.label("ciudad_origen_nombre"),
             PrecioDetalle.codigo_ciudad_destino_fk,

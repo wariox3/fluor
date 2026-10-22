@@ -7,14 +7,18 @@ from typing import Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.core.config import DEFAULT_EMPRESA_ID
+from app.modules.gen.models.asesor import Asesor
+from app.modules.gen.models.identificacion import Identificacion
 from app.modules.gen.models.tercero import Tercero
 from app.modules.tte.models.cierre import Cierre
 from app.modules.tte.models.ciudad import Ciudad
+from app.modules.tte.models.destinatario import Destinatario
 from app.modules.tte.models.empaque import Empaque
 from app.modules.tte.models.guia import Guia
 from app.modules.tte.models.guia_tipo import GuiaTipo
 from app.modules.tte.models.operacion import Operacion
 from app.modules.tte.models.producto import Producto
+from app.modules.tte.models.ruta import Ruta
 from app.modules.tte.models.seguimiento import Seguimiento
 from app.modules.tte.models.servicio import Servicio
 from app.modules.tte.models.tercero_operacion import TerceroOperacion
@@ -35,6 +39,15 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), curr
         (Servicio, Servicio.codigo_servicio_pk, payload.codigo_servicio_fk, "Servicio no encontrado"),
         (Ciudad, Ciudad.codigo_ciudad_pk, payload.codigo_ciudad_origen_fk, "Ciudad origen no encontrada"),
     ]
+    # FKs opcionales: se validan solo si llegan
+    fks_opcionales = [
+        (Operacion, Operacion.codigo_operacion_pk, payload.codigo_operacion_cargo_fk, "Operación cargo no encontrada"),
+        (Identificacion, Identificacion.codigo_identificacion_pk, payload.codigo_identificacion_destinatario_fk, "Identificación del destinatario no encontrada"),
+        (Destinatario, Destinatario.codigo_destinatario_pk, payload.codigo_destinatario_fk, "Destinatario no encontrado"),
+        (Ruta, Ruta.codigo_ruta_pk, payload.codigo_ruta_fk, "Ruta no encontrada"),
+        (Asesor, Asesor.codigo_asesor_pk, payload.codigo_asesor_fk, "Asesor no encontrado"),
+    ]
+    fks += [fk for fk in fks_opcionales if fk[2] is not None]
     for model, pk_col, value, detail in fks:
         if not db.query(model).filter(pk_col == value).first():
             raise HTTPException(status_code=404, detail=detail)
@@ -79,7 +92,8 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), curr
     guia = Guia(
         codigo_guia_tipo_fk=payload.codigo_guia_tipo_fk,
         codigo_operacion_ingreso_fk=payload.codigo_operacion_ingreso_fk,
-        codigo_operacion_cargo_fk=payload.codigo_operacion_ingreso_fk,  # Regla de negocio: cargo e ingreso inician con la misma operación; se diferencian en un proceso posterior
+        # Regla de negocio: si no llega, cargo inicia igual a ingreso; se diferencian en un proceso posterior
+        codigo_operacion_cargo_fk=payload.codigo_operacion_cargo_fk or payload.codigo_operacion_ingreso_fk,
         codigo_tercero_fk=payload.codigo_tercero_fk,
         codigo_adquiriente_fk=payload.codigo_adquiriente_fk,
         codigo_empaque_fk=payload.codigo_empaque_fk,
@@ -90,9 +104,13 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), curr
         documento_cliente=payload.documento_cliente,
         remitente=payload.remitente,
         nombre_remitente=tercero.nombre_corto,
-        direccion_remitente=tercero.direccion,
-        telefono_remitente=tercero.telefono,
-        codigo_asesor_fk=tercero.codigo_asesor_fk,
+        direccion_remitente=payload.direccion_remitente if payload.direccion_remitente is not None else tercero.direccion,
+        telefono_remitente=payload.telefono_remitente if payload.telefono_remitente is not None else tercero.telefono,
+        codigo_asesor_fk=payload.codigo_asesor_fk if payload.codigo_asesor_fk is not None else tercero.codigo_asesor_fk,
+        relacion_cliente=payload.relacion_cliente,
+        codigo_destinatario_fk=payload.codigo_destinatario_fk,
+        codigo_identificacion_destinatario_fk=payload.codigo_identificacion_destinatario_fk,
+        numero_identificacion_destinatario=payload.numero_identificacion_destinatario,
         nombre_destinatario=payload.nombre_destinatario,
         direccion_destinatario=payload.direccion_destinatario,
         telefono_destinatario=payload.telefono_destinatario,
@@ -105,9 +123,11 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), curr
         vr_declara=payload.vr_declara,
         vr_recaudo=payload.vr_recaudo,
         vr_cobro_entrega=cobro_entrega,
+        vr_otros=payload.vr_otros,
         tipo_liquidacion=payload.tipo_liquidacion,
         codigo_empresa_fk=DEFAULT_EMPRESA_ID,
-        codigo_ruta_fk=ciudad_destino.codigo_ruta_fk,
+        codigo_ruta_fk=payload.codigo_ruta_fk or ciudad_destino.codigo_ruta_fk,
+        orden_ruta=payload.orden_ruta if payload.orden_ruta is not None else 0,
         latitud=float(ciudad_destino.latitud) if ciudad_destino.latitud else None,
         longitud=float(ciudad_destino.longitud) if ciudad_destino.longitud else None,
         fecha_ingreso=datetime.now(),
@@ -123,6 +143,9 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), curr
         estado_autorizado=True,
         codigo_tercero_operacion_fk=payload.codigo_tercero_operacion_fk,
         documento_cliente_tipo=payload.documento_cliente_tipo,
+        empaque_referencia=payload.empaque_referencia,
+        mercancia_peligrosa=payload.mercancia_peligrosa,
+        contenido_verificado=payload.contenido_verificado,
     )
 
     db.add(guia)

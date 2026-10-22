@@ -6,6 +6,7 @@ from pydantic import BaseModel
 class PrecioDetalleResponse(BaseModel):
     codigo_precio_detalle_pk: int
     codigo_precio_fk: Optional[int] = None
+    omitir_descuento: Optional[bool] = None
     codigo_ciudad_origen_fk: Optional[str] = None
     ciudad_origen_nombre: Optional[str] = None
     codigo_ciudad_destino_fk: Optional[str] = None

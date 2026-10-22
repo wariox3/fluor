@@ -40,6 +40,21 @@ class GuiaCreateRequest(BaseModel):
     zona: Optional[str] = None
     tipo_liquidacion: str = "K"
     comentario: str
+    # Opcionales: si no llegan se usan los valores calculados (ver /tte/guia/nuevo)
+    codigo_operacion_cargo_fk: Optional[str] = Field(None, max_length=20)
+    relacion_cliente: Optional[str] = Field(None, max_length=100)
+    direccion_remitente: Optional[str] = Field(None, max_length=150)
+    telefono_remitente: Optional[str] = Field(None, max_length=80)
+    codigo_identificacion_destinatario_fk: Optional[str] = Field(None, max_length=3)
+    numero_identificacion_destinatario: Optional[str] = Field(None, max_length=20)
+    codigo_destinatario_fk: Optional[int] = None
+    codigo_ruta_fk: Optional[str] = Field(None, max_length=20)
+    orden_ruta: Optional[int] = None
+    codigo_asesor_fk: Optional[int] = None
+    vr_otros: float = 0.0
+    empaque_referencia: Optional[str] = Field(None, max_length=80)
+    mercancia_peligrosa: bool = False
+    contenido_verificado: bool = False
 
 class GuiaCreateResponse(BaseModel):
     codigo_guia_pk: int
@@ -70,6 +85,20 @@ class GuiaCreateResponse(BaseModel):
     estado_recogido: bool
     estado_ingreso: bool
     devolver_documento_cliente: bool
+    codigo_operacion_cargo_fk: Optional[str] = None
+    relacion_cliente: Optional[str] = None
+    direccion_remitente: Optional[str] = None
+    telefono_remitente: Optional[str] = None
+    codigo_identificacion_destinatario_fk: Optional[str] = None
+    numero_identificacion_destinatario: Optional[str] = None
+    codigo_destinatario_fk: Optional[int] = None
+    codigo_ruta_fk: Optional[str] = None
+    orden_ruta: Optional[int] = None
+    codigo_asesor_fk: Optional[int] = None
+    vr_otros: Optional[float] = None
+    empaque_referencia: Optional[str] = None
+    mercancia_peligrosa: Optional[bool] = None
+    contenido_verificado: Optional[bool] = None
 
     class Config:
         from_attributes = True

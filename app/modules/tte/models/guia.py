@@ -75,6 +75,7 @@ class Guia(Base):
     vr_recaudo = Column(Float, nullable=False, default=0.0)
     vr_abono = Column(Float, nullable=False, default=0.0)
     vr_cobro_entrega = Column(Float, nullable=False, default=0.0)
+    vr_otros = Column(Float, nullable=False, default=0.0)
     vr_costo_reexpedicion = Column(Float, nullable=False, default=0.0)
     vr_costo_peso = Column(Float, nullable=False, default=0.0)
     vr_costo_unidades = Column(Float, nullable=False, default=0.0)
