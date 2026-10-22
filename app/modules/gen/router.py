@@ -11,6 +11,7 @@ from .routes import sucursal
 from .routes import enlace
 from .routes import formato_imagen
 from .routes import identificacion
+from .routes import configuracion
 
 router = APIRouter(
     prefix="/gen"
@@ -28,3 +29,4 @@ router.include_router(sucursal.router,prefix="/sucursal", tags=["General / Sucur
 router.include_router(enlace.router,prefix="/enlace", tags=["General / Enlace"])
 router.include_router(formato_imagen.router,prefix="/formato-imagen", tags=["General / Formato Imagen"])
 router.include_router(identificacion.router,prefix="/identificacion", tags=["General / Identificacion"])
+router.include_router(configuracion.router,prefix="/configuracion", tags=["General / Configuracion"])

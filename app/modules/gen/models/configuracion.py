@@ -23,5 +23,9 @@ class Configuracion(Base):
     mostrar_programacion_impresion_pago = Column(Integer, nullable=True, default=1)
     mostrar_programacion = Column(Integer, nullable=True, default=1)
     omitir_porcentaje_formato_pago = Column(Boolean, nullable=False, default=False)
+    # En la base solo el asesor tiene llave foránea; precio y condición son enteros sueltos
+    codigo_precio_general_fk = Column(Integer, nullable=True)
+    codigo_condicion_general_fk = Column(Integer, nullable=True)
+    codigo_asesor_general_fk = Column(Integer, ForeignKey("gen_asesor.codigo_asesor_pk"), nullable=True)
 
     ciudad_rel = relationship(Ciudad, foreign_keys=[codigo_ciudad_fk])
