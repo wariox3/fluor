@@ -314,8 +314,19 @@ def formatos_impresion(
     ]
 
 
+# Las impresiones devuelven el PDF en bruto, no JSON; esto lo declara así en OpenAPI.
+_RESPUESTA_PDF = {
+    200: {
+        "description": "Archivo PDF",
+        "content": {"application/pdf": {"schema": {"type": "string", "format": "binary"}}},
+    }
+}
+
+
 @router.get(
     "/imprimir-guia",
+    response_class=Response,
+    responses=_RESPUESTA_PDF,
     description=(
         "PDF de las guías no anuladas del rango (máximo 30). Si no se envía `formato`, se usa "
         "`codigo_formato_guia_web` de la configuración y, si no hay uno válido, el formato 3."
@@ -333,6 +344,8 @@ def imprimir_guia(
 
 @router.get(
     "/imprimir-rotulo",
+    response_class=Response,
+    responses=_RESPUESTA_PDF,
     description=(
         "PDF con un rótulo por unidad de las guías no anuladas del rango (máximo 30 guías). Si no se "
         "envía `formato`, se usa `codigo_formato_rotulo` de la configuración y, si no hay uno válido, el 1."

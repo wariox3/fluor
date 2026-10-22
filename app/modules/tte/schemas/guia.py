@@ -355,6 +355,7 @@ class GuiaDetalleResponse(BaseModel):
     estado_soporte: bool
     estado_cumplido: bool
     estado_facturado: bool
+    estado_factura_generada: bool
     estado_anulado: bool
     estado_novedad: bool
     estado_novedad_solucion: bool
