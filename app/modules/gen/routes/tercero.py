@@ -4,11 +4,59 @@ from sqlalchemy import func
 from typing import Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
+from app.core.config import DEFAULT_EMPRESA_ID
+from app.modules.gen.models.asesor import Asesor
+from app.modules.gen.models.ciudad import Ciudad
+from app.modules.gen.models.identificacion import Identificacion
 from app.modules.gen.models.tercero import Tercero
-from app.modules.gen.schemas.tercero import TerceroBuscarListResponse, TerceroDetalleResponse, TerceroListResponse
+from app.modules.gen.schemas.tercero import TerceroBuscarListResponse, TerceroCreateRequest, TerceroDetalleResponse, TerceroListResponse
 from app.modules.tte.models.condicion import Condicion
+from app.modules.tte.models.operacion import Operacion
 
 router = APIRouter()
+
+@router.post("/nuevo", response_model=TerceroDetalleResponse)
+def nuevo(payload: TerceroCreateRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    fks = [
+        (Identificacion, Identificacion.codigo_identificacion_pk, payload.codigo_identificacion_fk, "Tipo de identificación no encontrado"),
+        (Ciudad, Ciudad.codigo_ciudad_pk, payload.codigo_ciudad_fk, "Ciudad no encontrada"),
+        (Asesor, Asesor.codigo_asesor_pk, payload.codigo_asesor_fk, "Asesor no encontrado"),
+        (Condicion, Condicion.codigo_condicion_pk, payload.codigo_condicion_fk, "Condición no encontrada"),
+        (Operacion, Operacion.codigo_operacion_pk, payload.codigo_operacion_fk, "Operación no encontrada"),
+    ]
+    for modelo, columna, valor, mensaje in fks:
+        if valor is not None and not db.query(modelo).filter(columna == valor).first():
+            raise HTTPException(status_code=404, detail=mensaje)
+
+    existe = db.query(Tercero.codigo_tercero_pk).filter(
+        Tercero.codigo_identificacion_fk == payload.codigo_identificacion_fk,
+        Tercero.numero_identificacion == payload.numero_identificacion,
+    ).first()
+    if existe:
+        raise HTTPException(status_code=409, detail="Ya existe un tercero con ese tipo y número de identificación")
+
+    # Si no llega nombre_corto se arma con los nombres y apellidos (persona natural)
+    nombre_corto = payload.nombre_corto or " ".join(
+        p for p in (payload.nombre1, payload.nombre2, payload.apellido1, payload.apellido2) if p
+    )
+    if not nombre_corto.strip():
+        raise HTTPException(status_code=422, detail="Debe enviar nombre_corto o nombres y apellidos")
+
+    datos = payload.model_dump(exclude={"nombre_corto"})
+    tercero = Tercero(
+        **datos,
+        nombre_corto=nombre_corto.strip(),
+        codigo_empresa_fk=DEFAULT_EMPRESA_ID,
+        estado_inactivo=False,
+        usuario=current_user["sub"],
+    )
+
+    db.add(tercero)
+    db.commit()
+    db.refresh(tercero)
+
+    return tercero
+
 
 @router.get("/lista", response_model=TerceroListResponse)
 def lista(page: int = 1, size: int = 50, numero_identificacion: Optional[str] = None, nombre_corto: Optional[str] = None, codigo_tercero_pk: Optional[int] = None, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
