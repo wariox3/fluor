@@ -14,7 +14,6 @@ class UserInfo(BaseModel):
     email: str
     role: UserRole | None = None
     numero_identificacion: str | None = None
-    codigo_usuario_fk: str | None = None
 
 class LoginResponse(BaseModel):
     access_token: str | None = None

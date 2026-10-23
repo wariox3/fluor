@@ -11,6 +11,7 @@ class UserTenantResponse(BaseModel):
     tenant_id: int
     tenant_nombre: str | None
     empleado_id: int | None
+    codigo_usuario_fk: str | None
     activo: bool
     control: bool
     fecha_creacion: datetime
@@ -30,6 +31,7 @@ class UserTenantUsuarioResponse(BaseModel):
     nombres: str | None
     apellidos: str | None
     empleado_id: int | None
+    codigo_usuario_fk: str | None
     activo: bool
     control: bool
     fecha_creacion: datetime

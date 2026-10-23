@@ -54,7 +54,6 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
         "id": user.id,
         "email": user.email,
         "role": user.role,
-        "codigo_usuario_fk": user.codigo_usuario_fk,
     }
 
     # modo web
@@ -150,6 +149,5 @@ def me(current_user: dict = Depends(get_current_user_from_token), db: Session = 
         email=user.email,
         role=user.role,
         numero_identificacion=user.numero_identificacion,
-        codigo_usuario_fk=user.codigo_usuario_fk,
     )
 

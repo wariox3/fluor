@@ -1,4 +1,4 @@
-from sqlalchemy import (Boolean, Column, DateTime, ForeignKey, Integer, UniqueConstraint, false, func, true)
+from sqlalchemy import (Boolean, Column, DateTime, ForeignKey, Integer, String, UniqueConstraint, false, func, true)
 from sqlalchemy.orm import Session, relationship
 from app.core.master_database import Base
 
@@ -12,6 +12,7 @@ class UserTenant(Base):
     usuario_id = Column(Integer, ForeignKey("auth_user.id"), nullable=False, index=True)
     tenant_id = Column(Integer, ForeignKey("mas_tenant.id"), nullable=False, index=True)
     empleado_id = Column(Integer, nullable=True)
+    codigo_usuario_fk = Column(String(25), nullable=True)
     activo = Column(Boolean, nullable=False, default=True, server_default=true())
     control = Column(Boolean, nullable=False, default=False, server_default=false())
     fecha_creacion = Column(DateTime, server_default=func.now(), nullable=False)
