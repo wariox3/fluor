@@ -100,3 +100,18 @@ class UserListResponse(BaseModel):
     page: int
     size: int
     items: list[UserResponse]        
+
+class UserSeleccionarResponse(BaseModel):
+    id: int
+    email: str
+    nombres: str | None = None
+    apellidos: str | None = None
+
+    class Config:
+        from_attributes = True
+
+class UserSeleccionarListResponse(BaseModel):
+    total: int
+    page: int
+    size: int
+    items: list[UserSeleccionarResponse]

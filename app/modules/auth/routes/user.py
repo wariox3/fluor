@@ -14,10 +14,10 @@ from app.core.config import DEBUG
 from app.core.utils import frontend_url
 from app.core.zinc import Zinc
 from app.core.turnstile import verify_turnstile
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from app.core.tenant_database import get_tenant_engine
 from app.modules.rhu.models.empleado import Empleado
-from app.modules.auth.schemas.user import UserListResponse
+from app.modules.auth.schemas.user import UserListResponse, UserSeleccionarListResponse
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,19 @@ def lista(page: int = 1, size: int = 50, email: Optional[str] = None,role: Optio
     offset = (page - 1) * size
     users = query.order_by(User.id.asc()).offset(offset).limit(size).all()
     return UserListResponse(total=total, page=page, size=size, items=users)
+
+@router.get("/seleccionar", response_model=UserSeleccionarListResponse, include_in_schema=False)
+@limiter.limit("60/minute")
+def seleccionar(request: Request, response: Response, page: int = 1, size: int = 50, buscar: Optional[str] = None, db: Session = Depends(get_master_db), current_user: dict = Depends(get_current_user)):
+    """Usuarios activos y verificados, con datos básicos. Cualquier usuario autenticado puede consultarlo."""
+    query = db.query(User).filter(User.is_active == True, User.is_verified == True)
+    if buscar:
+        patron = f"%{buscar}%"
+        query = query.filter(or_(User.email.ilike(patron), User.nombres.ilike(patron), User.apellidos.ilike(patron)))
+    total = query.with_entities(func.count(User.id)).scalar()
+    offset = (page - 1) * size
+    users = query.order_by(User.nombres, User.apellidos, User.email).offset(offset).limit(size).all()
+    return UserSeleccionarListResponse(total=total, page=page, size=size, items=users)
 
 @router.get("/detalle", response_model=PerfilResponse, include_in_schema=False)
 def detalle(db: Session = Depends(get_master_db), current_user: dict = Depends(get_current_user)):
