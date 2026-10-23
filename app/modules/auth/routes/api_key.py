@@ -1,12 +1,12 @@
-from typing import Optional
 from app.core.rate_limit import limiter
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
-from app.core.security import require_admin_control
+from app.core.security import get_current_user_from_token, require_admin_control
 from app.modules.auth.schemas.api_key import ApiKeyCreate, ApiKeyResponse
 from app.core.master_database import get_master_db
 from app.core.security import generate_api_key, hash_api_key
 from app.modules.auth.models.api_key import ApiKey
+from app.modules.mas.models.user_tenant import es_control
 
 router = APIRouter()
 
@@ -32,12 +32,20 @@ def nuevo(request: Request, response: Response, data: ApiKeyCreate, db: Session 
     }
 
 @router.get("/lista", response_model=list[ApiKeyResponse], include_in_schema=False)
-def lista(page: int = 1, size: int = 50, tenant_id: Optional[str] = None, db: Session = Depends(get_master_db), _: dict = Depends(require_admin_control)):
+def lista(tenant_id: int, page: int = 1, size: int = 50, db: Session = Depends(get_master_db), current_user: dict = Depends(get_current_user_from_token)):
+    """API keys de una empresa. Solo para quien es control activo en ella."""
+    if not es_control(db, int(current_user["sub"]), tenant_id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permiso para ver las API keys de esta empresa")
+
     offset = (page - 1) * size
-    query = db.query(ApiKey)    
-    if tenant_id:
-        query = query.filter(ApiKey.tenant_id == tenant_id)    
-    api_keys = query.offset(offset).limit(size).all()
+    api_keys = (
+        db.query(ApiKey)
+        .filter(ApiKey.tenant_id == tenant_id)
+        .order_by(ApiKey.id)
+        .offset(offset)
+        .limit(size)
+        .all()
+    )
     return api_keys
 
 @router.delete("/eliminar/{api_key_id}", include_in_schema=False)
