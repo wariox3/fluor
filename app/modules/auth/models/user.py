@@ -3,6 +3,7 @@ from sqlalchemy import (Boolean, Column, DateTime, Enum, ForeignKey, Integer, St
 from sqlalchemy.orm import relationship
 from app.core.master_database import Base
 from app.modules.auth.models.tenant import Tenant
+from app.modules.auth.models.user_tenant import UserTenant  # noqa: F401 — registra el modelo para la relación
 
 class UserRole(str, enum.Enum):
     admin = "admin"
@@ -29,4 +30,5 @@ class User(Base):
     fecha_creacion = Column(DateTime, server_default=func.now(), nullable=False)
 
     tenant = relationship(Tenant, back_populates="users")
+    users_tenants = relationship("UserTenant", back_populates="usuario")
 

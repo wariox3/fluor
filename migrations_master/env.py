@@ -16,6 +16,7 @@ from app.core.master_database import DATABASE_URL, Base
 # Importa todos los modelos del master para que Alembic los detecte
 from app.modules.auth.models.tenant import Tenant
 from app.modules.auth.models.user import User
+from app.modules.auth.models.user_tenant import UserTenant
 from app.modules.auth.models.api_key import ApiKey
 from app.modules.auth.models.notificacion import Notificacion
 from app.modules.auth.models.verificacion import Verificacion
