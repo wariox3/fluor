@@ -111,9 +111,9 @@ def test_api_key_con_vencimiento_futuro(api_key_client, db, tenant):
 
 
 @pytest.mark.parametrize("metodo,ruta", [
-    ("get", "/auth/notificacion/lista"),
-    ("get", "/auth/notificacion/contador"),
-    ("patch", "/auth/notificacion/leer-todas"),
+    ("get", "/mas/notificacion/lista"),
+    ("get", "/mas/notificacion/contador"),
+    ("patch", "/mas/notificacion/leer-todas"),
     ("get", "/mas/credito-solicitud/lista-portal"),
 ])
 def test_rutas_por_usuario_rechazan_api_key(client, db, tenant, metodo, ruta):
@@ -125,7 +125,7 @@ def test_rutas_por_usuario_rechazan_api_key(client, db, tenant, metodo, ruta):
 
 def test_rutas_por_usuario_aceptan_jwt(client, db, tenant):
     user = crear_usuario(db, tenant=tenant)
-    response = client.get("/auth/notificacion/contador", headers=auth_header(user))
+    response = client.get("/mas/notificacion/contador", headers=auth_header(user))
     assert response.status_code == 200
     assert response.json() == {"no_leidas": 0}
 

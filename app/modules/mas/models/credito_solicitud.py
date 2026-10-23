@@ -7,7 +7,7 @@ class CreditoSolicitud(Base):
     __tablename__ = "mas_credito_solicitud"
 
     codigo_credito_solicitud_pk = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    usuario_id = Column(Integer, ForeignKey("user.id"), nullable=False, index=True)
+    usuario_id = Column(Integer, ForeignKey("auth_user.id"), nullable=False, index=True)
     monto = Column(Numeric(18, 2), nullable=False)
     plazo = Column(Integer, nullable=False)                          # en meses
     tasa_interes = Column(Numeric(5, 2), nullable=True)              # % anual

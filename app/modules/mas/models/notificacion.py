@@ -4,10 +4,10 @@ from app.core.master_database import Base
 
 
 class Notificacion(Base):
-    __tablename__ = "notificacion"
+    __tablename__ = "mas_notificacion"
 
     id              = Column(Integer, primary_key=True, index=True)
-    usuario_id      = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False, index=True)
+    usuario_id      = Column(Integer, ForeignKey("auth_user.id", ondelete="CASCADE"), nullable=False, index=True)
     tipo            = Column(String(50), nullable=False)
     titulo          = Column(String(150), nullable=False)
     mensaje         = Column(Text, nullable=True)

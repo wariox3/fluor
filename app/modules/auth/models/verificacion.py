@@ -16,10 +16,10 @@ class EstadoVerificacion(str, enum.Enum):
 
 
 class Verificacion(Base):
-    __tablename__ = "verificacion"
+    __tablename__ = "auth_verificacion"
 
     id             = Column(Integer, primary_key=True, index=True)
-    usuario_id     = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False, index=True)
+    usuario_id     = Column(Integer, ForeignKey("auth_user.id", ondelete="CASCADE"), nullable=False, index=True)
     tipo           = Column(Enum(TipoVerificacion), nullable=False)
     token          = Column(String(64), nullable=False, unique=True, index=True)
     estado         = Column(Enum(EstadoVerificacion), nullable=False, default=EstadoVerificacion.pendiente)

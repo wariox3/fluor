@@ -31,7 +31,7 @@ from app.core.rate_limit import limiter
 from app.core.security import create_access_token, generate_api_key, hash_api_key, hash_password
 from app.main import app
 from app.modules.auth.models.api_key import ApiKey
-from app.modules.auth.models.tenant import Tenant
+from app.modules.mas.models.tenant import Tenant
 from app.modules.auth.models.user import User, UserRole
 
 # El listener de zona horaria ejecuta SQL de MySQL en cada conexión; SQLite no lo entiende

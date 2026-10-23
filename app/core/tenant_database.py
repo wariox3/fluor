@@ -53,7 +53,7 @@ def get_tenant_engine(database_name: str):
 
 def get_tenant_db(request: Request, current_user: dict = Depends(get_current_user), master_db: Session = Depends(get_master_db),):
     from app.modules.auth.models.user import User
-    from app.modules.auth.models.tenant import Tenant
+    from app.modules.mas.models.tenant import Tenant
 
     sub = current_user.get("sub", "")
 

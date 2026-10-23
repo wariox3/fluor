@@ -5,8 +5,8 @@ from sqlalchemy import func
 from app.core.master_database import get_master_db
 from app.core.rate_limit import limiter
 from app.core.security import require_admin_control
-from app.modules.auth.models.tenant import Tenant
-from app.modules.auth.schemas.tenant import TenantResponse, TenantListResponse
+from app.modules.mas.models.tenant import Tenant
+from app.modules.mas.schemas.tenant import TenantResponse, TenantListResponse
 
 router = APIRouter()
 

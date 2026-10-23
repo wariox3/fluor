@@ -6,7 +6,7 @@ from typing import Optional
 from app.core.security import require_admin, get_current_user
 from app.core.master_database import get_master_db
 from app.modules.auth.models.user import User, UserRole
-from app.modules.auth.models.tenant import Tenant
+from app.modules.mas.models.tenant import Tenant
 from app.modules.auth.models.verificacion import Verificacion, TipoVerificacion, EstadoVerificacion
 from app.modules.auth.schemas.user import UserCreate, UserResponse, RegisterRequest, RegisterResponse, RecuperarClaveRequest, RestablecerClaveRequest, AsociarRequest, ReenviarVerificacionRequest, ActualizarPerfilRequest, PerfilResponse
 from app.core.security import hash_password, generate_verification_token

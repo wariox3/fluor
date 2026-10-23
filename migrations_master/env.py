@@ -14,13 +14,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.core.master_database import DATABASE_URL, Base
 
 # Importa todos los modelos del master para que Alembic los detecte
-from app.modules.auth.models.tenant import Tenant
+from app.modules.mas.models.tenant import Tenant
 from app.modules.auth.models.user import User
-from app.modules.auth.models.user_tenant import UserTenant
+from app.modules.mas.models.user_tenant import UserTenant
 from app.modules.auth.models.api_key import ApiKey
-from app.modules.auth.models.notificacion import Notificacion
+from app.modules.mas.models.notificacion import Notificacion
 from app.modules.auth.models.verificacion import Verificacion
-from app.modules.auth.models.invitacion import Invitacion
+from app.modules.mas.models.invitacion import Invitacion
 from app.modules.mas.models.credito_solicitud import CreditoSolicitud
 from app.modules.mas.models.configuracion import Configuracion
 

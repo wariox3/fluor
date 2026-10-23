@@ -12,13 +12,13 @@ class EstadoInvitacion(str, enum.Enum):
 
 class Invitacion(Base):
     """Invitación de un usuario a otro (registrado y verificado) para unirse a una empresa."""
-    __tablename__ = "invitacion"
+    __tablename__ = "mas_invitacion"
 
     id                  = Column(Integer, primary_key=True)
-    tenant_id           = Column(Integer, ForeignKey("tenant.id"), nullable=False, index=True)
+    tenant_id           = Column(Integer, ForeignKey("mas_tenant.id"), nullable=False, index=True)
     # Quien invita; si se elimina, la invitación se conserva sin autor
-    usuario_id          = Column(Integer, ForeignKey("user.id", ondelete="SET NULL"), nullable=True, index=True)
+    usuario_id          = Column(Integer, ForeignKey("auth_user.id", ondelete="SET NULL"), nullable=True, index=True)
     # El invitado; si se elimina, sus invitaciones dejan de tener sentido
-    usuario_invitado_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False, index=True)
+    usuario_invitado_id = Column(Integer, ForeignKey("auth_user.id", ondelete="CASCADE"), nullable=False, index=True)
     estado              = Column(Enum(EstadoInvitacion), nullable=False, default=EstadoInvitacion.pendiente, server_default=EstadoInvitacion.pendiente.value)
     fecha               = Column(DateTime, server_default=func.now(), nullable=False)

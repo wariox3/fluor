@@ -1,6 +1,6 @@
 import asyncio
 from sqlalchemy.orm import Session
-from app.modules.auth.models.notificacion import Notificacion
+from app.modules.mas.models.notificacion import Notificacion
 
 # Colas SSE por usuario_id
 _colas: dict[int, asyncio.Queue] = {}

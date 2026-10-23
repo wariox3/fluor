@@ -7,8 +7,8 @@ from sqlalchemy import func
 from app.core.master_database import get_master_db
 from app.core.security import get_current_user_from_token, require_admin
 from app.core.notificacion import registrar_cola, eliminar_cola, crear_notificacion
-from app.modules.auth.models.notificacion import Notificacion
-from app.modules.auth.schemas.notificacion import (
+from app.modules.mas.models.notificacion import Notificacion
+from app.modules.mas.schemas.notificacion import (
     NotificacionCreate,
     NotificacionListResponse,
     NotificacionResponse,

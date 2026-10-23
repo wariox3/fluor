@@ -24,7 +24,7 @@ from app.core.middleware import (
     validation_exception_handler,
 )
 
-from app.core.master_database import Base as MasterBase, engine as master_engine
+from app.core.master_database import engine as master_engine
 from app.modules.auth.models import *  # noqa: F401,F403 — registra modelos en MasterBase
 
 from app.modules.rhu.models import *
@@ -52,7 +52,7 @@ setup_sentry()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    MasterBase.metadata.create_all(bind=master_engine)
+    # La base master se gestiona solo con Alembic (migrations_master/): no usar create_all aquí.
     yield
     # Cerrar el subproceso de render de PDF (WeasyPrint) al apagar la app
     from app.core.pdf_template import shutdown_pdf_executor
