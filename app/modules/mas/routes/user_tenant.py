@@ -133,11 +133,12 @@ def asociar(
     if not user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario no encontrado")
 
-    existe = db.query(UserTenant.id).filter(
+    # Si ya pertenece a la empresa (p. ej. por invitación) pero sin empleado, solo se completa el empleado
+    existente = db.query(UserTenant).filter(
         UserTenant.usuario_id == usuario_id,
         UserTenant.tenant_id == data.tenant_id,
     ).first()
-    if existe:
+    if existente and existente.empleado_id is not None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El usuario ya está asociado a esta empresa")
 
     tenant = db.query(Tenant).filter(Tenant.id == data.tenant_id).first()
@@ -158,6 +159,12 @@ def asociar(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"No se encontró un empleado con ese número de identificación {user.numero_identificacion} y correo {user.email} en la empresa indicada",
         )
+
+    if existente:
+        existente.empleado_id = empleado.codigo_empleado_pk
+        db.commit()
+        response.status_code = status.HTTP_200_OK
+        return {"detail": "Empleado asignado correctamente en la empresa"}
 
     db.add(UserTenant(usuario_id=usuario_id, tenant_id=data.tenant_id, empleado_id=empleado.codigo_empleado_pk))
     try:
