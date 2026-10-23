@@ -89,3 +89,20 @@ def lista_tenant(
         for ut, email, nombres, apellidos in filas
     ]
     return UserTenantUsuarioListResponse(total=total, page=page, size=size, items=items)
+
+
+@router.delete("/eliminar/{user_tenant_id}", include_in_schema=False)
+def eliminar(
+    user_tenant_id: int,
+    db: Session = Depends(get_master_db),
+    current_user: dict = Depends(get_current_user_from_token),
+):
+    """Elimina la asociación del usuario a una empresa. Solo el mismo usuario puede eliminar la suya."""
+    user_tenant = db.query(UserTenant).filter(UserTenant.id == user_tenant_id).first()
+    # Mismo 404 si no existe o es de otro usuario: no revela asociaciones ajenas
+    if not user_tenant or user_tenant.usuario_id != int(current_user["sub"]):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Asociación no encontrada")
+
+    db.delete(user_tenant)
+    db.commit()
+    return {"detail": "Asociación eliminada correctamente"}
