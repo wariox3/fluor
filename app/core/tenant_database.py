@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import sessionmaker, Session
 from decouple import config
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from app.core.security import get_current_user
 from app.core.master_database import get_master_db
 from sqlalchemy.orm import declarative_base
@@ -51,13 +51,21 @@ def get_tenant_engine(database_name: str):
         return engine
 
 
-def get_tenant_db(current_user: dict = Depends(get_current_user), master_db: Session = Depends(get_master_db),):
+def get_tenant_db(request: Request, current_user: dict = Depends(get_current_user), master_db: Session = Depends(get_master_db),):
     from app.modules.auth.models.user import User
     from app.modules.auth.models.tenant import Tenant
 
     sub = current_user.get("sub", "")
 
     if sub.lstrip("-").isdigit():
+        # Transición a user_tenant: con JWT se exige el encabezado, pero su valor aún
+        # no se usa; la empresa sigue saliendo de user.tenant_id.
+        if not request.headers.get("X-Tenant-ID"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Debe indicar la empresa en el encabezado X-Tenant-ID",
+            )
+
         # JWT: sub es el ID del usuario — consultamos en tiempo real para reflejar cambios de tenant
         user = master_db.query(User).filter(User.id == int(sub)).first()
         schema = user.tenant.schema if user and user.tenant else None
