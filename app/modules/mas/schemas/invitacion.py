@@ -34,3 +34,22 @@ class InvitacionPendienteListResponse(BaseModel):
     page: int
     size: int
     items: list[InvitacionPendienteResponse]
+
+
+class InvitacionTenantResponse(BaseModel):
+    id: int
+    usuario_invitado_id: int
+    usuario_invitado_nombre: str | None
+    usuario_invitado_email: str
+    usuario_id: int | None
+    usuario_nombre: str | None
+    usuario_email: str | None
+    estado: EstadoInvitacion
+    fecha: datetime
+
+
+class InvitacionTenantListResponse(BaseModel):
+    total: int
+    page: int
+    size: int
+    items: list[InvitacionTenantResponse]
