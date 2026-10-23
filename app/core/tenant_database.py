@@ -52,23 +52,42 @@ def get_tenant_engine(database_name: str):
 
 
 def get_tenant_db(request: Request, current_user: dict = Depends(get_current_user), master_db: Session = Depends(get_master_db),):
-    from app.modules.auth.models.user import User
     from app.modules.mas.models.tenant import Tenant
+    from app.modules.mas.models.user_tenant import UserTenant
 
     sub = current_user.get("sub", "")
 
     if sub.lstrip("-").isdigit():
-        # Transición a user_tenant: con JWT se exige el encabezado, pero su valor aún
-        # no se usa; la empresa sigue saliendo de user.tenant_id.
-        if not request.headers.get("X-Tenant-ID"):
+        # JWT: la empresa sale del encabezado X-Tenant-ID, validada contra user_tenant
+        tenant_header = request.headers.get("X-Tenant-ID", "").strip()
+        if not tenant_header:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Debe indicar la empresa en el encabezado X-Tenant-ID",
             )
+        if not tenant_header.isdigit():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El encabezado X-Tenant-ID no es válido",
+            )
 
-        # JWT: sub es el ID del usuario — consultamos en tiempo real para reflejar cambios de tenant
-        user = master_db.query(User).filter(User.id == int(sub)).first()
-        schema = user.tenant.schema if user and user.tenant else None
+        # Se consulta en cada petición para reflejar al instante accesos retirados
+        tenant = (
+            master_db.query(Tenant)
+            .join(UserTenant, UserTenant.tenant_id == Tenant.id)
+            .filter(
+                UserTenant.usuario_id == int(sub),
+                UserTenant.tenant_id == int(tenant_header),
+                UserTenant.activo == True,
+            )
+            .first()
+        )
+        if not tenant:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tienes acceso a esta empresa",
+            )
+        schema = tenant.schema
     else:
         # API Key: sub es el prefix — usamos tenant_id del payload para obtener el schema
         tenant_id = current_user.get("tenant_id")
