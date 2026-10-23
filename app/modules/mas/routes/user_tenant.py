@@ -25,12 +25,15 @@ router = APIRouter()
 def lista(
     page: int = 1,
     size: int = 50,
+    empleado: bool = False,
     db: Session = Depends(get_master_db),
     current_user: dict = Depends(get_current_user_from_token),
 ):
-    """Empresas a las que pertenece el usuario autenticado."""
+    """Empresas a las que pertenece el usuario autenticado. Con empleado=true, solo donde tiene empleado asignado."""
     usuario_id = int(current_user["sub"])
     query = db.query(UserTenant).filter(UserTenant.usuario_id == usuario_id)
+    if empleado:
+        query = query.filter(UserTenant.empleado_id.isnot(None))
     total = query.with_entities(func.count(UserTenant.id)).scalar()
     offset = (page - 1) * size
     filas = (
