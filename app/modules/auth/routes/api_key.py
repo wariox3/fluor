@@ -1,7 +1,7 @@
 from app.core.rate_limit import limiter
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
-from app.core.security import get_current_user_from_token, require_admin_control
+from app.core.security import get_current_user_from_token
 from app.modules.auth.schemas.api_key import ApiKeyCreate, ApiKeyResponse
 from app.core.master_database import get_master_db
 from app.core.security import generate_api_key, hash_api_key
@@ -12,7 +12,11 @@ router = APIRouter()
 
 @router.post("/nuevo", include_in_schema=False)
 @limiter.limit("5/minute")
-def nuevo(request: Request, response: Response, data: ApiKeyCreate, db: Session = Depends(get_master_db), current_user: dict = Depends(require_admin_control)):
+def nuevo(request: Request, response: Response, data: ApiKeyCreate, db: Session = Depends(get_master_db), current_user: dict = Depends(get_current_user_from_token)):
+    """Crea una API key para una empresa. Solo para quien es control activo en ella."""
+    if not es_control(db, int(current_user["sub"]), data.tenant_id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permiso para crear API keys en esta empresa")
+
     prefix, api_key = generate_api_key()
     key = ApiKey(
         name=data.name,
@@ -50,9 +54,11 @@ def lista(tenant_id: int, page: int = 1, size: int = 50, db: Session = Depends(g
 
 @router.delete("/eliminar/{api_key_id}", include_in_schema=False)
 @limiter.limit("5/minute")
-def eliminar(request: Request, response: Response, api_key_id: int, db: Session = Depends(get_master_db), _: dict = Depends(require_admin_control)):
+def eliminar(request: Request, response: Response, api_key_id: int, db: Session = Depends(get_master_db), current_user: dict = Depends(get_current_user_from_token)):
+    """Elimina una API key. Solo para quien es control activo en la empresa de la key."""
     key = db.query(ApiKey).filter(ApiKey.id == api_key_id).first()
-    if not key:
+    # Mismo 404 si no existe o es de una empresa ajena: no revela keys de otras empresas
+    if not key or not es_control(db, int(current_user["sub"]), key.tenant_id):
         raise HTTPException(status_code=404, detail="API Key no encontrada")
 
     db.delete(key)
