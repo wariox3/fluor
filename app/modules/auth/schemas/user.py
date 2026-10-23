@@ -12,10 +12,7 @@ class LoginRequest(BaseModel):
 class UserInfo(BaseModel):
     id: int
     email: str
-    tenant_id: int | None = None
-    tenant_nombre: str | None = None
     role: UserRole | None = None
-    empleado_id: int | None = None
     numero_identificacion: str | None = None
     codigo_usuario_fk: str | None = None
 
@@ -40,12 +37,10 @@ class UserResponse(BaseModel):
     id: int
     email: str
     role: str
-    tenant_id: int | None = None
     nombres: str | None = None
     apellidos: str | None = None
     numero_identificacion: str | None = None
     is_verified: bool = False
-    empleado_id: int | None = None
 
     class Config:
         from_attributes = True
@@ -63,10 +58,6 @@ class RestablecerClaveRequest(BaseModel):
     nueva_clave: str
     turnstile_token: str | None = None
 
-class AsociarRequest(BaseModel):
-    usuario_id: int
-    tenant_id: int
-
 class ReenviarVerificacionRequest(BaseModel):
     email: EmailStr
     turnstile_token: str | None = None
@@ -75,7 +66,6 @@ class PerfilResponse(BaseModel):
     nombres: str | None = None
     apellidos: str | None = None
     numero_identificacion: str | None = None
-    empleado_id: int | None = None
     email: str | None = None
 
     class Config:

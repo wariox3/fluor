@@ -11,6 +11,5 @@ class Tenant(Base):
     credito = Column(Boolean, default=False, server_default="0")
     anticipo = Column(Boolean, default=False, server_default="0")
     activo = Column(Boolean, default=False, server_default="0")
-    users = relationship("User", back_populates="tenant")
     api_keys = relationship("ApiKey", back_populates="tenant")
     users_tenants = relationship("UserTenant", back_populates="tenant")

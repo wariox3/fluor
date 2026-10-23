@@ -1,22 +1,19 @@
 import logging
 from app.core.rate_limit import limiter
 from fastapi import APIRouter, HTTPException, status, Depends, Request, Response
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 from typing import Optional
 from app.core.security import require_admin, get_current_user
 from app.core.master_database import get_master_db
 from app.modules.auth.models.user import User, UserRole
-from app.modules.mas.models.tenant import Tenant
 from app.modules.auth.models.verificacion import Verificacion, TipoVerificacion, EstadoVerificacion
-from app.modules.auth.schemas.user import UserResponse, RegisterRequest, RegisterResponse, RecuperarClaveRequest, RestablecerClaveRequest, AsociarRequest, ReenviarVerificacionRequest, ActualizarPerfilRequest, PerfilResponse
+from app.modules.auth.schemas.user import UserResponse, RegisterRequest, RegisterResponse, RecuperarClaveRequest, RestablecerClaveRequest, ReenviarVerificacionRequest, ActualizarPerfilRequest, PerfilResponse
 from app.core.security import hash_password, generate_verification_token
 from app.core.config import DEBUG
 from app.core.utils import frontend_url
 from app.core.zinc import Zinc
 from app.core.turnstile import verify_turnstile
 from sqlalchemy import func, or_
-from app.core.tenant_database import get_tenant_engine
-from app.modules.rhu.models.empleado import Empleado
 from app.modules.auth.schemas.user import UserListResponse, UserSeleccionarListResponse
 
 logger = logging.getLogger(__name__)
@@ -224,46 +221,6 @@ def reenviar_verificacion(request: Request, response: Response, data: ReenviarVe
         except Exception as e:
             logger.warning(f"No se pudo reenviar correo de verificación a {user.email}: {e}")
     return {"detail": "Si el correo existe y la cuenta no está verificada, recibirás el enlace de verificación"}
-
-
-@router.post("/asociar", include_in_schema=False)
-@limiter.limit("20/minute")
-def asociar(request: Request, response: Response, data: AsociarRequest, db: Session = Depends(get_master_db), current_user: dict = Depends(get_current_user),):
-    if int(current_user.get("sub")) != data.usuario_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Estas tratando de cambiar informacion de otro usuario")
-
-    user = db.query(User).filter(User.id == data.usuario_id).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario no encontrado")
-    if user.tenant_id == data.tenant_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El usuario ya está asociado a esta empresa")
-    if user.role != UserRole.employee:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Solo los usuarios con rol empleado pueden ser asociados a una empresa")
-    tenant = db.query(Tenant).filter(Tenant.id == data.tenant_id).first()
-    if not tenant or not tenant.schema:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empresa no encontrada")
-
-    engine = get_tenant_engine(tenant.schema)
-    TenantSession = sessionmaker(bind=engine)
-    tenant_db = TenantSession()
-    try:
-        empleado = tenant_db.query(Empleado).filter(
-            Empleado.numero_identificacion == user.numero_identificacion,
-            Empleado.correo == user.email,
-        ).first()
-    finally:
-        tenant_db.close()
-
-    if not empleado:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No se encontró un empleado con ese número de identificación {user.numero_identificacion} y correo {user.email} en la empresa indicada"
-        )
-
-    user.tenant_id = data.tenant_id
-    user.empleado_id = empleado.codigo_empleado_pk
-    db.commit()
-    return {"detail": "Usuario asociado correctamente a la empresa"}
 
 
 @router.put("/actualizar", response_model=UserResponse, include_in_schema=False)

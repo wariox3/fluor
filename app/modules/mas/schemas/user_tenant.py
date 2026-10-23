@@ -2,6 +2,10 @@ from datetime import datetime
 from pydantic import BaseModel
 
 
+class UserTenantAsociarRequest(BaseModel):
+    tenant_id: int
+
+
 class UserTenantResponse(BaseModel):
     id: int
     tenant_id: int

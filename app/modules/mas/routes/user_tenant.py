@@ -1,12 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session, sessionmaker
 from app.core.master_database import get_master_db
+from app.core.rate_limit import limiter
+from app.core.tenant_database import get_tenant_engine
 from app.core.security import get_current_user_from_token
 from app.modules.auth.models.user import User
 from app.modules.mas.models.tenant import Tenant
 from app.modules.mas.models.user_tenant import UserTenant, es_control
+from app.modules.rhu.models.empleado import Empleado
 from app.modules.mas.schemas.user_tenant import (
+    UserTenantAsociarRequest,
     UserTenantListResponse,
     UserTenantResponse,
     UserTenantUsuarioListResponse,
@@ -106,3 +111,54 @@ def eliminar(
     db.delete(user_tenant)
     db.commit()
     return {"detail": "Asociación eliminada correctamente"}
+
+
+@router.post("/asociar", status_code=status.HTTP_201_CREATED, include_in_schema=False)
+@limiter.limit("20/minute")
+def asociar(
+    request: Request,
+    response: Response,
+    data: UserTenantAsociarRequest,
+    db: Session = Depends(get_master_db),
+    current_user: dict = Depends(get_current_user_from_token),
+):
+    """Asocia al usuario autenticado a una empresa donde exista como empleado (mismo documento y correo)."""
+    usuario_id = int(current_user["sub"])
+    user = db.query(User).filter(User.id == usuario_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario no encontrado")
+
+    existe = db.query(UserTenant.id).filter(
+        UserTenant.usuario_id == usuario_id,
+        UserTenant.tenant_id == data.tenant_id,
+    ).first()
+    if existe:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El usuario ya está asociado a esta empresa")
+
+    tenant = db.query(Tenant).filter(Tenant.id == data.tenant_id).first()
+    if not tenant or not tenant.schema:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empresa no encontrada")
+
+    tenant_db = sessionmaker(bind=get_tenant_engine(tenant.schema))()
+    try:
+        empleado = tenant_db.query(Empleado).filter(
+            Empleado.numero_identificacion == user.numero_identificacion,
+            Empleado.correo == user.email,
+        ).first()
+    finally:
+        tenant_db.close()
+
+    if not empleado:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No se encontró un empleado con ese número de identificación {user.numero_identificacion} y correo {user.email} en la empresa indicada",
+        )
+
+    db.add(UserTenant(usuario_id=usuario_id, tenant_id=data.tenant_id, empleado_id=empleado.codigo_empleado_pk))
+    try:
+        db.commit()
+    except IntegrityError:
+        # Dos peticiones simultáneas: la restricción única (usuario, empresa) frena la segunda
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El usuario ya está asociado a esta empresa")
+    return {"detail": "Usuario asociado correctamente a la empresa"}

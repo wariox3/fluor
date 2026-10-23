@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 from app.core.security import verify_password, create_access_token, create_refresh_token, decode_refresh_token, get_current_user_from_token
 from app.core.turnstile import verify_turnstile
 from app.modules.auth.schemas.user import LoginRequest, LoginResponse, UserInfo
-from sqlalchemy.orm import joinedload
 from app.core.master_database import get_master_db
 from app.modules.auth.models.user import User
 
@@ -22,7 +21,7 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
     if data.client_type not in ("integration", "api"):
         verify_turnstile(data.turnstile_token)
 
-    user = db.query(User).options(joinedload(User.tenant)).filter(User.email == data.email).first()
+    user = db.query(User).filter(User.email == data.email).first()
     if not user or not verify_password(data.password, user.password_hash):
         registrar_login_fallido(data.email)
         raise HTTPException(
@@ -46,9 +45,7 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
 
     token_data = {
         "sub": str(user.id),
-        "tenant_id": user.tenant_id,
         "role": user.role,
-        "empleado_id": user.empleado_id
     }
 
     access_token = create_access_token(token_data)
@@ -56,10 +53,7 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
     user_data = {
         "id": user.id,
         "email": user.email,
-        "tenant_id": user.tenant_id,
-        "tenant_nombre": user.tenant.nombre if user.tenant else None,
         "role": user.role,
-        "empleado_id": user.empleado_id,
         "codigo_usuario_fk": user.codigo_usuario_fk,
     }
 
@@ -115,9 +109,7 @@ def refresh(request: Request, response: Response, db: Session = Depends(get_mast
 
     token_data = {
         "sub": str(user.id),
-        "tenant_id": user.tenant_id,
         "role": user.role,
-        "empleado_id": user.empleado_id
     }
 
     new_access_token = create_access_token(token_data)
@@ -150,16 +142,13 @@ def logout(response: Response):
 
 @router.get("/me", response_model=UserInfo, include_in_schema=False)
 def me(current_user: dict = Depends(get_current_user_from_token), db: Session = Depends(get_master_db)):
-    user = db.query(User).options(joinedload(User.tenant)).filter(User.id == int(current_user["sub"])).first()
+    user = db.query(User).filter(User.id == int(current_user["sub"])).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
     return UserInfo(
         id=user.id,
         email=user.email,
-        tenant_id=user.tenant_id,
-        tenant_nombre=user.tenant.nombre if user.tenant else None,
         role=user.role,
-        empleado_id=user.empleado_id,
         numero_identificacion=user.numero_identificacion,
         codigo_usuario_fk=user.codigo_usuario_fk,
     )
