@@ -17,3 +17,22 @@ class UserTenantListResponse(BaseModel):
     page: int
     size: int
     items: list[UserTenantResponse]
+
+
+class UserTenantUsuarioResponse(BaseModel):
+    id: int
+    usuario_id: int
+    email: str
+    nombres: str | None
+    apellidos: str | None
+    empleado_id: int | None
+    activo: bool
+    control: bool
+    fecha_creacion: datetime
+
+
+class UserTenantUsuarioListResponse(BaseModel):
+    total: int
+    page: int
+    size: int
+    items: list[UserTenantUsuarioResponse]

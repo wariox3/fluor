@@ -28,13 +28,6 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
-class UserCreate(BaseModel):
-    email: EmailStr
-    password: str
-    tenant_id: int | None = None
-    role: UserRole = UserRole.user
-    empleado_id: int | None = None
-
 class RegisterRequest(BaseModel):
     email: EmailStr
     password: str

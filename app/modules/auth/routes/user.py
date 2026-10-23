@@ -8,7 +8,7 @@ from app.core.master_database import get_master_db
 from app.modules.auth.models.user import User, UserRole
 from app.modules.mas.models.tenant import Tenant
 from app.modules.auth.models.verificacion import Verificacion, TipoVerificacion, EstadoVerificacion
-from app.modules.auth.schemas.user import UserCreate, UserResponse, RegisterRequest, RegisterResponse, RecuperarClaveRequest, RestablecerClaveRequest, AsociarRequest, ReenviarVerificacionRequest, ActualizarPerfilRequest, PerfilResponse
+from app.modules.auth.schemas.user import UserResponse, RegisterRequest, RegisterResponse, RecuperarClaveRequest, RestablecerClaveRequest, AsociarRequest, ReenviarVerificacionRequest, ActualizarPerfilRequest, PerfilResponse
 from app.core.security import hash_password, generate_verification_token
 from app.core.config import DEBUG
 from app.core.utils import frontend_url
@@ -51,28 +51,6 @@ def detalle(db: Session = Depends(get_master_db), current_user: dict = Depends(g
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
     return user
-
-
-@router.post("/nuevo", response_model=UserResponse, include_in_schema=False)
-@limiter.limit("5/minute")
-def nuevo(request: Request, response: Response, data: UserCreate, db: Session = Depends(get_master_db), _: dict = Depends(require_admin)):
-    existing_user = db.query(User).filter((User.email == data.email)).first()
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Usuario o email ya existe"
-        )
-
-    new_user = User(
-        email=data.email,
-        password_hash=hash_password(data.password),
-        tenant_id=data.tenant_id,
-        role=data.role
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
 
 
 @router.post("/registrar", response_model=RegisterResponse, response_model_exclude_none=True, include_in_schema=False)

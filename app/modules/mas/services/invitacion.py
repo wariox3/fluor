@@ -6,18 +6,12 @@ from sqlalchemy.orm import Session
 from app.modules.auth.models.user import User
 from app.modules.mas.models.invitacion import EstadoInvitacion, Invitacion
 from app.modules.mas.models.tenant import Tenant
-from app.modules.mas.models.user_tenant import UserTenant
+from app.modules.mas.models.user_tenant import UserTenant, es_control
 
 
 def crear(db: Session, usuario_id: int, tenant_id: int, usuario_invitado_id: int) -> Invitacion:
     """Crea una invitación pendiente. Solo puede invitar quien es control activo en la empresa."""
-    es_control = db.query(UserTenant.id).filter(
-        UserTenant.usuario_id == usuario_id,
-        UserTenant.tenant_id == tenant_id,
-        UserTenant.activo == True,
-        UserTenant.control == True,
-    ).first()
-    if not es_control:
+    if not es_control(db, usuario_id, tenant_id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permiso para invitar usuarios a esta empresa")
 
     invitado = db.query(User).filter(User.id == usuario_invitado_id).first()

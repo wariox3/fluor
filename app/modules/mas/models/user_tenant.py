@@ -1,5 +1,5 @@
 from sqlalchemy import (Boolean, Column, DateTime, ForeignKey, Integer, UniqueConstraint, false, func, true)
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Session, relationship
 from app.core.master_database import Base
 
 
@@ -18,3 +18,13 @@ class UserTenant(Base):
 
     usuario = relationship("User", back_populates="users_tenants")
     tenant = relationship("Tenant", back_populates="users_tenants")
+
+
+def es_control(db: Session, usuario_id: int, tenant_id: int) -> bool:
+    """True si el usuario es control activo en la empresa."""
+    return db.query(UserTenant.id).filter(
+        UserTenant.usuario_id == usuario_id,
+        UserTenant.tenant_id == tenant_id,
+        UserTenant.activo == True,
+        UserTenant.control == True,
+    ).first() is not None
