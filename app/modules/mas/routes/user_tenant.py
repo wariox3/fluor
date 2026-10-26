@@ -11,6 +11,7 @@ from app.modules.mas.models.tenant import Tenant
 from app.modules.mas.models.user_tenant import UserTenant, es_control
 from app.modules.rhu.models.empleado import Empleado
 from app.modules.mas.schemas.user_tenant import (
+    UserTenantActualizarRequest,
     UserTenantAsociarRequest,
     UserTenantListResponse,
     UserTenantResponse,
@@ -194,3 +195,42 @@ def asociar(
         db.rollback()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El usuario ya está asociado a esta empresa")
     return {"detail": "Usuario asociado correctamente a la empresa"}
+
+
+@router.patch("/{user_tenant_id}/actualizar", response_model=UserTenantUsuarioResponse, include_in_schema=False)
+def actualizar(
+    user_tenant_id: int,
+    data: UserTenantActualizarRequest,
+    db: Session = Depends(get_master_db),
+    current_user: dict = Depends(get_current_user_from_token),
+):
+    """Actualiza codigo_usuario_fk de una membresía. Solo para quien es control activo en esa empresa."""
+    fila = (
+        db.query(UserTenant, User.email, User.nombres, User.apellidos)
+        .join(User, User.id == UserTenant.usuario_id)
+        .filter(UserTenant.id == user_tenant_id)
+        .first()
+    )
+    if not fila:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Membresía no encontrada")
+    ut, email, nombres, apellidos = fila
+
+    if not es_control(db, int(current_user["sub"]), ut.tenant_id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permiso para actualizar usuarios de esta empresa")
+
+    ut.codigo_usuario_fk = data.codigo_usuario_fk
+    db.commit()
+    db.refresh(ut)
+    return UserTenantUsuarioResponse(
+        id=ut.id,
+        usuario_id=ut.usuario_id,
+        email=email,
+        nombres=nombres,
+        apellidos=apellidos,
+        empleado_id=ut.empleado_id,
+        codigo_usuario_fk=ut.codigo_usuario_fk,
+        activo=ut.activo,
+        control=ut.control,
+        erp=ut.erp,
+        fecha_creacion=ut.fecha_creacion,
+    )

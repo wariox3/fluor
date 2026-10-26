@@ -1,9 +1,24 @@
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class UserTenantAsociarRequest(BaseModel):
     tenant_id: int
+
+
+class UserTenantActualizarRequest(BaseModel):
+    """Solo se permite cambiar codigo_usuario_fk; cualquier otro campo se rechaza."""
+    model_config = ConfigDict(extra="forbid")
+
+    codigo_usuario_fk: str | None = Field(max_length=25)  # obligatorio; null o "" lo limpia
+
+    @field_validator("codigo_usuario_fk")
+    @classmethod
+    def _vacio_a_none(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        v = v.strip()
+        return v or None
 
 
 class UserTenantResponse(BaseModel):
