@@ -45,6 +45,7 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
 
     token_data = {
         "sub": str(user.id),
+        "email": user.email,
         "role": user.role,
     }
 
@@ -108,6 +109,7 @@ def refresh(request: Request, response: Response, db: Session = Depends(get_mast
 
     token_data = {
         "sub": str(user.id),
+        "email": user.email,
         "role": user.role,
     }
 

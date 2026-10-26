@@ -55,6 +55,7 @@ class GuiaCreateRequest(BaseModel):
     empaque_referencia: Optional[str] = Field(None, max_length=80)
     mercancia_peligrosa: bool = False
     contenido_verificado: bool = False
+    usuario: Optional[str] = Field(None, max_length=25)
 
 class GuiaCreateResponse(BaseModel):
     codigo_guia_pk: int

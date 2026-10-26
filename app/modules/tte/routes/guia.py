@@ -5,8 +5,11 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import Session, joinedload
 from typing import Literal, Optional
 from app.core.tenant_database import get_tenant_db
+from app.core.master_database import get_master_db
 from app.core.security import get_current_user
 from app.core.config import DEFAULT_EMPRESA_ID
+from app.modules.auth.models.api_key import ApiKey
+from app.modules.auth.models.user import User
 from app.modules.gen.models.asesor import Asesor
 from app.modules.gen.models.identificacion import Identificacion
 from app.modules.gen.models.tercero import Tercero
@@ -29,8 +32,25 @@ from app.modules.tte.formats.datos import MAXIMO_GUIAS, cargar_empresa, cargar_g
 
 router = APIRouter()
 
+def _usuario_autenticado(master_db: Session, current_user: dict) -> str:
+    """Correo del usuario autenticado, truncado a 25 caracteres.
+    JWT: viene en el claim email. API key (o token sin email): se busca en la BD master."""
+    if current_user.get("email"):
+        return current_user["email"][:25]
+    sub = str(current_user.get("sub", ""))
+    usuario_id = None
+    if sub.isdigit():
+        usuario_id = int(sub)
+    else:
+        key = master_db.query(ApiKey).filter(ApiKey.prefix == sub).first()
+        if key:
+            usuario_id = key.usuario_id
+    user = master_db.query(User).filter(User.id == usuario_id).first() if usuario_id else None
+    return (user.email if user else sub)[:25]
+
+
 @router.post("/nuevo", response_model=GuiaCreateResponse)
-def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), master_db: Session = Depends(get_master_db), current_user: dict = Depends(get_current_user)):
     fks = [
         (GuiaTipo, GuiaTipo.codigo_guia_tipo_pk, payload.codigo_guia_tipo_fk, "Tipo de guía no encontrado"),
         (Operacion, Operacion.codigo_operacion_pk, payload.codigo_operacion_ingreso_fk, "Operación ingreso no encontrada"),
@@ -133,6 +153,7 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), curr
         latitud=float(ciudad_destino.latitud) if ciudad_destino.latitud else None,
         longitud=float(ciudad_destino.longitud) if ciudad_destino.longitud else None,
         fecha_ingreso=datetime.now(),
+        usuario=payload.usuario or _usuario_autenticado(master_db, current_user),
         fecha_recogido=datetime.now(),
         fecha_ingreso_operacion=datetime.now(),
         estado_recogido=payload.estado_recogido,
