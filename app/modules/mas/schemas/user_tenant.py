@@ -14,6 +14,7 @@ class UserTenantResponse(BaseModel):
     codigo_usuario_fk: str | None
     activo: bool
     control: bool
+    erp: bool
     fecha_creacion: datetime
 
 
@@ -34,6 +35,7 @@ class UserTenantUsuarioResponse(BaseModel):
     codigo_usuario_fk: str | None
     activo: bool
     control: bool
+    erp: bool
     fecha_creacion: datetime
 
 

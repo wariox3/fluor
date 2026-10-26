@@ -53,6 +53,7 @@ def lista(
             codigo_usuario_fk=ut.codigo_usuario_fk,
             activo=ut.activo,
             control=ut.control,
+            erp=ut.erp,
             fecha_creacion=ut.fecha_creacion,
         )
         for ut, nombre in filas
@@ -65,14 +66,17 @@ def lista_tenant(
     tenant_id: int,
     page: int = 1,
     size: int = 50,
+    erp: bool | None = None,
     db: Session = Depends(get_master_db),
     current_user: dict = Depends(get_current_user_from_token),
 ):
-    """Usuarios de una empresa. Solo para quien es control activo en ella."""
+    """Usuarios de una empresa. Solo para quien es control activo en ella. Con erp, filtra por acceso al ERP."""
     if not es_control(db, int(current_user["sub"]), tenant_id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permiso para ver los usuarios de esta empresa")
 
     query = db.query(UserTenant).filter(UserTenant.tenant_id == tenant_id)
+    if erp is not None:
+        query = query.filter(UserTenant.erp == erp)
     total = query.with_entities(func.count(UserTenant.id)).scalar()
     offset = (page - 1) * size
     filas = (
@@ -94,6 +98,7 @@ def lista_tenant(
             codigo_usuario_fk=ut.codigo_usuario_fk,
             activo=ut.activo,
             control=ut.control,
+            erp=ut.erp,
             fecha_creacion=ut.fecha_creacion,
         )
         for ut, email, nombres, apellidos in filas
@@ -166,7 +171,12 @@ def asociar(
         response.status_code = status.HTTP_200_OK
         return {"detail": "Empleado asignado correctamente en la empresa"}
 
-    db.add(UserTenant(usuario_id=usuario_id, tenant_id=data.tenant_id, empleado_id=empleado.codigo_empleado_pk))
+    db.add(UserTenant(
+        usuario_id=usuario_id,
+        tenant_id=data.tenant_id,
+        empleado_id=empleado.codigo_empleado_pk,
+        erp=False,
+    ))
     try:
         db.commit()
     except IntegrityError:

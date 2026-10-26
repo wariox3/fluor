@@ -121,7 +121,7 @@ def aceptar(db: Session, invitacion_id: int, usuario_id: int) -> Invitacion:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ya perteneces a esta empresa")
 
     # Acceso y cambio de estado en una sola transacción
-    db.add(UserTenant(usuario_id=usuario_id, tenant_id=invitacion.tenant_id))
+    db.add(UserTenant(usuario_id=usuario_id, tenant_id=invitacion.tenant_id, erp=True))
     invitacion.estado = EstadoInvitacion.aceptada
     try:
         db.commit()

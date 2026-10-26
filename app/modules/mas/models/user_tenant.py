@@ -15,6 +15,7 @@ class UserTenant(Base):
     codigo_usuario_fk = Column(String(25), nullable=True)
     activo = Column(Boolean, nullable=False, default=True, server_default=true())
     control = Column(Boolean, nullable=False, default=False, server_default=false())
+    erp = Column(Boolean, nullable=False, default=False, server_default=false())  # acceso al ERP (por invitación)
     fecha_creacion = Column(DateTime, server_default=func.now(), nullable=False)
 
     usuario = relationship("User", back_populates="users_tenants")
