@@ -67,21 +67,31 @@ def lista_tenant(
     page: int = 1,
     size: int = 50,
     erp: bool | None = None,
+    usuario_id: int | None = None,
+    user_email: str | None = None,
     db: Session = Depends(get_master_db),
     current_user: dict = Depends(get_current_user_from_token),
 ):
-    """Usuarios de una empresa. Solo para quien es control activo en ella. Con erp, filtra por acceso al ERP."""
+    """Usuarios de una empresa. Solo para quien es control activo en ella.
+    Filtros opcionales: erp, usuario_id y user_email (coincidencia parcial)."""
     if not es_control(db, int(current_user["sub"]), tenant_id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permiso para ver los usuarios de esta empresa")
 
-    query = db.query(UserTenant).filter(UserTenant.tenant_id == tenant_id)
+    query = (
+        db.query(UserTenant)
+        .join(User, User.id == UserTenant.usuario_id)
+        .filter(UserTenant.tenant_id == tenant_id)
+    )
     if erp is not None:
         query = query.filter(UserTenant.erp == erp)
+    if usuario_id is not None:
+        query = query.filter(UserTenant.usuario_id == usuario_id)
+    if user_email:
+        query = query.filter(User.email.ilike(f"%{user_email.strip()}%"))
     total = query.with_entities(func.count(UserTenant.id)).scalar()
     offset = (page - 1) * size
     filas = (
-        query.join(User, User.id == UserTenant.usuario_id)
-        .with_entities(UserTenant, User.email, User.nombres, User.apellidos)
+        query.with_entities(UserTenant, User.email, User.nombres, User.apellidos)
         .order_by(User.nombres, User.apellidos, User.email)
         .offset(offset)
         .limit(size)
