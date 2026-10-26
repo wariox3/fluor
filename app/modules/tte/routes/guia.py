@@ -349,7 +349,7 @@ _RESPUESTA_PDF = {
     response_class=Response,
     responses=_RESPUESTA_PDF,
     description=(
-        "PDF de las guías no anuladas del rango (máximo 30). Si no se envía `formato`, se usa "
+        f"PDF de las guías no anuladas del rango (máximo {MAXIMO_GUIAS}). Si no se envía `formato`, se usa "
         "`codigo_formato_guia_web` de la configuración y, si no hay uno válido, el formato 3."
     ),
 )
@@ -368,7 +368,7 @@ def imprimir_guia(
     response_class=Response,
     responses=_RESPUESTA_PDF,
     description=(
-        "PDF con un rótulo por unidad de las guías no anuladas del rango (máximo 30 guías). Si no se "
+        f"PDF con un rótulo por unidad de las guías no anuladas del rango (máximo {MAXIMO_GUIAS} guías). Si no se "
         "envía `formato`, se usa `codigo_formato_rotulo` de la configuración y, si no hay uno válido, el 1."
     ),
 )

@@ -23,7 +23,7 @@ from app.modules.tte.models.seguimiento import Seguimiento
 
 logger = logging.getLogger(__name__)
 
-MAXIMO_GUIAS = 30
+MAXIMO_GUIAS = 100
 
 
 def numero(valor: float) -> str:
