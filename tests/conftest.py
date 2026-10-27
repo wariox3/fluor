@@ -32,6 +32,7 @@ from app.core.security import create_access_token, generate_api_key, hash_api_ke
 from app.main import app
 from app.modules.auth.models.api_key import ApiKey
 from app.modules.mas.models.tenant import Tenant
+from app.modules.mas.models.user_tenant import UserTenant
 from app.modules.auth.models.user import User, UserRole
 
 # El listener de zona horaria ejecuta SQL de MySQL en cada conexión; SQLite no lo entiende
@@ -104,17 +105,22 @@ def crear_tenant(db, nombre, schema):
 
 def crear_usuario(db, email="usuario@example.com", role=UserRole.user, tenant=None, **campos):
     campos.setdefault("is_verified", True)
-    user = User(
-        email=email,
-        password_hash=hash_password(PASSWORD),
-        role=role,
-        tenant_id=tenant.id if tenant else None,
-        **campos,
-    )
+    user = User(email=email, password_hash=hash_password(PASSWORD), role=role, **campos)
     db.add(user)
     db.commit()
     db.refresh(user)
+    if tenant:
+        asociar_tenant(db, user, tenant)
     return user
+
+
+def asociar_tenant(db, user, tenant, **campos):
+    """Da acceso al usuario a la empresa con una fila en mas_user_tenant."""
+    acceso = UserTenant(usuario_id=user.id, tenant_id=tenant.id, **campos)
+    db.add(acceso)
+    db.commit()
+    db.refresh(acceso)
+    return acceso
 
 
 def crear_api_key(db, tenant, **campos):
@@ -126,12 +132,7 @@ def crear_api_key(db, tenant, **campos):
 
 
 def token_para(user):
-    return create_access_token({
-        "sub": str(user.id),
-        "tenant_id": user.tenant_id,
-        "role": user.role.value,
-        "empleado_id": user.empleado_id,
-    })
+    return create_access_token({"sub": str(user.id), "email": user.email, "role": user.role.value})
 
 
 def auth_header(user):

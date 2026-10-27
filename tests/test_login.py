@@ -1,30 +1,61 @@
+import time
+
 import pytest
 
-from app.core.security import decode_token
+from app.core.security import decode_refresh_token, decode_token
 from tests.conftest import PASSWORD, crear_usuario
 
 LOGIN = "/auth/seguridad/login"
 
 
-def login(client, email="usuario@example.com", password=PASSWORD, client_type="api"):
+def login(client, email="usuario@example.com", password=PASSWORD, client_type="mobile"):
     return client.post(LOGIN, json={"email": email, "password": password, "client_type": client_type})
 
 
-def test_login_api_devuelve_token_en_el_cuerpo(client, db, tenant):
-    user = crear_usuario(db, tenant=tenant, empleado_id=7)
+def test_login_mobile_devuelve_tokens_en_el_cuerpo(client, db, tenant):
+    user = crear_usuario(db, tenant=tenant)
 
     response = login(client)
 
     assert response.status_code == 200
     body = response.json()
     assert body["token_type"] == "bearer"
-    assert body["user"]["tenant_nombre"] == "Empresa A"
+    assert body["user"]["id"] == user.id
     payload = decode_token(body["access_token"])
     assert payload["sub"] == str(user.id)
-    assert payload["tenant_id"] == tenant.id
     assert payload["role"] == "user"
-    assert payload["empleado_id"] == 7
+    # La empresa no viaja en el token: se elige por petición con X-Tenant-ID
+    assert "tenant_id" not in payload
+    assert decode_refresh_token(body["refresh_token"])["sub"] == str(user.id)
     assert "access_token" not in response.cookies
+
+
+def test_login_mobile_refresh_token_dura_30_dias(client, db, tenant):
+    crear_usuario(db, tenant=tenant)
+
+    body = login(client).json()
+
+    payload = decode_refresh_token(body["refresh_token"])
+    dias = (payload["exp"] - time.time()) / 86400
+    assert 29.9 < dias <= 30
+
+
+def test_login_mobile_refresca_con_el_token_en_el_cuerpo(client, db, tenant):
+    user = crear_usuario(db, tenant=tenant)
+    refresh_token = login(client).json()["refresh_token"]
+
+    response = client.post("/auth/seguridad/refresh", json={"refresh_token": refresh_token})
+
+    assert response.status_code == 200
+    assert decode_token(response.json()["access_token"])["sub"] == str(user.id)
+    assert "access_token" not in response.cookies
+
+
+@pytest.mark.parametrize("client_type", ["api", "integration"])
+def test_login_rechaza_client_types_eliminados(client, db, tenant, client_type):
+    crear_usuario(db, tenant=tenant)
+
+    assert login(client, client_type=client_type).status_code == 422
 
 
 def test_login_web_devuelve_cookies_httponly(client, db, tenant):

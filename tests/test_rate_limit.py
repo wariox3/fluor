@@ -9,7 +9,7 @@ LOGIN = "/auth/seguridad/login"
 def login(client, email="usuario@example.com", password=PASSWORD, ip="203.0.113.1"):
     return client.post(
         LOGIN,
-        json={"email": email, "password": password, "client_type": "api"},
+        json={"email": email, "password": password, "client_type": "mobile"},
         headers={"X-Forwarded-For": ip},
     )
 

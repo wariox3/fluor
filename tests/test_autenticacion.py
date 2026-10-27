@@ -9,7 +9,7 @@ from app.core.config import ALGORITHM, SECRET_KEY
 from app.core.master_database import get_master_db
 from app.core.security import get_current_user
 from app.modules.auth.models.user import UserRole
-from tests.conftest import auth_header, crear_api_key, crear_usuario, token_para
+from tests.conftest import asociar_tenant, auth_header, crear_api_key, crear_tenant, crear_usuario, token_para
 
 ME = "/auth/seguridad/me"
 
@@ -141,12 +141,22 @@ def test_require_admin(client, db, tenant, role, esperado):
     assert client.get("/auth/user/lista", headers=auth_header(user)).status_code == esperado
 
 
-@pytest.mark.parametrize("role,esperado", [
-    (UserRole.admin, 200),
-    (UserRole.control, 200),
-    (UserRole.user, 403),
-    (UserRole.viewer, 403),
+@pytest.mark.parametrize("role,control,esperado", [
+    (UserRole.user, True, 200),
+    (UserRole.user, False, 403),
+    # Ser admin global no da acceso a las keys de una empresa sin ser control en ella
+    (UserRole.admin, False, 403),
 ])
-def test_require_admin_control(client, db, tenant, role, esperado):
-    user = crear_usuario(db, role=role, tenant=tenant)
-    assert client.get("/auth/api-key/lista", headers=auth_header(user)).status_code == esperado
+def test_api_keys_solo_para_control_de_la_empresa(client, db, tenant, role, control, esperado):
+    user = crear_usuario(db, role=role)
+    asociar_tenant(db, user, tenant, control=control)
+    response = client.get("/auth/api-key/lista", params={"tenant_id": tenant.id}, headers=auth_header(user))
+    assert response.status_code == esperado
+
+
+def test_api_keys_control_de_otra_empresa(client, db, tenant):
+    otra = crear_tenant(db, "Empresa B", "empresa_b")
+    user = crear_usuario(db)
+    asociar_tenant(db, user, otra, control=True)
+    response = client.get("/auth/api-key/lista", params={"tenant_id": tenant.id}, headers=auth_header(user))
+    assert response.status_code == 403

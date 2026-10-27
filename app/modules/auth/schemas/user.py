@@ -6,7 +6,7 @@ from app.modules.auth.models.user import UserRole
 class LoginRequest(BaseModel):
     email: str
     password: str
-    client_type: Literal["web", "api", "integration"]
+    client_type: Literal["web", "mobile"]
     turnstile_token: str | None = None
 
 class UserInfo(BaseModel):
@@ -17,8 +17,12 @@ class UserInfo(BaseModel):
 
 class LoginResponse(BaseModel):
     access_token: str | None = None
+    refresh_token: str | None = None
     token_type: str | None = None
     user: UserInfo
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
 
 class TokenResponse(BaseModel):
     access_token: str

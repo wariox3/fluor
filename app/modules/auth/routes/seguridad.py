@@ -1,9 +1,10 @@
 from app.core.rate_limit import limiter, login_bloqueado, registrar_login_fallido, reiniciar_login_fallido
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from sqlalchemy.orm import Session
+from app.core.config import REFRESH_TOKEN_MOBILE_EXPIRE_DAYS
 from app.core.security import verify_password, create_access_token, create_refresh_token, decode_refresh_token, get_current_user_from_token
 from app.core.turnstile import verify_turnstile
-from app.modules.auth.schemas.user import LoginRequest, LoginResponse, UserInfo
+from app.modules.auth.schemas.user import LoginRequest, LoginResponse, RefreshRequest, UserInfo
 from app.core.master_database import get_master_db
 from app.modules.auth.models.user import User
 
@@ -18,7 +19,8 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
             detail="Demasiados intentos fallidos para esta cuenta. Intenta de nuevo en unos minutos."
         )
 
-    if data.client_type not in ("integration", "api"):
+    # Turnstile solo aplica al front web; la app móvil no puede resolverlo
+    if data.client_type == "web":
         verify_turnstile(data.turnstile_token)
 
     user = db.query(User).filter(User.email == data.email).first()
@@ -81,17 +83,19 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
             "user": user_data
         }
 
-    # modo api / integraciones
+    # modo móvil: tokens en el cuerpo, la app los guarda en almacenamiento seguro
     return {
         "access_token": access_token,
+        "refresh_token": create_refresh_token(token_data, expire_days=REFRESH_TOKEN_MOBILE_EXPIRE_DAYS),
         "token_type": "bearer",
         "user": user_data
     }
 
 @router.post("/refresh", include_in_schema=False)
 @limiter.limit("10/minute")
-def refresh(request: Request, response: Response, db: Session = Depends(get_master_db)):
-    token = request.cookies.get("refresh_token")
+def refresh(request: Request, response: Response, data: RefreshRequest | None = None, db: Session = Depends(get_master_db)):
+    # Web manda el refresh token en cookie; móvil lo manda en el cuerpo
+    token = data.refresh_token if data else request.cookies.get("refresh_token")
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -114,6 +118,9 @@ def refresh(request: Request, response: Response, db: Session = Depends(get_mast
     }
 
     new_access_token = create_access_token(token_data)
+    if data:
+        return {"access_token": new_access_token, "token_type": "bearer"}
+
     response.set_cookie(
         key="access_token",
         value=new_access_token,
