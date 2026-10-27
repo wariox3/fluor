@@ -52,7 +52,6 @@ def _usuario_autenticado(master_db: Session, current_user: dict) -> str:
 @router.post("/nuevo", response_model=GuiaCreateResponse)
 def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), master_db: Session = Depends(get_master_db), current_user: dict = Depends(get_current_user)):
     fks = [
-        (GuiaTipo, GuiaTipo.codigo_guia_tipo_pk, payload.codigo_guia_tipo_fk, "Tipo de guía no encontrado"),
         (Operacion, Operacion.codigo_operacion_pk, payload.codigo_operacion_ingreso_fk, "Operación ingreso no encontrada"),
         (Tercero, Tercero.codigo_tercero_pk, payload.codigo_tercero_fk, "Tercero no encontrado"),
         (Tercero, Tercero.codigo_tercero_pk, payload.codigo_adquiriente_fk, "Adquiriente no encontrado"),
@@ -73,6 +72,10 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), mast
     for model, pk_col, value, detail in fks:
         if not db.query(model).filter(pk_col == value).first():
             raise HTTPException(status_code=404, detail=detail)
+
+    guia_tipo = db.query(GuiaTipo).filter(GuiaTipo.codigo_guia_tipo_pk == payload.codigo_guia_tipo_fk).first()
+    if not guia_tipo:
+        raise HTTPException(status_code=404, detail="Tipo de guía no encontrado")
 
     ciudad_destino = db.query(Ciudad).filter(Ciudad.codigo_ciudad_pk == payload.codigo_ciudad_destino_fk).first()
     if not ciudad_destino:
@@ -169,6 +172,9 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), mast
         empaque_referencia=payload.empaque_referencia,
         mercancia_peligrosa=payload.mercancia_peligrosa,
         contenido_verificado=payload.contenido_verificado,
+        cortesia=bool(guia_tipo.cortesia),
+        factura=bool(guia_tipo.factura),
+        reexpedicion=bool(ciudad_destino.reexpedicion),
     )
 
     db.add(guia)
