@@ -42,6 +42,6 @@ def buscar(
 def descargar(db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     return (
         db.query(Servicio.codigo_servicio_pk, Servicio.nombre)
-        .order_by(Servicio.codigo_servicio_pk.asc())
+        .order_by(Servicio.orden.asc(), Servicio.codigo_servicio_pk.asc())
         .all()
     )
