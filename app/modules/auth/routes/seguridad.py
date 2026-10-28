@@ -19,7 +19,7 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
             detail="Demasiados intentos fallidos para esta cuenta. Intenta de nuevo en unos minutos."
         )
 
-    # Turnstile solo aplica al front web; la app móvil no puede resolverlo
+    # Turnstile solo aplica al front web; móvil y api no pueden resolverlo
     if data.client_type == "web":
         verify_turnstile(data.turnstile_token)
 
@@ -83,7 +83,7 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
             "user": user_data
         }
 
-    # modo móvil: tokens en el cuerpo, la app los guarda en almacenamiento seguro
+    # modo móvil / api: tokens en el cuerpo, el cliente los guarda en almacenamiento seguro
     return {
         "access_token": access_token,
         "refresh_token": create_refresh_token(token_data, expire_days=REFRESH_TOKEN_MOBILE_EXPIRE_DAYS),

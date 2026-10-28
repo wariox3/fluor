@@ -51,11 +51,24 @@ def test_login_mobile_refresca_con_el_token_en_el_cuerpo(client, db, tenant):
     assert "access_token" not in response.cookies
 
 
-@pytest.mark.parametrize("client_type", ["api", "integration"])
-def test_login_rechaza_client_types_eliminados(client, db, tenant, client_type):
+def test_login_rechaza_client_types_eliminados(client, db, tenant):
     crear_usuario(db, tenant=tenant)
 
-    assert login(client, client_type=client_type).status_code == 422
+    assert login(client, client_type="integration").status_code == 422
+
+
+def test_login_api_devuelve_tokens_en_el_cuerpo_sin_turnstile(client, db, tenant):
+    user = crear_usuario(db, tenant=tenant)
+
+    response = login(client, client_type="api")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert decode_token(body["access_token"])["sub"] == str(user.id)
+    payload = decode_refresh_token(body["refresh_token"])
+    assert payload["sub"] == str(user.id)
+    assert 29.9 < (payload["exp"] - time.time()) / 86400 <= 30
+    assert "access_token" not in response.cookies
 
 
 def test_login_web_devuelve_cookies_httponly(client, db, tenant):
