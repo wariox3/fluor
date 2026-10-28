@@ -49,6 +49,7 @@ def descargar(db: Session = Depends(get_tenant_db), current_user: dict = Depends
             GuiaTipo.validar_flete,
             GuiaTipo.genera_cobro,
         )
+        .filter(GuiaTipo.estado_inactivo.is_(False))
         .order_by(GuiaTipo.codigo_guia_tipo_pk.asc())
         .all()
     )
