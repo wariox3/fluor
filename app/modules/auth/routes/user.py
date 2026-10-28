@@ -66,7 +66,9 @@ def detalle(db: Session = Depends(get_master_db), current_user: dict = Depends(g
 @router.post("/registrar", response_model=RegisterResponse, response_model_exclude_none=True, include_in_schema=False)
 @limiter.limit("3/minute")
 def registrar(request: Request, response: Response, data: RegisterRequest, db: Session = Depends(get_master_db)):
-    verify_turnstile(data.turnstile_token)
+    # Turnstile solo aplica al front web; móvil y api no pueden resolverlo
+    if data.client_type == "web":
+        verify_turnstile(data.turnstile_token)
 
     existing_user = db.query(User).filter(User.email == data.email).first()
     if existing_user:
@@ -117,7 +119,9 @@ def registrar(request: Request, response: Response, data: RegisterRequest, db: S
 @router.post("/recuperar-clave", include_in_schema=False)
 @limiter.limit("3/minute")
 def recuperar_clave(request: Request, response: Response, data: RecuperarClaveRequest, db: Session = Depends(get_master_db)):
-    verify_turnstile(data.turnstile_token)
+    # Turnstile solo aplica al front web; móvil y api no pueden resolverlo
+    if data.client_type == "web":
+        verify_turnstile(data.turnstile_token)
 
     user = db.query(User).filter(User.email == data.email).first()
     if not user:
@@ -155,7 +159,9 @@ def recuperar_clave(request: Request, response: Response, data: RecuperarClaveRe
 @router.post("/restablecer-clave", include_in_schema=False)
 @limiter.limit("5/minute")
 def restablecer_clave(request: Request, response: Response, data: RestablecerClaveRequest, db: Session = Depends(get_master_db)):
-    verify_turnstile(data.turnstile_token)
+    # Turnstile solo aplica al front web; móvil y api no pueden resolverlo
+    if data.client_type == "web":
+        verify_turnstile(data.turnstile_token)
 
     verificacion = db.query(Verificacion).filter(
         Verificacion.token == data.token,
@@ -198,7 +204,9 @@ def verificar(request: Request, response: Response, token: str, db: Session = De
 @router.post("/reenviar-verificacion", include_in_schema=False)
 @limiter.limit("1/minute")
 def reenviar_verificacion(request: Request, response: Response, data: ReenviarVerificacionRequest, db: Session = Depends(get_master_db)):
-    verify_turnstile(data.turnstile_token)
+    # Turnstile solo aplica al front web; móvil y api no pueden resolverlo
+    if data.client_type == "web":
+        verify_turnstile(data.turnstile_token)
 
     user = db.query(User).filter(User.email == data.email).first()
     if user and not user.is_verified:

@@ -34,6 +34,7 @@ class RegisterRequest(BaseModel):
     nombres: str
     apellidos: str
     numero_identificacion: str
+    client_type: Literal["web", "mobile", "api"] = "web"
     turnstile_token: str | None = None
 
 class UserResponse(BaseModel):
@@ -54,15 +55,18 @@ class RegisterResponse(BaseModel):
 
 class RecuperarClaveRequest(BaseModel):
     email: EmailStr
+    client_type: Literal["web", "mobile", "api"] = "web"
     turnstile_token: str | None = None
 
 class RestablecerClaveRequest(BaseModel):
     token: str
     nueva_clave: str
+    client_type: Literal["web", "mobile", "api"] = "web"
     turnstile_token: str | None = None
 
 class ReenviarVerificacionRequest(BaseModel):
     email: EmailStr
+    client_type: Literal["web", "mobile", "api"] = "web"
     turnstile_token: str | None = None
 
 class PerfilResponse(BaseModel):
