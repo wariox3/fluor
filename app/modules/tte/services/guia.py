@@ -130,7 +130,7 @@ def buscar_condicion_manejo(db: Session, tercero, origen, destino, zona, cobertu
     ).first()
 
 
-def liquidar(db: Session, tercero, condicion_id, precio, origen, destino, producto, zona, tipo_liquidacion, unidades, peso, volumen, declarado):
+def liquidar(db: Session, tercero, condicion_id, precio, origen, destino, producto, zona, tipo_liquidacion, unidades, peso, volumen, declarado, pago=None):
     
     descuento_peso = 0
     porcentaje_manejo = 0
@@ -164,7 +164,7 @@ def liquidar(db: Session, tercero, condicion_id, precio, origen, destino, produc
         cobertura = precio_detalle.codigo_cobertura_fk
 
     # Condición flete (sobreescribe descuentos y mínimos)
-    condicion_flete = buscar_condicion_flete(db, tercero, origen, destino, zona, cobertura)
+    condicion_flete = buscar_condicion_flete(db, tercero, origen, destino, zona, cobertura, pago)
     if condicion_flete:
         descuento_peso = condicion_flete.descuento_peso or 0
         peso_minimo_unidad = condicion_flete.peso_minimo or 0
@@ -194,7 +194,7 @@ def liquidar(db: Session, tercero, condicion_id, precio, origen, destino, produc
             flete = flete_minimo_despacho
 
     # Condición manejo
-    condicion_manejo = buscar_condicion_manejo(db, tercero, origen, destino, zona, cobertura)
+    condicion_manejo = buscar_condicion_manejo(db, tercero, origen, destino, zona, cobertura, pago)
     if condicion_manejo:
         porcentaje_manejo = condicion_manejo.porcentaje or 0
         manejo_minimo_unidad = condicion_manejo.minimo_unidad or 0

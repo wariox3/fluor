@@ -109,6 +109,7 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), mast
             peso=payload.peso_real,
             volumen=payload.peso_volumen,
             declarado=payload.vr_declara,
+            pago=guia_tipo.codigo_pago_fk,
         )
         vr_flete = resultado["flete"]
         vr_manejo = resultado["manejo"]
@@ -174,6 +175,7 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), mast
         contenido_verificado=payload.contenido_verificado,
         cortesia=bool(guia_tipo.cortesia),
         factura=bool(guia_tipo.factura),
+        codigo_pago_fk=guia_tipo.codigo_pago_fk,
         reexpedicion=bool(ciudad_destino.reexpedicion),
     )
 
@@ -577,6 +579,7 @@ def reliquidar(payload: ReliquidarRequest, db: Session = Depends(get_tenant_db),
         peso=guia.peso_real,
         volumen=guia.peso_volumen,
         declarado=guia.vr_declara,
+        pago=guia.guia_tipo.codigo_pago_fk if guia.guia_tipo else None,
     )
 
     guia.tipo_liquidacion = tipo_liquidacion
