@@ -89,10 +89,10 @@ def producto_cliente(
     current_user: dict = Depends(get_current_user),
 ):
     return (
-        db.query(Producto.codigo_producto_pk, Producto.nombre)
+        db.query(Producto.codigo_producto_pk, Producto.nombre, Producto.orden)
         .join(PrecioDetalle, PrecioDetalle.codigo_producto_fk == Producto.codigo_producto_pk)
         .filter(PrecioDetalle.codigo_precio_fk == codigo_precio_fk)
         .distinct()
-        .order_by(Producto.nombre.asc(), Producto.codigo_producto_pk.asc())
+        .order_by(Producto.orden.asc())
         .all()
     )
