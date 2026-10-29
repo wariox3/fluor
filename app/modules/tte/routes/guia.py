@@ -87,12 +87,10 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), mast
             raise HTTPException(status_code=404, detail="Tercero operación no encontrado")
 
     tercero = db.query(Tercero).filter(Tercero.codigo_tercero_pk == payload.codigo_tercero_fk).first()
-    cobro_entrega = 0
-    if payload.vr_recaudo > 0:
-        cobro_entrega = payload.vr_recaudo
+    vr_flete = payload.vr_flete or 0
+    vr_manejo = payload.vr_manejo or 0
+    vr_recaudo = payload.vr_recaudo or 0
 
-    vr_flete = payload.vr_flete
-    vr_manejo = payload.vr_manejo
     peso_facturado = payload.peso_facturado
     if payload.liquidar:
         resultado = guia_service.liquidar(
@@ -114,6 +112,14 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), mast
         vr_flete = resultado["flete"]
         vr_manejo = resultado["manejo"]
         peso_facturado = resultado["peso_facturado"]
+
+    if guia_tipo.cortesia:
+        vr_flete = 0
+        vr_manejo = 0
+
+    cobro_entrega = vr_recaudo
+    if guia_tipo.genera_cobro:
+        cobro_entrega += vr_flete + vr_manejo
 
     guia = Guia(
         codigo_guia_tipo_fk=payload.codigo_guia_tipo_fk,
@@ -147,7 +153,7 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), mast
         vr_flete=vr_flete,
         vr_manejo=vr_manejo,
         vr_declara=payload.vr_declara,
-        vr_recaudo=payload.vr_recaudo,
+        vr_recaudo=vr_recaudo,
         vr_cobro_entrega=cobro_entrega,
         vr_otros=payload.vr_otros,
         tipo_liquidacion=payload.tipo_liquidacion,
