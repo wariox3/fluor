@@ -23,6 +23,7 @@ from app.modules.auth.models.verificacion import Verificacion
 from app.modules.mas.models.invitacion import Invitacion
 from app.modules.mas.models.credito_solicitud import CreditoSolicitud
 from app.modules.mas.models.configuracion import Configuracion
+from app.modules.mas.models.tenant_despacho import TenantDespacho
 
 # Alembic Config
 config = context.config
