@@ -14,3 +14,10 @@ class TenantDespachoResponse(BaseModel):
     tenant_id: int
     tenant_nombre: str | None
     codigo_despacho: int
+
+
+class TenantDespachoListResponse(BaseModel):
+    total: int
+    page: int
+    size: int
+    items: list[TenantDespachoResponse]

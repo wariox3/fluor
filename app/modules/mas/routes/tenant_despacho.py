@@ -1,5 +1,6 @@
 import hmac
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 from app.core.master_database import get_master_db
@@ -8,8 +9,13 @@ from app.core.tenant_database import get_tenant_engine
 from app.core.security import get_current_user_from_token
 from app.modules.mas.models.tenant import Tenant
 from app.modules.mas.models.tenant_despacho import TenantDespacho
+from app.modules.mas.models.user_tenant import es_control
 from app.modules.tte.models.despacho import Despacho
-from app.modules.mas.schemas.tenant_despacho import TenantDespachoCargarRequest, TenantDespachoResponse
+from app.modules.mas.schemas.tenant_despacho import (
+    TenantDespachoCargarRequest,
+    TenantDespachoListResponse,
+    TenantDespachoResponse,
+)
 
 router = APIRouter()
 
@@ -22,6 +28,53 @@ def _respuesta(asignacion: TenantDespacho, tenant: Tenant) -> TenantDespachoResp
         tenant_nombre=tenant.nombre,
         codigo_despacho=asignacion.codigo_despacho_fk,
     )
+
+
+@router.get("/lista", response_model=TenantDespachoListResponse, include_in_schema=False)
+def lista(
+    page: int = Query(1, ge=1),
+    size: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_master_db),
+    current_user: dict = Depends(get_current_user_from_token),
+):
+    """Despachos asignados al repartidor autenticado, del más reciente al más antiguo."""
+    usuario_id = int(current_user["sub"])
+    query = db.query(TenantDespacho).filter(TenantDespacho.usuario_id == usuario_id)
+    total = query.with_entities(func.count(TenantDespacho.id)).scalar()
+    filas = (
+        query.join(Tenant, Tenant.id == TenantDespacho.tenant_id)
+        .with_entities(TenantDespacho, Tenant)
+        .order_by(TenantDespacho.fecha.desc(), TenantDespacho.id.desc())
+        .offset((page - 1) * size)
+        .limit(size)
+        .all()
+    )
+    return TenantDespachoListResponse(
+        total=total,
+        page=page,
+        size=size,
+        items=[_respuesta(asignacion, tenant) for asignacion, tenant in filas],
+    )
+
+
+@router.delete("/eliminar/{tenant_despacho_id}", include_in_schema=False)
+def eliminar(
+    tenant_despacho_id: int,
+    db: Session = Depends(get_master_db),
+    current_user: dict = Depends(get_current_user_from_token),
+):
+    """Libera un despacho. Puede hacerlo el repartidor asignado o el control de la empresa."""
+    usuario_id = int(current_user["sub"])
+    asignacion = db.query(TenantDespacho).filter(TenantDespacho.id == tenant_despacho_id).first()
+    # Mismo 404 si no existe o no tiene permiso: no revela asignaciones ajenas
+    if not asignacion or (
+        asignacion.usuario_id != usuario_id and not es_control(db, usuario_id, asignacion.tenant_id)
+    ):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Despacho no encontrado")
+
+    db.delete(asignacion)
+    db.commit()
+    return {"detail": "Despacho eliminado correctamente"}
 
 
 @router.post("/cargar", response_model=TenantDespachoResponse, include_in_schema=False)
