@@ -158,15 +158,15 @@ class Guia3(FormatoPdf):
         for (x, dy, alto), (x_et, ancho_et), (x_val, dy_val, ancho_val), etiqueta, valor in [
             ((28, 46, 8), (32, 22), (32, 49, 20), "UNIDADES", fmt_cantidad(g.unidades)),
             ((58, 46, 8), (60, 25), (60, 49, 25), "PESO REAL", numero(g.peso_real)),
-            ((28, 54, 8), (31, 25), (30, 58, 23), "RECAUDO", numero(g.vr_recaudo)),
+            ((28, 54, 8), (31, 25), (28, 58, 30), "PRODUCTO", l.ajustar(g.producto_nombre, 28)),
             ((58, 54, 8), (60, 25), (60, 58, 25), "PESO VOLUMEN", numero(g.peso_volumen)),
-            ((28, 62, 9), (31, 25), (31, 66, 23), "PESO COBRADO", numero(g.peso_facturado)),
-            ((58, 62, 9), (60, 25), (58, 66, 25), "PRODUCTO", l.ajustar(g.producto_nombre, 28)),
+            ((28, 62, 9), (31, 25), (28, 66, 30), "RECAUDO", numero(g.vr_cobro_entrega)),
+            ((58, 62, 9), (60, 25), (60, 66, 25), "PESO COBRADO", numero(g.peso_facturado)),
         ]:
             l.rect(x, y + dy, 30, alto)
             l.fuente(6, negrita=True)
             l.celda(x_et, y + dy, ancho_et, 4, etiqueta, alinear="C")
-            l.fuente(6)
+            l.fuente(9 if etiqueta == "RECAUDO" else 6)
             l.celda(x_val, y + dy_val, ancho_val, 4, valor, alinear="C")
 
         # ── Novedades ─────────────────────────────────────────────────────────
@@ -201,9 +201,20 @@ class Guia3(FormatoPdf):
 
         # ── Observaciones ─────────────────────────────────────────────────────
         l.rect(88, y + 54, 63, 8)
-        l.fuente(4.5, negrita=True)
         if g.comentario:
-            l.multicelda(88, y + 54, 65, 2.5, f"OBSERVACIONES:{g.comentario[:180]}", max_lineas=3)
+            # Solo la etiqueta va en negrita; el comentario sigue en la misma línea.
+            etiqueta = "OBSERVACIONES: "
+            l.fuente(5.5, negrita=True)
+            ancho_etiqueta = l.ancho_texto(etiqueta)
+            l.celda(88, y + 54, 65, 2.6, etiqueta)
+            l.fuente(5.5)
+            disponible = 65 - 2 * l.MARGEN_CELDA - ancho_etiqueta
+            palabras = g.comentario[:180].split()
+            primera = ""
+            while palabras and l.ancho_texto(f"{primera} {palabras[0]}".strip()) <= disponible:
+                primera = f"{primera} {palabras.pop(0)}".strip()
+            l.celda(88 + ancho_etiqueta, y + 54, disponible, 2.6, primera)
+            l.multicelda(88, y + 56.6, 65, 2.6, " ".join(palabras), max_lineas=2)
 
         # ── Entrega y control ─────────────────────────────────────────────────
         l.rect(151, y + 42, 51, 12)
