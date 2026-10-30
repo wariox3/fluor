@@ -35,7 +35,7 @@ def cargar(
 ):
     """Asigna un despacho al repartidor autenticado validando el api_token del despacho."""
     usuario_id = int(current_user["sub"])
-    # Mismo error para empresa, despacho o token inválidos: no revela qué existe
+    # Mismo error para empresa, despacho o token inválidos: no revela qué existe por seguridad
     invalido = HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Despacho o token no válido")
 
     tenant = db.query(Tenant).filter(Tenant.id == data.tenant_id, Tenant.activo == True).first()
