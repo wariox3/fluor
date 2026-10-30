@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 class TenantDespachoCargarRequest(BaseModel):
     tenant_id: int
     codigo_despacho: int
-    api_token: str = Field(min_length=1, max_length=20)
+    token_despacho: str = Field(min_length=1, max_length=20)
 
 
 class TenantDespachoResponse(BaseModel):

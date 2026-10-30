@@ -33,7 +33,7 @@ def cargar(
     db: Session = Depends(get_master_db),
     current_user: dict = Depends(get_current_user_from_token),
 ):
-    """Asigna un despacho al repartidor autenticado validando el api_token del despacho."""
+    """Asigna un despacho al repartidor autenticado validando el token del despacho (tte_despacho.api_token)."""
     usuario_id = int(current_user["sub"])
     # Mismo error para empresa, despacho o token inválidos: no revela qué existe por seguridad
     invalido = HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Despacho o token no válido")
@@ -48,7 +48,7 @@ def cargar(
         token_valido = (
             despacho is not None
             and despacho.api_token
-            and hmac.compare_digest(despacho.api_token.encode(), data.api_token.encode())
+            and hmac.compare_digest(despacho.api_token.encode(), data.token_despacho.encode())
         )
         if not token_valido or despacho.estado_anulado or despacho.estado_cerrado or despacho.estado_entregado:
             raise invalido
