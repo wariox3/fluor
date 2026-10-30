@@ -1,10 +1,11 @@
 import re
+from dataclasses import dataclass
 from sqlalchemy import create_engine
 from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import sessionmaker, Session
 from decouple import config
 from fastapi import Depends, HTTPException, Request, status
-from app.core.security import get_current_user
+from app.core.security import get_current_user, get_current_user_from_token
 from app.core.master_database import get_master_db
 from sqlalchemy.orm import declarative_base
 from threading import Lock
@@ -106,5 +107,56 @@ def get_tenant_db(request: Request, current_user: dict = Depends(get_current_use
 
     try:
         yield db
+    finally:
+        db.close()
+
+
+@dataclass
+class DespachoContexto:
+    """Despacho asignado al repartidor, con la sesión abierta en la base de su empresa."""
+    db: Session
+    tenant_id: int
+    tenant_nombre: str | None
+    tenant_despacho_id: int
+    codigo_despacho: int
+
+
+def get_despacho_db(
+    tenant_despacho_id: int,
+    current_user: dict = Depends(get_current_user_from_token),
+    master_db: Session = Depends(get_master_db),
+):
+    """Abre la base de la empresa a partir de una asignación de mas_tenant_despacho del usuario.
+
+    Para la app móvil: el repartidor no tiene fila en user_tenant, su acceso es la asignación.
+    """
+    from app.modules.mas.models.tenant import Tenant
+    from app.modules.mas.models.tenant_despacho import TenantDespacho
+
+    # Se consulta en cada petición para reflejar al instante asignaciones liberadas
+    fila = (
+        master_db.query(TenantDespacho, Tenant)
+        .join(Tenant, Tenant.id == TenantDespacho.tenant_id)
+        .filter(
+            TenantDespacho.id == tenant_despacho_id,
+            TenantDespacho.usuario_id == int(current_user["sub"]),
+            Tenant.activo == True,
+        )
+        .first()
+    )
+    # Mismo 404 si no existe, es de otro usuario o la empresa está inactiva
+    if not fila or not fila[1].schema:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Despacho no encontrado")
+    asignacion, tenant = fila
+
+    db = sessionmaker(autocommit=False, autoflush=False, bind=get_tenant_engine(tenant.schema))()
+    try:
+        yield DespachoContexto(
+            db=db,
+            tenant_id=tenant.id,
+            tenant_nombre=tenant.nombre,
+            tenant_despacho_id=asignacion.id,
+            codigo_despacho=asignacion.codigo_despacho_fk,
+        )
     finally:
         db.close()
