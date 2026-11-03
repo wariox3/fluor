@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from .routes import credito_solicitud, configuracion, tenant, notificacion, user_tenant, invitacion, tenant_despacho
+from .routes import credito_solicitud, configuracion, tenant, notificacion, user_tenant, user_tenant_configuracion, invitacion, tenant_despacho
 
 router = APIRouter(
     prefix="/mas",
@@ -11,5 +11,6 @@ router.include_router(configuracion.router, prefix="/configuracion", tags=["Mast
 router.include_router(tenant.router, prefix="/tenant", tags=["Master / Tenant"])
 router.include_router(notificacion.router, prefix="/notificacion", tags=["Master / Notificacion"])
 router.include_router(user_tenant.router, prefix="/user-tenant", tags=["Master / User Tenant"])
+router.include_router(user_tenant_configuracion.router, prefix="/user-tenant-configuracion", tags=["Master / User Tenant Configuracion"])
 router.include_router(invitacion.router, prefix="/invitacion", tags=["Master / Invitacion"])
 router.include_router(tenant_despacho.router, prefix="/tenant-despacho", tags=["Master / Tenant Despacho"])

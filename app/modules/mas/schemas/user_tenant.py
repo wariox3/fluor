@@ -14,11 +14,8 @@ class UserTenantActualizarRequest(BaseModel):
     empleado: bool | None = None
     cliente: bool | None = None
     cliente_id: int | None = None  # null lo limpia
-    codigo_operacion_fk: str | None = Field(default=None, max_length=20)  # null o "" lo limpia
-    codigo_tercero_operacion_fk: int | None = None  # null lo limpia
-    codigo_ciudad_origen_fk: str | None = Field(default=None, max_length=20)  # null o "" lo limpia
 
-    @field_validator("codigo_usuario_fk", "codigo_operacion_fk", "codigo_ciudad_origen_fk")
+    @field_validator("codigo_usuario_fk")
     @classmethod
     def _vacio_a_none(cls, v: str | None) -> str | None:
         if v is None:
@@ -52,9 +49,6 @@ class UserTenantResponse(BaseModel):
     empleado: bool
     cliente: bool
     cliente_id: int | None
-    codigo_operacion_fk: str | None
-    codigo_tercero_operacion_fk: int | None
-    codigo_ciudad_origen_fk: str | None
     fecha_creacion: datetime
 
 
@@ -79,9 +73,6 @@ class UserTenantUsuarioResponse(BaseModel):
     empleado: bool
     cliente: bool
     cliente_id: int | None
-    codigo_operacion_fk: str | None
-    codigo_tercero_operacion_fk: int | None
-    codigo_ciudad_origen_fk: str | None
     fecha_creacion: datetime
 
 
