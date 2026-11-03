@@ -195,7 +195,7 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), mast
 def lista(
     page: int = 1,
     size: int = 50,
-    tercero_id: Optional[int] = None,
+    codigo_tercero_fk: Optional[int] = None,
     fecha_desde: Optional[date] = None,
     fecha_hasta: Optional[date] = None,
     estado_ingreso: Optional[bool] = None,
@@ -206,8 +206,8 @@ def lista(
     current_user: dict = Depends(get_current_user),
 ):
     query = db.query(Guia)
-    if tercero_id is not None:
-        query = query.filter(Guia.codigo_tercero_fk == tercero_id)
+    if codigo_tercero_fk is not None:
+        query = query.filter(Guia.codigo_tercero_fk == codigo_tercero_fk)
     if fecha_desde is not None:
         query = query.filter(Guia.fecha_ingreso >= fecha_desde)
     if fecha_hasta is not None:
