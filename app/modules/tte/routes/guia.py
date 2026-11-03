@@ -196,6 +196,14 @@ def lista(
     page: int = 1,
     size: int = 50,
     codigo_tercero_fk: Optional[int] = None,
+    codigo_guia_pk: Optional[int] = None,
+    documento_cliente: Optional[str] = None,
+    codigo_guia_tipo_fk: Optional[str] = None,
+    codigo_servicio_fk: Optional[str] = None,
+    codigo_ciudad_origen_fk: Optional[str] = None,
+    codigo_ciudad_destino_fk: Optional[str] = None,
+    codigo_despacho_fk: Optional[int] = None,
+    codigo_tercero_operacion_fk: Optional[int] = None,
     fecha_desde: Optional[date] = None,
     fecha_hasta: Optional[date] = None,
     estado_ingreso: Optional[bool] = None,
@@ -208,6 +216,22 @@ def lista(
     query = db.query(Guia)
     if codigo_tercero_fk is not None:
         query = query.filter(Guia.codigo_tercero_fk == codigo_tercero_fk)
+    # Filtros exactos opcionales; los de texto se ignoran si llegan vacíos
+    filtros_exactos = {
+        Guia.codigo_guia_pk: codigo_guia_pk,
+        Guia.documento_cliente: documento_cliente,
+        Guia.codigo_guia_tipo_fk: codigo_guia_tipo_fk,
+        Guia.codigo_servicio_fk: codigo_servicio_fk,
+        Guia.codigo_ciudad_origen_fk: codigo_ciudad_origen_fk,
+        Guia.codigo_ciudad_destino_fk: codigo_ciudad_destino_fk,
+        Guia.codigo_despacho_fk: codigo_despacho_fk,
+        Guia.codigo_tercero_operacion_fk: codigo_tercero_operacion_fk,
+    }
+    for columna, valor in filtros_exactos.items():
+        if isinstance(valor, str):
+            valor = valor.strip() or None
+        if valor is not None:
+            query = query.filter(columna == valor)
     if fecha_desde is not None:
         query = query.filter(Guia.fecha_ingreso >= fecha_desde)
     if fecha_hasta is not None:
