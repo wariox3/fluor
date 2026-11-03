@@ -1,6 +1,7 @@
 from sqlalchemy import (Boolean, Column, DateTime, ForeignKey, Integer, String, UniqueConstraint, false, func, true)
 from sqlalchemy.orm import Session, relationship
 from app.core.master_database import Base
+from app.modules.mas.models.user_tenant_configuracion import UserTenantConfiguracion
 
 
 class UserTenant(Base):
@@ -19,12 +20,11 @@ class UserTenant(Base):
     empleado = Column(Boolean, nullable=False, default=False, server_default=false())
     cliente = Column(Boolean, nullable=False, default=False, server_default=false())
     cliente_id = Column(Integer, nullable=True)
-    codigo_operacion_fk = Column(String(20), nullable=True)
-    codigo_tercero_operacion_fk = Column(Integer, nullable=True)
     fecha_creacion = Column(DateTime, server_default=func.now(), nullable=False)
 
     usuario = relationship("User", back_populates="users_tenants")
     tenant = relationship("Tenant", back_populates="users_tenants")
+    configuracion = relationship(UserTenantConfiguracion, uselist=False, cascade="all, delete-orphan", passive_deletes=True)
 
 
 def es_control(db: Session, usuario_id: int, tenant_id: int) -> bool:

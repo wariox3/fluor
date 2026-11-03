@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session, joinedload, sessionmaker
 from app.core.master_database import get_master_db
 from app.core.rate_limit import limiter
 from app.core.tenant_database import get_tenant_engine
@@ -9,6 +9,7 @@ from app.core.security import get_current_user_from_token
 from app.modules.auth.models.user import User
 from app.modules.mas.models.tenant import Tenant
 from app.modules.mas.models.user_tenant import UserTenant, es_control
+from app.modules.mas.models.user_tenant_configuracion import UserTenantConfiguracion
 from app.modules.rhu.models.empleado import Empleado
 from app.modules.mas.schemas.user_tenant import (
     UserTenantActualizarRequest,
@@ -20,6 +21,14 @@ from app.modules.mas.schemas.user_tenant import (
 )
 
 router = APIRouter()
+
+# Campos de /actualizar que viven en mas_user_tenant_configuracion y no en mas_user_tenant
+CAMPOS_CONFIGURACION = ("codigo_operacion_fk", "codigo_tercero_operacion_fk", "codigo_ciudad_origen_fk")
+
+
+def _configuracion(ut: UserTenant) -> dict:
+    """Campos de configuración de la membresía para las respuestas (None si aún no tiene configuración)."""
+    return {campo: getattr(ut.configuracion, campo, None) for campo in CAMPOS_CONFIGURACION}
 
 
 @router.get("/lista", response_model=UserTenantListResponse, include_in_schema=False)
@@ -40,6 +49,7 @@ def lista(
     filas = (
         query.join(Tenant, Tenant.id == UserTenant.tenant_id)
         .with_entities(UserTenant, Tenant.nombre)
+        .options(joinedload(UserTenant.configuracion))
         .order_by(Tenant.nombre)
         .offset(offset)
         .limit(size)
@@ -58,8 +68,7 @@ def lista(
             empleado=ut.empleado,
             cliente=ut.cliente,
             cliente_id=ut.cliente_id,
-            codigo_operacion_fk=ut.codigo_operacion_fk,
-            codigo_tercero_operacion_fk=ut.codigo_tercero_operacion_fk,
+            **_configuracion(ut),
             fecha_creacion=ut.fecha_creacion,
         )
         for ut, nombre in filas
@@ -110,6 +119,7 @@ def lista_tenant(
     offset = (page - 1) * size
     filas = (
         query.with_entities(UserTenant, User.email, User.nombres, User.apellidos)
+        .options(joinedload(UserTenant.configuracion))
         .order_by(User.nombres, User.apellidos, User.email)
         .offset(offset)
         .limit(size)
@@ -130,8 +140,7 @@ def lista_tenant(
             empleado=ut.empleado,
             cliente=ut.cliente,
             cliente_id=ut.cliente_id,
-            codigo_operacion_fk=ut.codigo_operacion_fk,
-            codigo_tercero_operacion_fk=ut.codigo_tercero_operacion_fk,
+            **_configuracion(ut),
             fecha_creacion=ut.fecha_creacion,
         )
         for ut, email, nombres, apellidos in filas
@@ -226,7 +235,7 @@ def actualizar(
     db: Session = Depends(get_master_db),
     current_user: dict = Depends(get_current_user_from_token),
 ):
-    """Actualiza codigo_usuario_fk, empleado, cliente, cliente_id, codigo_operacion_fk y codigo_tercero_operacion_fk de una membresía (solo los campos enviados).
+    """Actualiza codigo_usuario_fk, empleado, cliente, cliente_id, codigo_operacion_fk, codigo_tercero_operacion_fk y codigo_ciudad_origen_fk de una membresía (solo los campos enviados).
     Solo para quien es control activo en esa empresa."""
     fila = (
         db.query(UserTenant, User.email, User.nombres, User.apellidos)
@@ -242,7 +251,12 @@ def actualizar(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permiso para actualizar usuarios de esta empresa")
 
     for campo, valor in data.model_dump(exclude_unset=True).items():
-        setattr(ut, campo, valor)
+        if campo in CAMPOS_CONFIGURACION:
+            if ut.configuracion is None:
+                ut.configuracion = UserTenantConfiguracion()
+            setattr(ut.configuracion, campo, valor)
+        else:
+            setattr(ut, campo, valor)
     db.commit()
     db.refresh(ut)
     return UserTenantUsuarioResponse(
@@ -259,7 +273,6 @@ def actualizar(
         empleado=ut.empleado,
         cliente=ut.cliente,
         cliente_id=ut.cliente_id,
-        codigo_operacion_fk=ut.codigo_operacion_fk,
-        codigo_tercero_operacion_fk=ut.codigo_tercero_operacion_fk,
+        **_configuracion(ut),
         fecha_creacion=ut.fecha_creacion,
     )
