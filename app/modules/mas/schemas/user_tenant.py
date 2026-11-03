@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class UserTenantAsociarRequest(BaseModel):
@@ -7,10 +7,13 @@ class UserTenantAsociarRequest(BaseModel):
 
 
 class UserTenantActualizarRequest(BaseModel):
-    """Solo se permite cambiar codigo_usuario_fk; cualquier otro campo se rechaza."""
+    """Actualización parcial: solo se cambian los campos enviados; cualquier otro campo se rechaza."""
     model_config = ConfigDict(extra="forbid")
 
-    codigo_usuario_fk: str | None = Field(max_length=25)  # obligatorio; null o "" lo limpia
+    codigo_usuario_fk: str | None = Field(default=None, max_length=25)  # null o "" lo limpia
+    empleado: bool | None = None
+    cliente: bool | None = None
+    cliente_id: int | None = None  # null lo limpia
 
     @field_validator("codigo_usuario_fk")
     @classmethod
@@ -19,6 +22,19 @@ class UserTenantActualizarRequest(BaseModel):
             return None
         v = v.strip()
         return v or None
+
+    @field_validator("empleado", "cliente")
+    @classmethod
+    def _bool_no_nulo(cls, v: bool | None) -> bool:
+        if v is None:
+            raise ValueError("no puede ser null")
+        return v
+
+    @model_validator(mode="after")
+    def _al_menos_un_campo(self):
+        if not self.model_fields_set:
+            raise ValueError("Envía al menos un campo para actualizar")
+        return self
 
 
 class UserTenantResponse(BaseModel):
@@ -30,6 +46,9 @@ class UserTenantResponse(BaseModel):
     activo: bool
     control: bool
     erp: bool
+    empleado: bool
+    cliente: bool
+    cliente_id: int | None
     fecha_creacion: datetime
 
 
@@ -51,6 +70,9 @@ class UserTenantUsuarioResponse(BaseModel):
     activo: bool
     control: bool
     erp: bool
+    empleado: bool
+    cliente: bool
+    cliente_id: int | None
     fecha_creacion: datetime
 
 

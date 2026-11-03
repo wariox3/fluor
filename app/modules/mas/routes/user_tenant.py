@@ -55,6 +55,9 @@ def lista(
             activo=ut.activo,
             control=ut.control,
             erp=ut.erp,
+            empleado=ut.empleado,
+            cliente=ut.cliente,
+            cliente_id=ut.cliente_id,
             fecha_creacion=ut.fecha_creacion,
         )
         for ut, nombre in filas
@@ -116,6 +119,9 @@ def lista_tenant(
             activo=ut.activo,
             control=ut.control,
             erp=ut.erp,
+            empleado=ut.empleado,
+            cliente=ut.cliente,
+            cliente_id=ut.cliente_id,
             fecha_creacion=ut.fecha_creacion,
         )
         for ut, email, nombres, apellidos in filas
@@ -210,7 +216,8 @@ def actualizar(
     db: Session = Depends(get_master_db),
     current_user: dict = Depends(get_current_user_from_token),
 ):
-    """Actualiza codigo_usuario_fk de una membresía. Solo para quien es control activo en esa empresa."""
+    """Actualiza codigo_usuario_fk, empleado, cliente y cliente_id de una membresía (solo los campos enviados).
+    Solo para quien es control activo en esa empresa."""
     fila = (
         db.query(UserTenant, User.email, User.nombres, User.apellidos)
         .join(User, User.id == UserTenant.usuario_id)
@@ -224,7 +231,8 @@ def actualizar(
     if not es_control(db, int(current_user["sub"]), ut.tenant_id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permiso para actualizar usuarios de esta empresa")
 
-    ut.codigo_usuario_fk = data.codigo_usuario_fk
+    for campo, valor in data.model_dump(exclude_unset=True).items():
+        setattr(ut, campo, valor)
     db.commit()
     db.refresh(ut)
     return UserTenantUsuarioResponse(
@@ -238,5 +246,8 @@ def actualizar(
         activo=ut.activo,
         control=ut.control,
         erp=ut.erp,
+        empleado=ut.empleado,
+        cliente=ut.cliente,
+        cliente_id=ut.cliente_id,
         fecha_creacion=ut.fecha_creacion,
     )
