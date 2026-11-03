@@ -19,6 +19,8 @@ class UserTenant(Base):
     empleado = Column(Boolean, nullable=False, default=False, server_default=false())
     cliente = Column(Boolean, nullable=False, default=False, server_default=false())
     cliente_id = Column(Integer, nullable=True)
+    codigo_operacion_fk = Column(String(20), nullable=True)
+    codigo_tercero_operacion_fk = Column(Integer, nullable=True)
     fecha_creacion = Column(DateTime, server_default=func.now(), nullable=False)
 
     usuario = relationship("User", back_populates="users_tenants")

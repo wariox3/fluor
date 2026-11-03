@@ -68,6 +68,8 @@ class TerceroResponse(BaseModel):
     condicion_nombre: Optional[str] = None
     condicion_codigo_precio_fk: Optional[int] = None
     codigo_operacion_fk: Optional[str] = None
+    liquidar_guia_peso: Optional[bool] = None
+    liquidar_guia_unidad: Optional[bool] = None
 
     model_config = {"from_attributes": True}
 

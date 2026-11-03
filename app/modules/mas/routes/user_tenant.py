@@ -58,6 +58,8 @@ def lista(
             empleado=ut.empleado,
             cliente=ut.cliente,
             cliente_id=ut.cliente_id,
+            codigo_operacion_fk=ut.codigo_operacion_fk,
+            codigo_tercero_operacion_fk=ut.codigo_tercero_operacion_fk,
             fecha_creacion=ut.fecha_creacion,
         )
         for ut, nombre in filas
@@ -128,6 +130,8 @@ def lista_tenant(
             empleado=ut.empleado,
             cliente=ut.cliente,
             cliente_id=ut.cliente_id,
+            codigo_operacion_fk=ut.codigo_operacion_fk,
+            codigo_tercero_operacion_fk=ut.codigo_tercero_operacion_fk,
             fecha_creacion=ut.fecha_creacion,
         )
         for ut, email, nombres, apellidos in filas
@@ -222,7 +226,7 @@ def actualizar(
     db: Session = Depends(get_master_db),
     current_user: dict = Depends(get_current_user_from_token),
 ):
-    """Actualiza codigo_usuario_fk, empleado, cliente y cliente_id de una membresía (solo los campos enviados).
+    """Actualiza codigo_usuario_fk, empleado, cliente, cliente_id, codigo_operacion_fk y codigo_tercero_operacion_fk de una membresía (solo los campos enviados).
     Solo para quien es control activo en esa empresa."""
     fila = (
         db.query(UserTenant, User.email, User.nombres, User.apellidos)
@@ -255,5 +259,7 @@ def actualizar(
         empleado=ut.empleado,
         cliente=ut.cliente,
         cliente_id=ut.cliente_id,
+        codigo_operacion_fk=ut.codigo_operacion_fk,
+        codigo_tercero_operacion_fk=ut.codigo_tercero_operacion_fk,
         fecha_creacion=ut.fecha_creacion,
     )

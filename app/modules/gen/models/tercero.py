@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, false, true
 from sqlalchemy.ext.hybrid import hybrid_property
 from app.core.tenant_database import Base
 from sqlalchemy.orm import relationship
@@ -52,6 +52,8 @@ class Tercero(Base):
     guia_pago_recogida = Column(Boolean, nullable=True, default=False)
     ocultar_valores_guia = Column(Boolean, nullable=True, default=False)
     ocultar_valor_declarado = Column(Boolean, nullable=True, default=False)
+    liquidar_guia_peso = Column(Boolean, nullable=False, default=True, server_default=true())
+    liquidar_guia_unidad = Column(Boolean, nullable=False, default=False, server_default=false())
 
     identificacion = relationship(Identificacion, foreign_keys=[codigo_identificacion_fk])
     tipo_persona = relationship(TipoPersona, foreign_keys=[codigo_tipo_persona_fk], backref="terceros_tipo_persona_rel")
