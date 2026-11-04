@@ -25,7 +25,7 @@ from app.modules.tte.models.ruta import Ruta
 from app.modules.tte.models.seguimiento import Seguimiento
 from app.modules.tte.models.servicio import Servicio
 from app.modules.tte.models.tercero_operacion import TerceroOperacion
-from app.modules.tte.schemas.guia import GuiaFormatoImpresionResponse, GuiaCreateRequest, GuiaDetalleResponse, GuiaCreateResponse, GuiaCorreccionRequest, GuiaCorreccionResponse, GuiaListResponse, GuiaEstadoResponse, GuiaRecogidoRequest, GuiaRecogidoResponse, GuiaIngresoRequest, GuiaIngresoResponse, GuiasMasivoRequest, GuiasDocumentoMasivoRequest, LiquidarRequest, LiquidarResponse, ReliquidarRequest, ReliquidarResponse
+from app.modules.tte.schemas.guia import GuiaFormatoImpresionResponse, GuiaCreateRequest, GuiaDetalleResponse, GuiaCreateResponse, GuiaCorreccionRequest, GuiaCorreccionResponse, GuiaListResponse, GuiaEstadoResponse, GuiaRecogidoRequest, GuiaRecogidoResponse, GuiaIngresoRequest, GuiaIngresoResponse, GuiasMasivoRequest, GuiasDocumentoMasivoRequest, LiquidarRequest, LiquidarResponse, CondicionEspecialRequest, CondicionEspecialResponse, ReliquidarRequest, ReliquidarResponse
 from app.modules.tte.services import guia as guia_service
 from app.modules.tte.formats import guia as formatos_guia, rotulo as formatos_rotulo
 from app.modules.tte.formats.datos import MAXIMO_GUIAS, cargar_empresa, cargar_guias, preparar_guias
@@ -572,6 +572,25 @@ def liquidar(payload: LiquidarRequest, db: Session = Depends(get_tenant_db), cur
         declarado=payload.declarado,
     )
     return LiquidarResponse(**resultado)
+
+@router.post(
+    "/condicion-especial",
+    response_model=CondicionEspecialResponse,
+    description="Precio y condiciones especiales (flete y manejo) que aplican al tercero para un origen/destino (replica condicionEspecial de PHP).",
+)
+def condicion_especial(payload: CondicionEspecialRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    resultado = guia_service.condicion_especial(
+        db,
+        tercero=payload.codigo_tercero,
+        origen=payload.origen,
+        destino=payload.destino,
+        precio=payload.precio,
+        guia_tipo=payload.guia_tipo,
+        producto=payload.producto,
+    )
+    if resultado is None:
+        raise HTTPException(status_code=404, detail="Tercero no encontrado")
+    return CondicionEspecialResponse(**resultado)
 
 @router.post("/reliquidar", response_model=ReliquidarResponse)
 def reliquidar(payload: ReliquidarRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):

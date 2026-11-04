@@ -191,6 +191,35 @@ class LiquidarResponse(BaseModel):
     peso_facturado: float
 
 
+class CondicionEspecialRequest(BaseModel):
+    codigo_tercero: int
+    origen: str = Field(..., min_length=1, max_length=20)
+    destino: str = Field(..., min_length=1, max_length=20)
+    precio: int
+    guia_tipo: Optional[str] = Field(None, max_length=20)
+    producto: Optional[str] = Field(None, max_length=20)
+
+
+class CondicionEspecialResponse(BaseModel):
+    error: bool = False
+    error_mensaje: Optional[str] = None
+    condicion_especial_flete: bool
+    condicion_especial_manejo: bool
+    cobertura: Optional[str] = None
+    vr_peso: float
+    vr_unidad: float
+    descuento_peso: float
+    descuento_unidad: float
+    peso_minimo: float
+    peso_minimo_guia: float
+    flete_minimo: float
+    flete_minimo_guia: float
+    porcentaje_manejo: float
+    manejo_minimo_unidad: float
+    manejo_minimo_guia: float
+    reexpedicion: bool
+
+
 class ReliquidarRequest(BaseModel):
     codigo_guia_pk: int
     zona: Optional[str] = None

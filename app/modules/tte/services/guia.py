@@ -1,8 +1,11 @@
 from sqlalchemy.orm import Session
 
+from app.modules.gen.models.tercero import Tercero
+from app.modules.tte.models.ciudad import Ciudad
 from app.modules.tte.models.condicion import Condicion
 from app.modules.tte.models.condicion_flete import CondicionFlete
 from app.modules.tte.models.condicion_manejo import CondicionManejo
+from app.modules.tte.models.guia_tipo import GuiaTipo
 from app.modules.tte.models.precio_detalle import PrecioDetalle
 
 
@@ -128,6 +131,85 @@ def buscar_condicion_manejo(db: Session, tercero, origen, destino, zona, cobertu
         CondicionManejo.codigo_ciudad_destino_fk.is_(None),
         CondicionManejo.codigo_zona_fk.is_(None),
     ).first()
+
+
+def condicion_especial(db: Session, tercero, origen, destino, precio, guia_tipo=None, producto=None):
+    """Replica TteGuiaRepository::condicionEspecial de PHP.
+    Devuelve None si el tercero no existe."""
+    tercero_obj = db.query(Tercero).filter(Tercero.codigo_tercero_pk == tercero).first()
+    if not tercero_obj:
+        return None
+
+    resultado = {
+        "error": False,
+        "error_mensaje": None,
+        "condicion_especial_flete": False,
+        "condicion_especial_manejo": False,
+        "cobertura": None,
+        "vr_peso": 0,
+        "vr_unidad": 0,
+        "descuento_peso": 0,
+        "descuento_unidad": 0,
+        "peso_minimo": 0,
+        "peso_minimo_guia": 0,
+        "flete_minimo": 0,
+        "flete_minimo_guia": 0,
+        "porcentaje_manejo": 0,
+        "manejo_minimo_unidad": 0,
+        "manejo_minimo_guia": 0,
+        "reexpedicion": False,
+    }
+
+    pago = None
+    if guia_tipo:
+        tipo = db.query(GuiaTipo).filter(GuiaTipo.codigo_guia_tipo_pk == guia_tipo).first()
+        if tipo:
+            pago = tipo.codigo_pago_fk
+
+    # Manejo base desde la condición del tercero
+    condicion = tercero_obj.condicion
+    if condicion:
+        resultado["porcentaje_manejo"] = condicion.porcentaje_manejo or 0
+        resultado["manejo_minimo_unidad"] = condicion.manejo_minimo_unidad or 0
+        resultado["manejo_minimo_guia"] = condicion.manejo_minimo_despacho or 0
+
+    zona = None
+    ciudad_destino = db.query(Ciudad).filter(Ciudad.codigo_ciudad_pk == destino).first()
+    if ciudad_destino:
+        resultado["reexpedicion"] = bool(ciudad_destino.reexpedicion)
+        zona = ciudad_destino.codigo_zona_fk
+
+    if producto:
+        precio_detalle = _buscar_precio_detalle(db, precio, origen, destino, producto, zona)
+        if precio_detalle:
+            resultado["vr_peso"] = precio_detalle.vr_peso or 0
+            resultado["vr_unidad"] = precio_detalle.vr_unidad or 0
+            resultado["cobertura"] = precio_detalle.codigo_cobertura_fk
+            resultado["peso_minimo"] = precio_detalle.minimo or 0
+    else:
+        resultado["error"] = True
+        resultado["error_mensaje"] = "Debe indicar el producto"
+
+    cobertura = resultado["cobertura"]
+
+    condicion_flete = buscar_condicion_flete(db, tercero, origen, destino, zona, cobertura, pago)
+    if condicion_flete:
+        resultado["condicion_especial_flete"] = True
+        resultado["descuento_peso"] = condicion_flete.descuento_peso or 0
+        resultado["descuento_unidad"] = condicion_flete.descuento_unidad or 0
+        resultado["peso_minimo"] = condicion_flete.peso_minimo or 0
+        resultado["peso_minimo_guia"] = condicion_flete.peso_minimo_guia or 0
+        resultado["flete_minimo"] = condicion_flete.flete_minimo or 0
+        resultado["flete_minimo_guia"] = condicion_flete.flete_minimo_guia or 0
+
+    condicion_manejo = buscar_condicion_manejo(db, tercero, origen, destino, zona, cobertura, pago)
+    if condicion_manejo:
+        resultado["condicion_especial_manejo"] = True
+        resultado["porcentaje_manejo"] = condicion_manejo.porcentaje or 0
+        resultado["manejo_minimo_unidad"] = condicion_manejo.minimo_unidad or 0
+        resultado["manejo_minimo_guia"] = condicion_manejo.minimo_despacho or 0
+
+    return resultado
 
 
 def liquidar(db: Session, tercero, condicion_id, precio, origen, destino, producto, zona, tipo_liquidacion, unidades, peso, volumen, declarado, pago=None):
