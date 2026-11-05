@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 class GuiaBase(BaseModel):
     documento_cliente: str
@@ -56,6 +56,12 @@ class GuiaCreateRequest(BaseModel):
     mercancia_peligrosa: bool = False
     contenido_verificado: bool = False
     usuario: Optional[str] = Field(None, max_length=25)
+
+    @field_validator("codigo_destinatario_fk")
+    @classmethod
+    def cero_como_nulo(cls, v):
+        # El front envía 0 cuando no hay destinatario seleccionado
+        return None if v == 0 else v
 
 class GuiaCreateResponse(BaseModel):
     codigo_guia_pk: int
