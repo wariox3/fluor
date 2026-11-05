@@ -1,5 +1,5 @@
 from datetime import date
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -24,6 +24,7 @@ def lista(
     codigo_novedad_tipo_fk: Optional[str] = None,
     codigo_guia_fk: Optional[int] = None,
     codigo_tercero_fk: Optional[int] = None,
+    documento_cliente: Optional[str] = None,
     codigo_despacho_fk: Optional[int] = None,
     estado_reporte: Optional[bool] = None,
     estado_atendido: Optional[bool] = None,
@@ -33,11 +34,17 @@ def lista(
     db: Session = Depends(get_tenant_db),
     current_user: dict = Depends(get_current_user),
 ):
+    # documento_cliente no es único entre terceros, por eso se exige el tercero
+    if documento_cliente is not None and codigo_tercero_fk is None:
+        raise HTTPException(status_code=400, detail="Para filtrar por documento_cliente se requiere codigo_tercero_fk")
+
     query = db.query(Novedad)
     if codigo_tercero_fk is not None:
         query = query.join(Guia, Novedad.codigo_guia_fk == Guia.codigo_guia_pk).filter(
             Guia.codigo_tercero_fk == codigo_tercero_fk
         )
+        if documento_cliente is not None:
+            query = query.filter(Guia.documento_cliente == documento_cliente)
     if codigo_novedad_tipo_fk is not None:
         query = query.filter(Novedad.codigo_novedad_tipo_fk == codigo_novedad_tipo_fk)
     if codigo_guia_fk is not None:
