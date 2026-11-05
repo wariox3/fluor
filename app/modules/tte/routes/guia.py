@@ -15,6 +15,7 @@ from app.modules.gen.models.identificacion import Identificacion
 from app.modules.gen.models.tercero import Tercero
 from app.modules.tte.models.cierre import Cierre
 from app.modules.tte.models.ciudad import Ciudad
+from app.modules.tte.models.condicion import Condicion
 from app.modules.tte.models.destinatario import Destinatario
 from app.modules.tte.models.empaque import Empaque
 from app.modules.tte.models.guia import Guia
@@ -25,6 +26,7 @@ from app.modules.tte.models.ruta import Ruta
 from app.modules.tte.models.seguimiento import Seguimiento
 from app.modules.tte.models.servicio import Servicio
 from app.modules.tte.models.tercero_operacion import TerceroOperacion
+from app.modules.tte.models.zona import Zona
 from app.modules.tte.schemas.guia import GuiaFormatoImpresionResponse, GuiaCreateRequest, GuiaDetalleResponse, GuiaCreateResponse, GuiaCorreccionRequest, GuiaCorreccionResponse, GuiaListResponse, GuiaEstadoResponse, GuiaRecogidoRequest, GuiaRecogidoResponse, GuiaIngresoRequest, GuiaIngresoResponse, GuiasMasivoRequest, GuiasDocumentoMasivoRequest, LiquidarRequest, LiquidarResponse, CondicionEspecialRequest, CondicionEspecialResponse, ReliquidarRequest, ReliquidarResponse
 from app.modules.tte.services import guia as guia_service
 from app.modules.tte.formats import guia as formatos_guia, rotulo as formatos_rotulo
@@ -67,6 +69,8 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), mast
         (Destinatario, Destinatario.codigo_destinatario_pk, payload.codigo_destinatario_fk, f"Destinatario {payload.codigo_destinatario_fk} no encontrado"),
         (Ruta, Ruta.codigo_ruta_pk, payload.codigo_ruta_fk, "Ruta no encontrada"),
         (Asesor, Asesor.codigo_asesor_pk, payload.codigo_asesor_fk, "Asesor no encontrado"),
+        (Zona, Zona.codigo_zona_pk, payload.zona, "Zona no encontrada"),
+        (Condicion, Condicion.codigo_condicion_pk, payload.condicion, "Condición no encontrada"),
     ]
     fks += [fk for fk in fks_opcionales if fk[2] is not None]
     for model, pk_col, value, detail in fks:
@@ -159,6 +163,8 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), mast
         tipo_liquidacion=payload.tipo_liquidacion,
         codigo_empresa_fk=DEFAULT_EMPRESA_ID,
         codigo_ruta_fk=payload.codigo_ruta_fk or ciudad_destino.codigo_ruta_fk,
+        codigo_zona_fk=payload.zona or ciudad_destino.codigo_zona_fk,
+        codigo_condicion_fk=payload.condicion,
         orden_ruta=payload.orden_ruta if payload.orden_ruta is not None else 0,
         latitud=float(ciudad_destino.latitud) if ciudad_destino.latitud else None,
         longitud=float(ciudad_destino.longitud) if ciudad_destino.longitud else None,
@@ -614,10 +620,12 @@ def reliquidar(payload: ReliquidarRequest, db: Session = Depends(get_tenant_db),
 
     tipo_liquidacion = payload.tipo_liquidacion or guia.tipo_liquidacion or "K"
     tercero = guia.tercero
+    # La reliquidación usa la condición actual del tercero y la deja guardada en la guía
+    condicion_id = tercero.codigo_condicion_fk if tercero else None
     resultado = guia_service.liquidar(
         db,
         tercero=guia.codigo_tercero_fk,
-        condicion_id=tercero.codigo_condicion_fk if tercero else None,
+        condicion_id=condicion_id,
         precio=tercero.condicion_codigo_precio_fk if tercero else None,
         origen=guia.codigo_ciudad_origen_fk,
         destino=guia.codigo_ciudad_destino_fk,
@@ -632,6 +640,7 @@ def reliquidar(payload: ReliquidarRequest, db: Session = Depends(get_tenant_db),
     )
 
     guia.tipo_liquidacion = tipo_liquidacion
+    guia.codigo_condicion_fk = condicion_id
     guia.peso_facturado = resultado["peso_facturado"]
     guia.vr_flete = resultado["flete"]
     guia.vr_manejo = resultado["manejo"]
