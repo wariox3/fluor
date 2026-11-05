@@ -64,7 +64,7 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), mast
     fks_opcionales = [
         (Operacion, Operacion.codigo_operacion_pk, payload.codigo_operacion_cargo_fk, "Operación cargo no encontrada"),
         (Identificacion, Identificacion.codigo_identificacion_pk, payload.codigo_identificacion_destinatario_fk, "Identificación del destinatario no encontrada"),
-        (Destinatario, Destinatario.codigo_destinatario_pk, payload.codigo_destinatario_fk, "Destinatario no encontrado"),
+        (Destinatario, Destinatario.codigo_destinatario_pk, payload.codigo_destinatario_fk, f"Destinatario {payload.codigo_destinatario_fk} no encontrado"),
         (Ruta, Ruta.codigo_ruta_pk, payload.codigo_ruta_fk, "Ruta no encontrada"),
         (Asesor, Asesor.codigo_asesor_pk, payload.codigo_asesor_fk, "Asesor no encontrado"),
     ]
