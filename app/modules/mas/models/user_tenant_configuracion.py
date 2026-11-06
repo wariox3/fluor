@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, false, true
 from app.core.master_database import Base
 
 
@@ -12,3 +12,12 @@ class UserTenantConfiguracion(Base):
     codigo_operacion_fk = Column(String(20), nullable=True)
     codigo_tercero_operacion_fk = Column(Integer, nullable=True)
     codigo_ciudad_origen_fk = Column(String(20), nullable=True)
+    # Permisos y valores por defecto del usuario al crear guías
+    cambiar_valores_guia = Column(Boolean, nullable=False, default=False, server_default=false())
+    permite_cambiar_adquiriente = Column(Boolean, nullable=False, default=False, server_default=false())
+    estado_recogido = Column(Boolean, nullable=False, default=True, server_default=true())
+    estado_ingreso = Column(Boolean, nullable=False, default=True, server_default=true())
+    invertir_origen_destino = Column(Boolean, nullable=False, default=False, server_default=false())
+    bloquear_recaudo = Column(Boolean, nullable=False, default=False, server_default=false())
+    bloquear_adquiriente_credito = Column(Boolean, nullable=False, default=False, server_default=false())
+    bloquear_operacion_cliente = Column(Boolean, nullable=False, default=False, server_default=false())

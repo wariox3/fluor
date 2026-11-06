@@ -19,14 +19,28 @@ def _membresia(db: Session, user_tenant_id: int) -> UserTenant:
     return ut
 
 
+# Valores de la tabla cuando la membresía aún no tiene fila de configuración
+_POR_DEFECTO = {
+    "cambiar_valores_guia": False,
+    "permite_cambiar_adquiriente": False,
+    "estado_recogido": True,
+    "estado_ingreso": True,
+    "invertir_origen_destino": False,
+    "bloquear_recaudo": False,
+    "bloquear_adquiriente_credito": False,
+    "bloquear_operacion_cliente": False,
+}
+
+
 def _respuesta(ut: UserTenant) -> UserTenantConfiguracionResponse:
-    """Configuración de la membresía; campos en null si aún no tiene."""
+    """Configuración de la membresía; si aún no tiene: códigos en null y booleanos con su valor por defecto."""
     c = ut.configuracion
     return UserTenantConfiguracionResponse(
         user_tenant_id=ut.id,
         codigo_operacion_fk=c.codigo_operacion_fk if c else None,
         codigo_tercero_operacion_fk=c.codigo_tercero_operacion_fk if c else None,
         codigo_ciudad_origen_fk=c.codigo_ciudad_origen_fk if c else None,
+        **{campo: getattr(c, campo) if c else defecto for campo, defecto in _POR_DEFECTO.items()},
     )
 
 
