@@ -84,6 +84,9 @@ origins = [
     "https://api.semanticaerp.com",
     "https://empleado.co",
     "https://www.empleado.co",
+    "https://semanticaerp.uk",
+    "https://empleado.semanticaerp.uk",
+    "https://cliente.semanticaerp.uk",
 ]
 
 app.add_middleware(
