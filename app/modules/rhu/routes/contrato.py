@@ -67,6 +67,7 @@ def imprimir_certificado_laboral(contrato_id: int, db: Session = Depends(get_ten
             joinedload(Contrato.entidad_salud_rel),
             joinedload(Contrato.entidad_pension_rel),
             joinedload(Contrato.ciudad_contrato_rel),
+            joinedload(Contrato.tercero_rel),
         )
         .filter(Contrato.codigo_contrato_pk == contrato_id)
         .first()
@@ -113,6 +114,8 @@ def imprimir_certificado_laboral(contrato_id: int, db: Session = Depends(get_ten
         else 0
     )
     identificacion_rel = getattr(empleado_rel, "identificacion_rel", None) if empleado_rel else None
+    # Cliente (tercero) del contrato
+    tercero_rel = contrato.tercero_rel
 
     etiquetas = {
         "FECHA_HOY":                    fecha_larga(date.today()),
@@ -138,6 +141,8 @@ def imprimir_certificado_laboral(contrato_id: int, db: Session = Depends(get_ten
         "DEVENGADO_PACTADO":            fmt_numero(devengado_pactado),
         "SALARIO_EN_LETRAS":            salario_en_letras,
         "TIPO_IDENTIFICACION":          identificacion_rel.nombre.upper() if identificacion_rel else "",
+        "CLIENTE_NUMERO_IDENTIFICACION": (tercero_rel.numero_identificacion or "").upper() if tercero_rel else "",
+        "CLIENTE_NOMBRE":               (tercero_rel.nombre_corto or "").upper() if tercero_rel else "",
     }
 
     pdf_bytes = generar_pdf(etiquetas, formato, imagenes)
