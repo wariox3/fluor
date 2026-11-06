@@ -1,12 +1,35 @@
+import json
+import logging
+import random
+from datetime import datetime
+
+import magic
+from fastapi import HTTPException, UploadFile
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.core.backblaze import b2_client
+from app.core.utils import comprimir_imagen
+from app.modules.auth.models.api_key import ApiKey
+from app.modules.auth.models.user import User
+from app.modules.doc.models.fichero import Fichero
+from app.modules.gen.models.configuracion import Configuracion
 from app.modules.gen.models.tercero import Tercero
 from app.modules.tte.models.ciudad import Ciudad
 from app.modules.tte.models.condicion import Condicion
 from app.modules.tte.models.condicion_flete import CondicionFlete
 from app.modules.tte.models.condicion_manejo import CondicionManejo
 from app.modules.tte.models.guia_tipo import GuiaTipo
+from app.modules.tte.models.despacho import Despacho
+from app.modules.tte.models.guia import Guia
 from app.modules.tte.models.precio_detalle import PrecioDetalle
+from app.modules.tte.models.seguimiento import Seguimiento
+from app.modules.tte.models.ubicacion import Ubicacion
+from app.modules.tte.schemas.guia import GuiaEntregaRequest, GuiaEntregaResponse
+
+logger = logging.getLogger(__name__)
 
 
 def _buscar_precio_detalle(db: Session, precio, origen, destino, producto, zona):
@@ -294,3 +317,228 @@ def liquidar(db: Session, tercero, condicion_id, precio, origen, destino, produc
         "manejo": round(manejo),
         "peso_facturado": peso_facturado,
     }
+
+
+# ---------------------------------------------------------------------------
+# Entrega de guías (compartida por /tte/guia/entrega y la app móvil)
+# ---------------------------------------------------------------------------
+
+MAX_ARCHIVO_ENTREGA = 10 * 1024 * 1024  # 10 MB por imagen o firma
+MAX_IMAGENES_ENTREGA = 10
+MAX_TOTAL_ENTREGA = 30 * 1024 * 1024  # 30 MB sumando fotos y firma
+_EXTENSIONES_IMAGEN = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
+
+
+def usuario_autenticado(master_db: Session, current_user: dict) -> str:
+    """Correo del usuario autenticado, truncado a 25 caracteres.
+    JWT: viene en el claim email. API key (o token sin email): se busca en la BD master."""
+    if current_user.get("email"):
+        return current_user["email"][:25]
+    sub = str(current_user.get("sub", ""))
+    usuario_id = None
+    if sub.isdigit():
+        usuario_id = int(sub)
+    else:
+        key = master_db.query(ApiKey).filter(ApiKey.prefix == sub).first()
+        if key:
+            usuario_id = key.usuario_id
+    user = master_db.query(User).filter(User.id == usuario_id).first() if usuario_id else None
+    return (user.email if user else sub)[:25]
+
+
+def parsear_datos_entrega(datos: str) -> GuiaEntregaRequest:
+    """Valida el campo `datos` (JSON) del multipart de entrega."""
+    try:
+        return GuiaEntregaRequest.model_validate_json(datos)
+    except ValidationError as e:
+        # Mismo formato que un body normal: ubicacion "datos" y el campo con error
+        raise RequestValidationError([{**err, "loc": ("datos", *err["loc"])} for err in e.errors(include_url=False)])
+
+
+def _leer_archivo(archivo: UploadFile, campo: str, tipos: set[str]) -> bytes:
+    """Lee el archivo subido validando tamaño y tipo real (por contenido, no por la extensión)."""
+    data = archivo.file.read(MAX_ARCHIVO_ENTREGA + 1)
+    if not data or len(data) > MAX_ARCHIVO_ENTREGA:
+        raise HTTPException(status_code=400, detail=f"{campo}: vacío o supera el tamaño máximo de 10MB")
+    if magic.from_buffer(data[:2048], mime=True) not in tipos:
+        raise HTTPException(status_code=400, detail=f"{campo}: tipo de archivo no permitido")
+    return data
+
+
+def leer_archivos_entrega(imagenes: list[UploadFile], firma: UploadFile | None) -> tuple[list[bytes], bytes | None]:
+    """Lee y valida fotos y firma antes de tocar la guía: uno inválido no deja la entrega a medias."""
+    if len(imagenes) > MAX_IMAGENES_ENTREGA:
+        raise HTTPException(status_code=400, detail=f"Máximo {MAX_IMAGENES_ENTREGA} imágenes por entrega")
+
+    # Con el tamaño que registró el parser se rechaza el exceso antes de cargar archivos en memoria
+    total = sum(archivo.size or 0 for archivo in [*imagenes, firma] if archivo)
+    if total > MAX_TOTAL_ENTREGA:
+        raise HTTPException(status_code=400, detail="Los archivos de la entrega superan el tamaño máximo total de 30MB")
+
+    archivos_imagenes = [
+        _leer_archivo(img, f"imagenes[{i}]", set(_EXTENSIONES_IMAGEN)) for i, img in enumerate(imagenes)
+    ]
+    archivo_firma = _leer_archivo(firma, "firma", {"image/png"}) if firma else None
+    return archivos_imagenes, archivo_firma
+
+
+def _subir_fichero(db: Session, guia: int, data: bytes, nombre: str, extension: str, mime: str,
+                   directorio_base: str, carpeta: str, usuario: str, tipo: str = "G",
+                   comprimido: bool = False) -> bool:
+    """Registra el fichero de la guía y lo sube a Backblaze. Si la subida falla queda con error_carga.
+    Tipo G (general) se descarga de la carpeta fichero/; F (firma) de firma/."""
+    fichero = Fichero(
+        codigo_fichero_tipo_fk=tipo,
+        codigo_modelo_fk="TteGuia",
+        codigo=str(guia),
+        fecha=datetime.now(),
+        nombre=nombre,
+        extension=extension,
+        tipo=mime,
+        tamano=len(data),
+        usuario=usuario[:25] if usuario else None,
+        ui="M",
+        comprimido=comprimido,
+        directorio_base=directorio_base,
+    )
+    db.add(fichero)
+    try:
+        db.flush()
+    except SQLAlchemyError:
+        # La entrega ya está confirmada: un fallo al registrar el fichero no la revierte
+        db.rollback()
+        logger.exception("Error registrando el fichero %s de la guía %s", nombre, guia)
+        return False
+    try:
+        b2_client.upload_file(f"{directorio_base}/{carpeta}/{fichero.codigo_fichero_pk}.{extension}", data, mime)
+        ok = True
+    except Exception:
+        logger.exception("Error subiendo a Backblaze el fichero %s de la guía %s", fichero.codigo_fichero_pk, guia)
+        fichero.error_carga = True
+        ok = False
+    db.commit()
+    return ok
+
+
+def registrar_entrega(db: Session, payload: GuiaEntregaRequest, archivos_imagenes: list[bytes],
+                      archivo_firma: bytes | None, usuario: str) -> GuiaEntregaResponse:
+    """Marca la guía como entregada, registra seguimientos, ubicación y despacho, y sube los archivos.
+    Los archivos ya deben venir validados (leer_archivos_entrega); `usuario` es quien registra la entrega."""
+    directorio_base = None
+    if archivos_imagenes or archivo_firma:
+        configuracion = db.query(Configuracion).first()
+        directorio_base = configuracion.ruta_almacenamiento_servicio if configuracion else None
+        if not directorio_base:
+            raise HTTPException(status_code=400, detail="No está configurada la ruta del servicio documental")
+
+    # Se bloquea la fila para que dos entregas simultáneas no cuenten doble en el despacho
+    guia = db.query(Guia).filter(Guia.codigo_guia_pk == payload.guia).with_for_update().first()
+    if not guia:
+        raise HTTPException(status_code=404, detail="Guía no encontrada")
+    if guia.estado_anulado:
+        raise HTTPException(status_code=409, detail="La guía está anulada")
+    if not guia.estado_despachado:
+        raise HTTPException(status_code=409, detail="La guía no está despachada")
+    if guia.estado_entregado:
+        # entrega=true le indica a la app que la guía ya quedó entregada (p. ej. en un reintento)
+        raise HTTPException(
+            status_code=409, detail={"message": "La guía ya fue entregada anteriormente", "entrega": True}
+        )
+
+    ahora = datetime.now()
+    fecha_entrega = payload.fecha_entrega or ahora
+
+    guia.fecha_entrega = fecha_entrega
+    guia.estado_entregado = True
+    guia.usuario_entrega = usuario
+
+    # Llaves en camelCase: el formato de impresión las lee así del seguimiento FIRMA
+    datos_adicionales = {
+        llave: valor for llave, valor in {
+            "recibe": payload.recibe,
+            "recibeParentesco": payload.recibe_parentesco,
+            "recibeNumeroIdentificacion": payload.recibe_numero_identificacion,
+            "recibeCelular": payload.recibe_celular,
+        }.items() if valor
+    }
+    datos_seguimiento = json.dumps(datos_adicionales) if datos_adicionales else None
+
+    def seguimiento(tipo: str, **extra) -> Seguimiento:
+        return Seguimiento(
+            codigo_guia_fk=guia.codigo_guia_pk,
+            codigo_seguimiento_tipo_fk=tipo,
+            fecha=ahora,
+            fecha_seguimiento=fecha_entrega,
+            usuario=usuario[:50],
+            **extra,
+        )
+
+    comentario = " ".join(filter(None, ["ENTREGA APP MOVIL", payload.usuario_nombre, payload.usuario_correo]))
+    db.add(seguimiento(
+        "ENTREGA",
+        comentario=comentario[:300],
+        datos=datos_seguimiento,
+        latitud=payload.latitud or 0,
+        longitud=payload.longitud or 0,
+    ))
+    if archivos_imagenes:
+        guia.estado_predigitalizado = True
+        guia.estado_digitalizado = True
+        db.add(seguimiento("DIGITALIZACION"))
+    if archivo_firma:
+        guia.estado_firma = True
+        db.add(seguimiento("FIRMA", datos=datos_seguimiento))
+
+    if payload.latitud is not None and payload.longitud is not None:
+        db.add(Ubicacion(
+            codigo_guia_fk=guia.codigo_guia_pk,
+            codigo_despacho_fk=guia.codigo_despacho_fk,
+            fecha=ahora,
+            usuario=usuario[:25],
+            latitud=payload.latitud,
+            longitud=payload.longitud,
+            velocidad=payload.velocidad or 0,
+            altitud=payload.altitud or 0,
+            exactitud=payload.exactitud or 0,
+            exactitud_altitud=payload.exactitud_altitud or 0,
+        ))
+
+    # El despacho va acumulando las guías entregadas
+    if guia.codigo_despacho_fk:
+        db.query(Despacho).filter(Despacho.codigo_despacho_pk == guia.codigo_despacho_fk).update(
+            {Despacho.cantidad_entregada: Despacho.cantidad_entregada + 1}, synchronize_session=False
+        )
+
+    db.commit()
+
+    # Los archivos se suben después de confirmar la entrega; si fallan, la entrega se mantiene
+    errores = 0
+    for data in archivos_imagenes:
+        mime = magic.from_buffer(data[:2048], mime=True)
+        comprimido = False
+        try:
+            webp = comprimir_imagen(data)
+            # Una imagen ya pequeña puede crecer al recomprimir: se deja la original
+            if len(webp) < len(data):
+                data, mime, comprimido = webp, "image/webp", True
+        except Exception:
+            logger.exception("Error comprimiendo imagen de la guía %s; se sube la original", guia.codigo_guia_pk)
+        extension = _EXTENSIONES_IMAGEN[mime]
+        if not _subir_fichero(db, guia.codigo_guia_pk, data, f"{guia.codigo_guia_pk}.{extension}", extension,
+                              mime, directorio_base, "fichero", usuario, comprimido=comprimido):
+            errores += 1
+    if archivo_firma:
+        nombre = f"{random.randint(100000, 999999)}_{guia.codigo_guia_pk}.png"
+        if not _subir_fichero(db, guia.codigo_guia_pk, archivo_firma, nombre, "png", "image/png",
+                              directorio_base, "firma", usuario, tipo="F"):
+            errores += 1
+
+    db.refresh(guia)
+    return GuiaEntregaResponse(
+        codigo_guia_pk=guia.codigo_guia_pk,
+        estado_entregado=guia.estado_entregado,
+        fecha_entrega=guia.fecha_entrega,
+        estado_digitalizado=guia.estado_digitalizado,
+        estado_firma=guia.estado_firma,
+        ficheros_con_error=errores,
+    )
