@@ -166,6 +166,40 @@ class GuiaIngresoResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class GuiaEntregaImagen(BaseModel):
+    base64: str
+    comprimido: bool = False
+
+
+class GuiaEntregaRequest(BaseModel):
+    guia: int
+    fecha_entrega: Optional[datetime] = None
+    usuario: Optional[str] = None
+    usuario_nombre: Optional[str] = None
+    usuario_correo: Optional[str] = None
+    recibe: Optional[str] = None
+    recibe_parentesco: Optional[str] = None
+    recibe_numero_identificacion: Optional[str] = None
+    recibe_celular: Optional[str] = None
+    firma: Optional[str] = None  # PNG en base64
+    imagenes: Annotated[list[GuiaEntregaImagen], Field(max_length=10)] = []
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
+    velocidad: Optional[float] = None
+    altitud: Optional[float] = None
+    exactitud: Optional[float] = None
+    exactitud_altitud: Optional[float] = None
+
+
+class GuiaEntregaResponse(BaseModel):
+    codigo_guia_pk: int
+    estado_entregado: bool
+    fecha_entrega: Optional[datetime]
+    estado_digitalizado: bool
+    estado_firma: bool
+    ficheros_con_error: int = 0
+
+
 class GuiasMasivoRequest(BaseModel):
     guias: Annotated[list[int], Field(min_length=1, max_length=1000)]
 

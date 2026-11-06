@@ -1,3 +1,9 @@
+import base64
+import binascii
+import json
+import logging
+import random
+import magic
 from datetime import datetime, date, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
@@ -7,15 +13,20 @@ from typing import Literal, Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.master_database import get_master_db
 from app.core.security import get_current_user
+from app.core.backblaze import b2_client
 from app.core.config import DEFAULT_EMPRESA_ID
+from app.core.utils import comprimir_imagen
 from app.modules.auth.models.api_key import ApiKey
 from app.modules.auth.models.user import User
+from app.modules.doc.models.fichero import Fichero
+from app.modules.gen.models.configuracion import Configuracion
 from app.modules.gen.models.asesor import Asesor
 from app.modules.gen.models.identificacion import Identificacion
 from app.modules.gen.models.tercero import Tercero
 from app.modules.tte.models.cierre import Cierre
 from app.modules.tte.models.ciudad import Ciudad
 from app.modules.tte.models.condicion import Condicion
+from app.modules.tte.models.despacho import Despacho
 from app.modules.tte.models.destinatario import Destinatario
 from app.modules.tte.models.empaque import Empaque
 from app.modules.tte.models.guia import Guia
@@ -26,13 +37,17 @@ from app.modules.tte.models.ruta import Ruta
 from app.modules.tte.models.seguimiento import Seguimiento
 from app.modules.tte.models.servicio import Servicio
 from app.modules.tte.models.tercero_operacion import TerceroOperacion
+from app.modules.tte.models.ubicacion import Ubicacion
 from app.modules.tte.models.zona import Zona
-from app.modules.tte.schemas.guia import GuiaFormatoImpresionResponse, GuiaCreateRequest, GuiaDetalleResponse, GuiaCreateResponse, GuiaCorreccionRequest, GuiaCorreccionResponse, GuiaListResponse, GuiaEstadoResponse, GuiaRecogidoRequest, GuiaRecogidoResponse, GuiaIngresoRequest, GuiaIngresoResponse, GuiasMasivoRequest, GuiasDocumentoMasivoRequest, LiquidarRequest, LiquidarResponse, CondicionEspecialRequest, CondicionEspecialResponse, ReliquidarRequest, ReliquidarResponse
+from app.modules.tte.schemas.guia import GuiaFormatoImpresionResponse, GuiaCreateRequest, GuiaDetalleResponse, GuiaCreateResponse, GuiaCorreccionRequest, GuiaCorreccionResponse, GuiaListResponse, GuiaEstadoResponse, GuiaRecogidoRequest, GuiaRecogidoResponse, GuiaIngresoRequest, GuiaIngresoResponse, GuiaEntregaRequest, GuiaEntregaResponse, GuiasMasivoRequest, GuiasDocumentoMasivoRequest, LiquidarRequest, LiquidarResponse, CondicionEspecialRequest, CondicionEspecialResponse, ReliquidarRequest, ReliquidarResponse
 from app.modules.tte.services import guia as guia_service
 from app.modules.tte.formats import guia as formatos_guia, rotulo as formatos_rotulo
 from app.modules.tte.formats.datos import MAXIMO_GUIAS, cargar_empresa, cargar_guias, preparar_guias
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+MAX_ARCHIVO_ENTREGA = 10 * 1024 * 1024  # 10 MB por imagen o firma
 
 def _usuario_autenticado(master_db: Session, current_user: dict) -> str:
     """Correo del usuario autenticado, truncado a 25 caracteres.
@@ -559,6 +574,175 @@ def ingreso(payload: GuiaIngresoRequest, db: Session = Depends(get_tenant_db), c
     db.refresh(guia)
 
     return guia
+
+def _decodificar_archivo(valor: str, campo: str, tipos: set[str]) -> bytes:
+    """Base64 (con o sin prefijo data:...;base64,) a bytes, validando tamaño y tipo real."""
+    if valor.startswith("data:"):
+        valor = valor.split(",", 1)[-1]
+    try:
+        data = base64.b64decode(valor, validate=True)
+    except (binascii.Error, ValueError):
+        raise HTTPException(status_code=400, detail=f"{campo}: base64 inválido")
+    if not data or len(data) > MAX_ARCHIVO_ENTREGA:
+        raise HTTPException(status_code=400, detail=f"{campo}: vacío o supera el tamaño máximo de 10MB")
+    if magic.from_buffer(data[:2048], mime=True) not in tipos:
+        raise HTTPException(status_code=400, detail=f"{campo}: tipo de archivo no permitido")
+    return data
+
+
+def _subir_fichero(db: Session, guia: int, data: bytes, nombre: str, extension: str, mime: str,
+                   directorio_base: str, carpeta: str, usuario: str, tipo: Optional[str] = None,
+                   comprimido: bool = False) -> bool:
+    """Registra el fichero de la guía y lo sube a Backblaze. Si la subida falla queda con error_carga."""
+    fichero = Fichero(
+        codigo_fichero_tipo_fk=tipo,
+        codigo_modelo_fk="TteGuia",
+        codigo=str(guia),
+        fecha=datetime.now(),
+        nombre=nombre,
+        extension=extension,
+        tipo=mime,
+        tamano=len(data),
+        usuario=usuario[:25] if usuario else None,
+        ui="M",
+        comprimido=comprimido,
+        directorio_base=directorio_base,
+    )
+    db.add(fichero)
+    db.flush()
+    try:
+        b2_client.upload_file(f"{directorio_base}/{carpeta}/{fichero.codigo_fichero_pk}.{extension}", data, mime)
+        ok = True
+    except Exception:
+        logger.exception("Error subiendo a Backblaze el fichero %s de la guía %s", fichero.codigo_fichero_pk, guia)
+        fichero.error_carga = True
+        ok = False
+    db.commit()
+    return ok
+
+
+@router.post("/entrega", response_model=GuiaEntregaResponse)
+def entrega(payload: GuiaEntregaRequest, db: Session = Depends(get_tenant_db), master_db: Session = Depends(get_master_db), current_user: dict = Depends(get_current_user)):
+    # Se bloquea la fila para que dos entregas simultáneas no cuenten doble en el despacho
+    guia = db.query(Guia).filter(Guia.codigo_guia_pk == payload.guia).with_for_update().first()
+    if not guia:
+        raise HTTPException(status_code=404, detail="Guía no encontrada")
+    if not guia.estado_despachado:
+        raise HTTPException(status_code=409, detail="La guía no está despachada")
+    if guia.estado_entregado:
+        raise HTTPException(status_code=409, detail="La guía ya fue entregada anteriormente")
+
+    # Se decodifica todo antes de tocar la guía: un archivo inválido no deja la entrega a medias
+    imagenes = [
+        (_decodificar_archivo(img.base64, f"imagenes[{i}]", {"image/jpeg", "image/png"}), img.comprimido)
+        for i, img in enumerate(payload.imagenes)
+    ]
+    firma = _decodificar_archivo(payload.firma, "firma", {"image/png"}) if payload.firma else None
+
+    ahora = datetime.now()
+    fecha_entrega = payload.fecha_entrega or ahora
+    usuario = payload.usuario or _usuario_autenticado(master_db, current_user)
+
+    guia.fecha_entrega = fecha_entrega
+    guia.estado_entregado = True
+    guia.usuario_entrega = usuario
+
+    # Llaves en camelCase: el formato de impresión las lee así del seguimiento FIRMA
+    datos_adicionales = {
+        llave: valor for llave, valor in {
+            "recibe": payload.recibe,
+            "recibeParentesco": payload.recibe_parentesco,
+            "recibeNumeroIdentificacion": payload.recibe_numero_identificacion,
+            "recibeCelular": payload.recibe_celular,
+        }.items() if valor
+    }
+    datos = json.dumps(datos_adicionales) if datos_adicionales else None
+
+    def seguimiento(tipo: str, **extra) -> Seguimiento:
+        return Seguimiento(
+            codigo_guia_fk=guia.codigo_guia_pk,
+            codigo_seguimiento_tipo_fk=tipo,
+            fecha=ahora,
+            fecha_seguimiento=fecha_entrega,
+            usuario=usuario[:50],
+            **extra,
+        )
+
+    comentario = " ".join(filter(None, ["ENTREGA APP MOVIL", payload.usuario_nombre, payload.usuario_correo]))
+    db.add(seguimiento(
+        "ENTREGA",
+        comentario=comentario[:300],
+        datos=datos,
+        latitud=payload.latitud or 0,
+        longitud=payload.longitud or 0,
+    ))
+    if imagenes:
+        guia.estado_predigitalizado = True
+        guia.estado_digitalizado = True
+        db.add(seguimiento("DIGITALIZACION"))
+    if firma:
+        guia.estado_firma = True
+        db.add(seguimiento("FIRMA", datos=datos))
+
+    if payload.latitud is not None and payload.longitud is not None:
+        db.add(Ubicacion(
+            codigo_guia_fk=guia.codigo_guia_pk,
+            codigo_despacho_fk=guia.codigo_despacho_fk,
+            fecha=ahora,
+            usuario=usuario[:25],
+            latitud=payload.latitud,
+            longitud=payload.longitud,
+            velocidad=payload.velocidad or 0,
+            altitud=payload.altitud or 0,
+            exactitud=payload.exactitud or 0,
+            exactitud_altitud=payload.exactitud_altitud or 0,
+        ))
+
+    # El despacho va acumulando las guías entregadas
+    if guia.codigo_despacho_fk:
+        db.query(Despacho).filter(Despacho.codigo_despacho_pk == guia.codigo_despacho_fk).update(
+            {Despacho.cantidad_entregada: Despacho.cantidad_entregada + 1}, synchronize_session=False
+        )
+
+    db.commit()
+
+    # Los archivos se suben después de confirmar la entrega; si fallan, la entrega se mantiene
+    errores = 0
+    if imagenes or firma:
+        configuracion = db.query(Configuracion).first()
+        directorio_base = configuracion.ruta_almacenamiento_servicio if configuracion else None
+        if not directorio_base:
+            logger.error("Guía %s entregada sin archivos: no está configurada la ruta del servicio documental", guia.codigo_guia_pk)
+        else:
+            for data, comprimido in imagenes:
+                mime = magic.from_buffer(data[:2048], mime=True)
+                if not comprimido:
+                    try:
+                        data = comprimir_imagen(data)
+                        comprimido = True
+                        mime = "image/jpeg"
+                    except Exception:
+                        logger.exception("Error comprimiendo imagen de la guía %s", guia.codigo_guia_pk)
+                extension = "jpg" if mime == "image/jpeg" else "png"
+                if not _subir_fichero(db, guia.codigo_guia_pk, data, f"{guia.codigo_guia_pk}.{extension}", extension,
+                                      mime, directorio_base, "fichero", usuario, comprimido=comprimido):
+                    errores += 1
+            if firma:
+                nombre = f"{random.randint(100000, 999999)}_{guia.codigo_guia_pk}.png"
+                if not _subir_fichero(db, guia.codigo_guia_pk, firma, nombre, "png", "image/png",
+                                      directorio_base, "firma", usuario, tipo="F"):
+                    errores += 1
+
+    db.refresh(guia)
+    return GuiaEntregaResponse(
+        codigo_guia_pk=guia.codigo_guia_pk,
+        estado_entregado=guia.estado_entregado,
+        fecha_entrega=guia.fecha_entrega,
+        estado_digitalizado=guia.estado_digitalizado,
+        estado_firma=guia.estado_firma,
+        ficheros_con_error=errores,
+    )
+
 
 @router.post("/liquidar", response_model=LiquidarResponse)
 def liquidar(payload: LiquidarRequest, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):

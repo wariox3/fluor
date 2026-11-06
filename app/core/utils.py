@@ -1,4 +1,7 @@
 from datetime import date, datetime, timedelta, timezone
+from io import BytesIO
+
+from PIL import Image, ImageOps
 
 from app.core.config import DB_TIME_ZONE, APP_URL, FRONTEND_URLS
 
@@ -41,3 +44,13 @@ def frontend_url(origin: str | None) -> str:
     if origin and origin.rstrip("/") in FRONTEND_URLS:
         return origin.rstrip("/")
     return APP_URL.rstrip("/")
+
+
+def comprimir_imagen(data: bytes, calidad: int = 70, lado_maximo: int = 1600) -> bytes:
+    """Reduce una imagen a JPEG: corrige la rotación EXIF, limita el lado mayor y baja la calidad."""
+    with Image.open(BytesIO(data)) as original:
+        imagen = ImageOps.exif_transpose(original).convert("RGB")
+    imagen.thumbnail((lado_maximo, lado_maximo))
+    salida = BytesIO()
+    imagen.save(salida, "JPEG", quality=calidad, optimize=True)
+    return salida.getvalue()
