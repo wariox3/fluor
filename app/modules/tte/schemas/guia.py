@@ -166,12 +166,8 @@ class GuiaIngresoResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class GuiaEntregaImagen(BaseModel):
-    base64: str
-    comprimido: bool = False
-
-
 class GuiaEntregaRequest(BaseModel):
+    """Campo `datos` (JSON) del multipart de entrega; imágenes y firma van como archivos."""
     guia: int
     fecha_entrega: Optional[datetime] = None
     usuario: Optional[str] = None
@@ -181,8 +177,6 @@ class GuiaEntregaRequest(BaseModel):
     recibe_parentesco: Optional[str] = None
     recibe_numero_identificacion: Optional[str] = None
     recibe_celular: Optional[str] = None
-    firma: Optional[str] = None  # PNG en base64
-    imagenes: Annotated[list[GuiaEntregaImagen], Field(max_length=10)] = []
     latitud: Optional[float] = None
     longitud: Optional[float] = None
     velocidad: Optional[float] = None
