@@ -629,7 +629,7 @@ def _subir_fichero(db: Session, guia: int, data: bytes, nombre: str, extension: 
 @router.post("/entrega", response_model=GuiaEntregaResponse)
 def entrega(
     datos: str = Form(..., description="JSON con los datos de la entrega (GuiaEntregaRequest)"),
-    imagenes: list[UploadFile] = File(default=[], description="Fotos de la entrega, JPEG o PNG"),
+    imagenes: list[UploadFile] = File(default=[], description="Fotos de la entrega, JPEG, PNG o WebP"),
     firma: Optional[UploadFile] = File(default=None, description="Firma de quien recibe, PNG"),
     db: Session = Depends(get_tenant_db),
     master_db: Session = Depends(get_master_db),
@@ -668,7 +668,10 @@ def entrega(
     if not guia.estado_despachado:
         raise HTTPException(status_code=409, detail="La guía no está despachada")
     if guia.estado_entregado:
-        raise HTTPException(status_code=409, detail="La guía ya fue entregada anteriormente")
+        # entrega=true le indica a la app que la guía ya quedó entregada (p. ej. en un reintento)
+        raise HTTPException(
+            status_code=409, detail={"message": "La guía ya fue entregada anteriormente", "entrega": True}
+        )
 
     ahora = datetime.now()
     fecha_entrega = payload.fecha_entrega or ahora
