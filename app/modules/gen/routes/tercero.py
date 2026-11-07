@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.core.config import DEFAULT_EMPRESA_ID
+from app.core.rate_limit import limiter
+from app.core.utils import Filtro, ListaConfig, exportar_excel, paginar
 from app.modules.gen.models.asesor import Asesor
 from app.modules.gen.models.ciudad import Ciudad
 from app.modules.gen.models.identificacion import Identificacion
@@ -61,25 +63,58 @@ def nuevo(payload: TerceroCreateRequest, db: Session = Depends(get_tenant_db), c
     return tercero
 
 
+LISTA_TERCERO = ListaConfig(
+    pk=Tercero.codigo_tercero_pk,
+    orden=[Tercero.nombre_corto.asc(), Tercero.codigo_tercero_pk.asc()],
+    filtros={
+        "codigo_tercero_pk": Filtro(Tercero.codigo_tercero_pk),
+        "numero_identificacion": Filtro(Tercero.numero_identificacion, "contiene"),
+        "nombre_corto": Filtro(Tercero.nombre_corto, "contiene"),
+        "codigo_ciudad_fk": Filtro(Tercero.codigo_ciudad_fk),
+        "codigo_asesor_fk": Filtro(Tercero.codigo_asesor_fk),
+        "codigo_condicion_fk": Filtro(Tercero.codigo_condicion_fk),
+        "cliente": Filtro(Tercero.cliente),
+        "proveedor": Filtro(Tercero.proveedor),
+        "empleado": Filtro(Tercero.empleado),
+        "estado_inactivo": Filtro(Tercero.estado_inactivo),
+    },
+    ordenables={
+        "codigo_tercero_pk": Tercero.codigo_tercero_pk,
+        "nombre_corto": Tercero.nombre_corto,
+        "numero_identificacion": Tercero.numero_identificacion,
+    },
+    relaciones=[Tercero.asesor, Tercero.condicion, Tercero.ciudad],
+    columnas_excel=[
+        ("ID", "codigo_tercero_pk"),
+        ("Tipo identificación", "codigo_identificacion_fk"),
+        ("Identificación", "numero_identificacion"),
+        ("DV", "digito_verificacion"),
+        ("Nombre", "nombre_corto"),
+        ("Dirección", "direccion"),
+        ("Barrio", "barrio"),
+        ("Ciudad", "ciudad_nombre"),
+        ("Teléfono", "telefono"),
+        ("Celular", "celular"),
+        ("Correo", "correo"),
+        ("Asesor", "asesor_nombre"),
+        ("Condición", "condicion_nombre"),
+        ("Cliente", "cliente"),
+        ("Proveedor", "proveedor"),
+        ("Empleado", "empleado"),
+        ("Inactivo", "estado_inactivo"),
+    ],
+)
+
+
 @router.get("/lista", response_model=TerceroListResponse)
-def lista(page: int = 1, size: int = 50, numero_identificacion: Optional[str] = None, nombre_corto: Optional[str] = None, codigo_tercero_pk: Optional[int] = None, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
-    query = db.query(Tercero)
-    if numero_identificacion:
-        query = query.filter(Tercero.numero_identificacion.ilike(f"%{numero_identificacion}%"))
-    if nombre_corto:
-        query = query.filter(Tercero.nombre_corto.ilike(f"%{nombre_corto}%"))
-    if codigo_tercero_pk is not None:
-        query = query.filter(Tercero.codigo_tercero_pk == codigo_tercero_pk)        
-    total = query.with_entities(func.count(Tercero.codigo_tercero_pk)).scalar()
-    offset = (page - 1) * size
-    terceros = (
-        query.options(joinedload(Tercero.asesor), joinedload(Tercero.condicion))
-        .order_by(Tercero.nombre_corto.asc(), Tercero.codigo_tercero_pk.asc())
-        .offset(offset)
-        .limit(size)
-        .all()
-    )
-    return TerceroListResponse(total=total, page=page, size=size, items=terceros)
+def lista(params: dict = Depends(LISTA_TERCERO.params_lista), db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    return paginar(db, LISTA_TERCERO, params)
+
+
+@router.get("/excel")
+@limiter.limit("5/minute")
+def excel(request: Request, response: Response, params: dict = Depends(LISTA_TERCERO.params_excel), db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    return exportar_excel(db, LISTA_TERCERO, params, nombre="terceros")
 
 
 @router.get("/buscar", response_model=TerceroBuscarListResponse)

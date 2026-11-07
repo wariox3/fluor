@@ -1,14 +1,16 @@
 import logging
 from datetime import datetime, date, timedelta
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 from typing import Literal, Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.master_database import get_master_db
 from app.core.security import get_current_user
 from app.core.config import DEFAULT_EMPRESA_ID
+from app.core.rate_limit import limiter
+from app.core.utils import Filtro, ListaConfig, exportar_excel, paginar
 from app.modules.gen.models.asesor import Asesor
 from app.modules.gen.models.identificacion import Identificacion
 from app.modules.gen.models.tercero import Tercero
@@ -181,63 +183,78 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), mast
 
     return guia
 
+LISTA_GUIA = ListaConfig(
+    pk=Guia.codigo_guia_pk,
+    orden=[Guia.codigo_guia_pk.desc()],
+    filtros={
+        "codigo_guia_pk": Filtro(Guia.codigo_guia_pk),
+        "codigo_tercero_fk": Filtro(Guia.codigo_tercero_fk),
+        "documento_cliente": Filtro(Guia.documento_cliente),
+        "codigo_guia_tipo_fk": Filtro(Guia.codigo_guia_tipo_fk),
+        "codigo_servicio_fk": Filtro(Guia.codigo_servicio_fk),
+        "codigo_ciudad_origen_fk": Filtro(Guia.codigo_ciudad_origen_fk),
+        "codigo_ciudad_destino_fk": Filtro(Guia.codigo_ciudad_destino_fk),
+        "codigo_despacho_fk": Filtro(Guia.codigo_despacho_fk),
+        "codigo_tercero_operacion_fk": Filtro(Guia.codigo_tercero_operacion_fk),
+        "fecha_desde": Filtro(Guia.fecha_ingreso, "gte", tipo=date, descripcion="Fecha de ingreso desde"),
+        "fecha_hasta": Filtro(Guia.fecha_ingreso, "hasta_dia", tipo=date, descripcion="Fecha de ingreso hasta (incluye el día)"),
+        "estado_ingreso": Filtro(Guia.estado_ingreso),
+        "estado_despachado": Filtro(Guia.estado_despachado),
+        "estado_entregado": Filtro(Guia.estado_entregado),
+        "estado_novedad": Filtro(Guia.estado_novedad),
+        "estado_anulado": Filtro(Guia.estado_anulado),
+    },
+    ordenables={
+        "codigo_guia_pk": Guia.codigo_guia_pk,
+        "fecha_ingreso": Guia.fecha_ingreso,
+        "documento_cliente": Guia.documento_cliente,
+    },
+    # La lista no muestra nombres de relaciones; el Excel sí
+    relaciones_excel=[Guia.guia_tipo, Guia.tercero, Guia.ciudad_origen, Guia.ciudad_destino, Guia.servicio],
+    columnas_excel=[
+        ("Guía", "codigo_guia_pk"),
+        ("Tipo", "guia_tipo_nombre"),
+        ("Fecha ingreso", "fecha_ingreso"),
+        ("Documento cliente", "documento_cliente"),
+        ("Cliente", "tercero_nombre"),
+        ("Remitente", "remitente"),
+        ("Destinatario", "nombre_destinatario"),
+        ("Dirección destinatario", "direccion_destinatario"),
+        ("Teléfono destinatario", "telefono_destinatario"),
+        ("Origen", "ciudad_origen_nombre"),
+        ("Destino", "ciudad_destino_nombre"),
+        ("Servicio", "servicio_nombre"),
+        ("Despacho", "codigo_despacho_fk"),
+        ("Unidades", "unidades"),
+        ("Peso real", "peso_real"),
+        ("Peso volumen", "peso_volumen"),
+        ("Peso facturado", "peso_facturado"),
+        ("Vr declarado", "vr_declara"),
+        ("Vr flete", "vr_flete"),
+        ("Vr manejo", "vr_manejo"),
+        ("Vr recaudo", "vr_recaudo"),
+        ("Ingreso", "estado_ingreso"),
+        ("Despachado", "estado_despachado"),
+        ("Fecha despacho", "fecha_despacho"),
+        ("Entregado", "estado_entregado"),
+        ("Fecha entrega", "fecha_entrega"),
+        ("Cumplido", "estado_cumplido"),
+        ("Novedad", "estado_novedad"),
+        ("Anulado", "estado_anulado"),
+    ],
+)
+
+
 @router.get("/lista", response_model=GuiaListResponse)
-def lista(
-    page: int = 1,
-    size: int = 50,
-    codigo_tercero_fk: Optional[int] = None,
-    codigo_guia_pk: Optional[int] = None,
-    documento_cliente: Optional[str] = None,
-    codigo_guia_tipo_fk: Optional[str] = None,
-    codigo_servicio_fk: Optional[str] = None,
-    codigo_ciudad_origen_fk: Optional[str] = None,
-    codigo_ciudad_destino_fk: Optional[str] = None,
-    codigo_despacho_fk: Optional[int] = None,
-    codigo_tercero_operacion_fk: Optional[int] = None,
-    fecha_desde: Optional[date] = None,
-    fecha_hasta: Optional[date] = None,
-    estado_ingreso: Optional[bool] = None,
-    estado_despachado: Optional[bool] = None,
-    estado_entregado: Optional[bool] = None,
-    estado_novedad: Optional[bool] = None,
-    db: Session = Depends(get_tenant_db),
-    current_user: dict = Depends(get_current_user),
-):
-    query = db.query(Guia)
-    if codigo_tercero_fk is not None:
-        query = query.filter(Guia.codigo_tercero_fk == codigo_tercero_fk)
-    # Filtros exactos opcionales; los de texto se ignoran si llegan vacíos
-    filtros_exactos = {
-        Guia.codigo_guia_pk: codigo_guia_pk,
-        Guia.documento_cliente: documento_cliente,
-        Guia.codigo_guia_tipo_fk: codigo_guia_tipo_fk,
-        Guia.codigo_servicio_fk: codigo_servicio_fk,
-        Guia.codigo_ciudad_origen_fk: codigo_ciudad_origen_fk,
-        Guia.codigo_ciudad_destino_fk: codigo_ciudad_destino_fk,
-        Guia.codigo_despacho_fk: codigo_despacho_fk,
-        Guia.codigo_tercero_operacion_fk: codigo_tercero_operacion_fk,
-    }
-    for columna, valor in filtros_exactos.items():
-        if isinstance(valor, str):
-            valor = valor.strip() or None
-        if valor is not None:
-            query = query.filter(columna == valor)
-    if fecha_desde is not None:
-        query = query.filter(Guia.fecha_ingreso >= fecha_desde)
-    if fecha_hasta is not None:
-        query = query.filter(Guia.fecha_ingreso <= fecha_hasta)
-    if estado_ingreso is not None:
-        query = query.filter(Guia.estado_ingreso == estado_ingreso)
-    if estado_despachado is not None:
-        query = query.filter(Guia.estado_despachado == estado_despachado)
-    if estado_entregado is not None:
-        query = query.filter(Guia.estado_entregado == estado_entregado)
-    if estado_novedad is not None:
-        query = query.filter(Guia.estado_novedad == estado_novedad)
-    total = query.with_entities(func.count(Guia.codigo_guia_pk)).scalar()
-    offset = (page - 1) * size
-    guias = query.order_by(Guia.codigo_guia_pk.desc()).offset(offset).limit(size).all()
-    return GuiaListResponse(total=total, page=page, size=size, items=guias)
+def lista(params: dict = Depends(LISTA_GUIA.params_lista), db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    return paginar(db, LISTA_GUIA, params)
+
+
+@router.get("/excel")
+@limiter.limit("5/minute")
+def excel(request: Request, response: Response, params: dict = Depends(LISTA_GUIA.params_excel), db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+    return exportar_excel(db, LISTA_GUIA, params, nombre="guias")
+
 
 @router.get("/detalle/{codigo_guia_pk}", response_model=GuiaDetalleResponse)
 def detalle(codigo_guia_pk: int, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
