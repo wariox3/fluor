@@ -8,7 +8,6 @@ class Concepto(Base):
 
     codigo_concepto_pk = Column(String(10), primary_key=True, index=True)
     nombre = Column(String(80), nullable=True)
-    codigo_empresa_fk = Column(Integer)
     codigo_concepto_tipo_fk = Column(String(10), nullable=True)
     codigo_tipo_electronico_fk = Column(String(30), nullable=True)
     codigo_medio_concepto_fk = Column(Integer, nullable=True)

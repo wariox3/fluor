@@ -10,7 +10,6 @@ class FacturaResponse(BaseModel):
     codigo_factura_clase_fk: Optional[str]
     codigo_tercero_fk: Optional[int]
     codigo_sucursal_fk: Optional[int]
-    codigo_empresa_fk: int
     numero: Optional[int]
     prefijo: Optional[str]
     fecha: Optional[date]

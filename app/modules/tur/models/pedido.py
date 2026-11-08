@@ -36,7 +36,6 @@ class Pedido(Base):
     vr_salario_base = Column(Float, default=0)
     estrato = Column(Integer, nullable=True, default=0)
     codigo_pedido_fk = Column(Integer, nullable=True)
-    codigo_empresa_fk = Column(Integer)
     codigo_sucursal_fk = Column(Integer, nullable=True)
     codigo_segmento_fk = Column(String(10), nullable=True)
 

@@ -6,7 +6,6 @@ from typing import Optional
 
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
-from app.core.config import DEFAULT_EMPRESA_ID
 from app.modules.tte.models.monitoreo import Monitoreo
 from app.modules.tte.schemas.monitoreo import (
     MonitoreoCreateRequest,
@@ -31,7 +30,6 @@ def nuevo(payload: MonitoreoCreateRequest, db: Session = Depends(get_tenant_db),
         fecha_proximo_reporte=payload.fecha_proximo_reporte,
         soporte=payload.soporte,
         comentario=payload.comentario,
-        codigo_empresa_fk=DEFAULT_EMPRESA_ID,
     )
 
     db.add(monitoreo)

@@ -24,7 +24,6 @@ class NovedadResponse(BaseModel):
     codigo_despacho_fk: Optional[int]
     codigo_despacho_referencia_fk: Optional[int]
     ingreso_api: bool
-    codigo_empresa_fk: int
 
     model_config = {"from_attributes": True}
 

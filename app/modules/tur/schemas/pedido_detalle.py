@@ -69,7 +69,6 @@ class PedidoDetalleResponse(BaseModel):
     moto: Optional[bool]
     carro: Optional[bool]
     cuatrimoto: Optional[bool]
-    codigo_empresa_fk: Optional[int]
 
     model_config = {"from_attributes": True}
 

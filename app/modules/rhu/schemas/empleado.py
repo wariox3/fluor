@@ -148,7 +148,6 @@ class EmpleadoDetalleResponse(BaseModel):
     derecho_dependientes: Optional[bool] = None
     omitir_adicional_puesto: Optional[bool] = None
     codigo_tercero_fk: Optional[int] = None
-    codigo_empresa_fk: Optional[int] = None
     codigo_interno: Optional[str] = None
     usuario: Optional[str] = None
     vetado: Optional[bool] = None

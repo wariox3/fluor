@@ -49,7 +49,6 @@ class Despacho(Base):
     codigo_anticipo_tipo_fk = Column(Integer, nullable=True)
     codigo_usuario_externo_fk = Column(Integer, nullable=True)
     codigo_cotizacion_detalle_fk = Column(Integer, nullable=True)
-    codigo_empresa_fk = Column(Integer, nullable=False)
 
     # Cantidades y pesos
     cantidad = Column(Integer, nullable=False, default=0)

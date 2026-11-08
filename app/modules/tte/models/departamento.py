@@ -8,4 +8,3 @@ class Departamento(Base):
 
     codigo_departamento_pk = Column(String(2), primary_key=True, index=True)
     nombre = Column(String(100), nullable=True)
-    codigo_empresa_fk = Column(Integer, nullable=False)

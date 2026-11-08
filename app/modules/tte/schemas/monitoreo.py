@@ -35,7 +35,6 @@ class MonitoreoResponse(BaseModel):
     estado_anulado: Optional[bool]
     estado_cerrado: Optional[bool]
     estado_terminado: Optional[bool]
-    codigo_empresa_fk: int
 
     model_config = {"from_attributes": True}
 

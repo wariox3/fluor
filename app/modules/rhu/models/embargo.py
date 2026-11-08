@@ -10,7 +10,6 @@ class Embargo(Base):
     codigo_embargo_tipo_fk = Column(String(10), nullable=True)
     codigo_embargo_juzgado_fk = Column(String(30), nullable=True)
     codigo_empleado_fk = Column(Integer, ForeignKey("rhu_empleado.codigo_empleado_pk"), nullable=True, index=True)
-    codigo_empresa_fk = Column(Integer)
     fecha = Column(Date)
     numero = Column(String(30), nullable=True)
     estado_activo = Column(Boolean, default=False)

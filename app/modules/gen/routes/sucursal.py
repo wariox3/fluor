@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.gen.models.sucursal import Sucursal
@@ -13,14 +12,12 @@ router = APIRouter()
 
 
 @router.get("/lista", response_model=SucursalListResponse)
-def lista(page: int = 1, size: int = 50, empresa_id: Optional[int] = None, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
+def lista(page: int = 1, size: int = 50, db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
     query = (
         db.query(Sucursal, Ciudad.nombre.label("ciudad_nombre"), Tercero.nombre_corto.label("tercero_nombre_corto"), Tercero.numero_identificacion.label("tercero_numero_identificacion"))
         .outerjoin(Ciudad, Sucursal.codigo_ciudad_fk == Ciudad.codigo_ciudad_pk)
         .outerjoin(Tercero, Sucursal.codigo_tercero_fk == Tercero.codigo_tercero_pk)
     )
-    if empresa_id:
-        query = query.filter(Sucursal.codigo_empresa_fk == empresa_id)
     total = query.with_entities(func.count(Sucursal.codigo_sucursal_pk)).scalar()
     offset = (page - 1) * size
     rows = query.order_by(Sucursal.nombre).offset(offset).limit(size).all()

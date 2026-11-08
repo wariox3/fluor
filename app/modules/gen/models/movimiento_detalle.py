@@ -10,7 +10,6 @@ class MovimientoDetalle(Base):
     codigo_movimiento_fk = Column(Integer, nullable=True)
     codigo_item_fk = Column(Integer, nullable=True)
     codigo_tercero_fk = Column(Integer, nullable=True)
-    codigo_empresa_fk = Column(Integer, nullable=False)
     codigo_centro_costo_fk = Column(String(20), nullable=True)
     codigo_impuesto_retencion_fk = Column(String(5), nullable=True)
     codigo_impuesto_industria_comercio_fk = Column(String(5), nullable=True)

@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
-from app.core.config import DEFAULT_EMPRESA_ID
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.gen.models.item import Item
@@ -21,7 +20,6 @@ def nuevo(data: ItemCreate, db: Session = Depends(get_tenant_db), current_user: 
         producto=data.producto,
         venta=data.venta,
         compra=data.compra,
-        codigo_empresa_fk=DEFAULT_EMPRESA_ID,
     )
     db.add(item)
     db.commit()

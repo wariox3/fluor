@@ -10,7 +10,6 @@ class MovimientoDetalleResponse(BaseModel):
     codigo_movimiento_fk: Optional[int] = None
     codigo_item_fk: Optional[int] = None
     codigo_tercero_fk: Optional[int] = None
-    codigo_empresa_fk: int
     codigo_centro_costo_fk: Optional[str] = None
     codigo_impuesto_retencion_fk: Optional[str] = None
     codigo_impuesto_industria_comercio_fk: Optional[str] = None

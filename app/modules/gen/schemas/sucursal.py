@@ -11,7 +11,6 @@ class SucursalResponse(BaseModel):
     contacto: Optional[str] = None
     direccion: Optional[str] = None
     codigo_ciudad_fk: Optional[int] = None
-    codigo_empresa_fk: int
     ciudad_nombre: Optional[str] = None
     tercero_nombre_corto: Optional[str] = None
     tercero_numero_identificacion: Optional[str] = None

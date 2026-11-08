@@ -8,7 +8,6 @@ class Consigna(Base):
 
     codigo_consigna_pk = Column(Integer, primary_key=True, index=True)
     codigo_puesto_fk = Column(Integer, ForeignKey("tur_puesto.codigo_puesto_pk"), nullable=True, index=True)
-    codigo_empresa_fk = Column(Integer)
     consigna = Column(Text, nullable=True)
     habilitado_portal = Column(Boolean, default=True, nullable=True)
 

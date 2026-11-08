@@ -9,7 +9,6 @@ class FacturaTipo(Base):
     nombre = Column(String(50), nullable=False)
     abreviatura = Column(String(10), nullable=False)
     codigo_factura_clase_fk = Column(String(10), nullable=False)
-    codigo_empresa_fk = Column(Integer, nullable=False)
 
     # FKs sin modelo local
     codigo_cuenta_cobrar_tipo_fk = Column(String(20), nullable=True)

@@ -24,7 +24,6 @@ class Monitoreo(Base):
     codigo_despacho_fk = Column(Integer, nullable=True)
     codigo_ciudad_destino_fk = Column(String(20), ForeignKey("tte_ciudad.codigo_ciudad_pk"), nullable=True)
     codigo_monitoreo_seguimiento_fk = Column(Integer, ForeignKey("tte_monitoreo_seguimiento.codigo_monitoreo_seguimiento_pk"), nullable=True)
-    codigo_empresa_fk = Column(Integer, nullable=False)
 
     # Estados
     estado_autorizado = Column(Boolean, nullable=True, default=False)

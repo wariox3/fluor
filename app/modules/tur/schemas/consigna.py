@@ -6,7 +6,6 @@ class ConsignaResponse(BaseModel):
     codigo_consigna_pk: int
     codigo_puesto_fk: Optional[int]
     puesto_nombre: Optional[str]
-    codigo_empresa_fk: int
     consigna: Optional[str]
     habilitado_portal: Optional[bool]
 

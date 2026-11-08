@@ -9,5 +9,4 @@ class NovedadTipo(Base):
     nombre = Column(String(100), nullable=True)
     interna = Column(Boolean, nullable=True, default=False)
     aplica_movil = Column(Boolean, nullable=True, default=False)
-    codigo_empresa_fk = Column(Integer, nullable=False)
     codigo_interface = Column(String(50), nullable=True)

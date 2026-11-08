@@ -17,7 +17,6 @@ B2_KEY_ID = config("B2_KEY_ID", default="")
 B2_APPLICATION_KEY = config("B2_APPLICATION_KEY", default="")
 B2_BUCKET_NAME = config("B2_BUCKET_NAME", default="")
 
-DEFAULT_EMPRESA_ID = 1
 
 APP_URL = config("APP_URL", default="http://localhost:4200")
 # Frontends que pueden recibir enlaces de verificación/recuperación. El enlace usa el

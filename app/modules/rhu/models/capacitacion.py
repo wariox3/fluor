@@ -14,7 +14,6 @@ class Capacitacion(Base):
     codigo_capacitacion_metodologia_fk = Column(String(10), nullable=True)
     codigo_zona_fk = Column(String(10), nullable=True)
     codigo_subzona_fk = Column(String(10), nullable=True)
-    codigo_empresa_fk = Column(Integer, nullable=False)
     fecha = Column(Date, nullable=True)
     fecha_capacitacion = Column(DateTime, nullable=True)
     usuario = Column(String(80), nullable=True)

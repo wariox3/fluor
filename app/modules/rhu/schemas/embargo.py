@@ -9,7 +9,6 @@ class EmbargoResponse(BaseModel):
     codigo_embargo_juzgado_fk: Optional[str]
     codigo_empleado_fk: Optional[int]
     empleado_nombre: Optional[str]
-    codigo_empresa_fk: int
     fecha: Optional[date]
     numero: Optional[str]
     estado_activo: Optional[bool]

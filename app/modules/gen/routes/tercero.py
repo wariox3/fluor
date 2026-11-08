@@ -4,7 +4,6 @@ from sqlalchemy import func
 from typing import Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
-from app.core.config import DEFAULT_EMPRESA_ID
 from app.core.rate_limit import limiter
 from app.core.utils import Filtro, ListaConfig, exportar_excel, paginar
 from app.modules.gen.models.asesor import Asesor
@@ -51,7 +50,6 @@ def nuevo(payload: TerceroCreateRequest, db: Session = Depends(get_tenant_db), c
     tercero = Tercero(
         **datos,
         nombre_corto=nombre_corto.strip(),
-        codigo_empresa_fk=DEFAULT_EMPRESA_ID,
         estado_inactivo=False,
         usuario=current_user["sub"],
     )

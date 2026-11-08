@@ -11,6 +11,5 @@ class Ruta(Base):
     nombre = Column(String(100), nullable=True)
     codigo_despacho_clase_fk = Column(String(5), nullable=True)
     codigo_operacion_fk = Column(String(20), ForeignKey("tte_operacion.codigo_operacion_pk"), nullable=True)
-    codigo_empresa_fk = Column(Integer, nullable=False)
 
     operacion = relationship(Operacion, foreign_keys=[codigo_operacion_fk], backref="rutas_operacion")

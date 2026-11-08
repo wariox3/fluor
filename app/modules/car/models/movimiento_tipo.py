@@ -11,7 +11,6 @@ class MovimientoTipo(Base):
     orden = Column(Integer, nullable=True, default=0)
     naturaleza = Column(String(1), nullable=True)
     prefijo = Column(String(20), nullable=True)
-    codigo_empresa_fk = Column(Integer, nullable=False)
 
     # FKs sin modelo local
     codigo_comprobante_fk = Column(String, nullable=True)

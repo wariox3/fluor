@@ -50,7 +50,6 @@ class CiudadSincronizarResponse(BaseModel):
     codigo_zona_fk: Optional[str]
     codigo_cuenta_industria_comercio_fk: Optional[str]
     codigo_centro_costo_fk: Optional[str]
-    codigo_empresa_fk: int
     orden_ruta: Optional[int]
     codigo_interface: Optional[str]
     codigo_general: Optional[str]

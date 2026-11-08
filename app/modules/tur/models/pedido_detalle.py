@@ -71,7 +71,6 @@ class PedidoDetalle(Base):
     moto = Column(Boolean, default=False)
     carro = Column(Boolean, default=False)
     cuatrimoto = Column(Boolean, default=False)
-    codigo_empresa_fk = Column(Integer)
 
     pedido_rel = relationship(
         "Pedido",

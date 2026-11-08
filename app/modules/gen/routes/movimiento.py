@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import Optional
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
-from app.core.config import DEFAULT_EMPRESA_ID
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.gen.models.movimiento import Movimiento
@@ -41,7 +40,6 @@ def nuevo_documento(data: MovimientoCreate, db: Session = Depends(get_tenant_db)
         operacion_inventario=movimiento_tipo.operacion_inventario,
         operacion_comercial=movimiento_tipo.operacion_comercial,
         codigo_interface=data.codigo_interface,
-        codigo_empresa_fk=DEFAULT_EMPRESA_ID,
     )
     db.add(movimiento)
     db.flush() 
@@ -59,7 +57,6 @@ def nuevo_documento(data: MovimientoCreate, db: Session = Depends(get_tenant_db)
 
         detalle = MovimientoDetalle(
             codigo_movimiento_fk=movimiento.codigo_movimiento_pk,
-            codigo_empresa_fk=DEFAULT_EMPRESA_ID,
             codigo_item_fk=detalle_data.codigo_item_fk,
             codigo_impuesto_retencion_fk=item.codigo_impuesto_retencion_fk,
             codigo_impuesto_iva_fk=item.codigo_impuesto_iva_venta_fk,

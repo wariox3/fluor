@@ -34,5 +34,4 @@ class Turno(Base):
     vr_adicional = Column(Float, default=0.0)
     adicional_dia = Column(Boolean, default=False)
     adicional_noche = Column(Boolean, default=False)
-    codigo_empresa_fk = Column(Integer)
     estado_inactivo = Column(Boolean, nullable=True, default=False)

@@ -17,7 +17,6 @@ class Configuracion(Base):
     sitio_web = Column(String(120), nullable=True)
     logo = Column(LargeBinary, nullable=True)
     vr_auxilio_transporte = Column(Numeric(12, 2), nullable=True, default=0)
-    codigo_empresa_fk = Column(Integer)
     codigo_ciudad_fk = Column(Integer, ForeignKey("gen_ciudad.codigo_ciudad_pk"), nullable=True)
     ruta_almacenamiento_servicio = Column(String(200), nullable=True)
     mostrar_programacion_impresion_pago = Column(Integer, nullable=True, default=1)

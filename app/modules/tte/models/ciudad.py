@@ -26,7 +26,6 @@ class Ciudad(Base):
     codigo_zona_fk = Column(String(20), ForeignKey("tte_zona.codigo_zona_pk"), nullable=True)
     codigo_cuenta_industria_comercio_fk = Column(String(20), nullable=True)
     codigo_centro_costo_fk = Column(String(20), nullable=True)
-    codigo_empresa_fk = Column(Integer, nullable=False)
 
     orden_ruta = Column(Integer, nullable=True, default=0)
     codigo_interface = Column(String(10), nullable=True)

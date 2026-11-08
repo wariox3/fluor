@@ -39,7 +39,6 @@ class Contrato(Base):
     codigo_puesto_fk                = Column(Integer, ForeignKey("tur_puesto.codigo_puesto_pk"), nullable=True)
     codigo_examen_fk                = Column(Integer, nullable=True)
     codigo_dotacion_fk              = Column(Integer, nullable=True)
-    codigo_empresa_fk               = Column(Integer, nullable=True)
     codigo_jefe_fk                  = Column(Integer, nullable=True)
 
     fecha                           = Column(Date, nullable=True)

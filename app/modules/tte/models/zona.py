@@ -12,7 +12,6 @@ class Zona(Base):
     __tablename__ = "tte_zona"
 
     codigo_zona_pk = Column(String(20), primary_key=True, index=True)
-    codigo_empresa_fk = Column(Integer, nullable=False)
     nombre = Column(String(150), nullable=True)
 
     ciudades = relationship(Ciudad, backref="zona")

@@ -37,4 +37,3 @@ class GuiaTipo(Base):
     codigo_cuenta_manejo_fk = Column(String(20), nullable=True)
     codigo_cuenta_reexpedicion_fk = Column(String(20), nullable=True)
     cotizacion = Column(Boolean, nullable=False, default=False)
-    codigo_empresa_fk = Column(Integer, nullable=False)

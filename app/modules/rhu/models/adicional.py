@@ -14,7 +14,6 @@ class Adicional(Base):
     codigo_programacion_detalle_fk = Column(Integer, nullable=True)
     codigo_contrato_fk = Column(Integer, ForeignKey("rhu_contrato.codigo_contrato_pk"), nullable=True)
     codigo_soporte_contrato_fk = Column(Integer, nullable=True)
-    codigo_empresa_fk = Column(Integer)
     fecha = Column(Date, nullable=True)
     fecha_desde = Column(Date, nullable=True)
     fecha_hasta = Column(Date, nullable=True)

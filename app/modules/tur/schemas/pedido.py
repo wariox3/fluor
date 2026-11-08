@@ -34,7 +34,6 @@ class PedidoResponse(BaseModel):
     vr_salario_base: Optional[float]
     estrato: Optional[int]
     codigo_pedido_fk: Optional[int]
-    codigo_empresa_fk: Optional[int]
     codigo_sucursal_fk: Optional[int]
     codigo_segmento_fk: Optional[str]
 

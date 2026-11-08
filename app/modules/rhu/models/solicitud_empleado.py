@@ -21,7 +21,6 @@ class SolicitudEmpleado(Base):
     estado_anulado = Column(Boolean, default=False, nullable=True)
     estado_cerrado = Column(Boolean, default=False, nullable=True)
     estado_solicitud = Column(String(1), default="P", nullable=True)
-    codigo_empresa_fk = Column(Integer)
 
     solicitud_empleado_tipo = relationship("SolicitudEmpleadoTipo", foreign_keys=[codigo_solicitud_empleado_tipo_fk])
 

@@ -8,7 +8,6 @@ from typing import Literal, Optional
 from app.core.tenant_database import get_tenant_db
 from app.core.master_database import get_master_db
 from app.core.security import get_current_user
-from app.core.config import DEFAULT_EMPRESA_ID
 from app.core.rate_limit import limiter
 from app.core.utils import Filtro, ListaConfig, exportar_excel, paginar
 from app.modules.gen.models.asesor import Asesor
@@ -147,7 +146,6 @@ def nuevo(payload: GuiaCreateRequest, db: Session = Depends(get_tenant_db), mast
         vr_cobro_entrega=cobro_entrega,
         vr_otros=payload.vr_otros,
         tipo_liquidacion=payload.tipo_liquidacion,
-        codigo_empresa_fk=DEFAULT_EMPRESA_ID,
         codigo_ruta_fk=payload.codigo_ruta_fk or ciudad_destino.codigo_ruta_fk,
         codigo_zona_fk=payload.zona or ciudad_destino.codigo_zona_fk,
         codigo_condicion_fk=payload.condicion,

@@ -102,7 +102,6 @@ class Empleado(Base):
     vr_retencion_fuente_base = Column(Float, default=0.0)
     vr_aporte_afc_propuesto = Column(Float, default=0.0)
     fecha_examen_ingreso = Column(Date, nullable=True)
-    codigo_empresa_fk = Column(Integer, nullable=True)
     fecha_actualizacion = Column(Date, nullable=True)
     codigo_interno = Column(String(30), nullable=True)
     vetado = Column(Boolean, default=False, nullable=False)

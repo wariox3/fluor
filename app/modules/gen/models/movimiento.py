@@ -81,7 +81,6 @@ class Movimiento(Base):
     codigo_impuesto_industria_comercio_fk = Column(String(5), nullable=True)
     vr_base_impuesto_industria_comercio_propuesto = Column(Float, nullable=True, default=0.0)
     vr_base_impuesto_industria_comercio = Column(Float, nullable=True, default=0.0)
-    codigo_empresa_fk = Column(Integer, nullable=False)
     codigo_interface = Column(String(20), nullable=True)
 
     tercero = relationship(Tercero, foreign_keys=[codigo_tercero_fk], backref="movimientos_tercero")

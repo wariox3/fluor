@@ -16,7 +16,6 @@ class Credito(Base):
     codigo_empleado_fk = Column(Integer, ForeignKey("rhu_empleado.codigo_empleado_pk"), nullable=True, index=True)
     codigo_contrato_fk = Column(Integer, ForeignKey("rhu_contrato.codigo_contrato_pk"), nullable=True)
     codigo_grupo_fk = Column(String(10), ForeignKey("rhu_grupo.codigo_grupo_pk"), nullable=True)
-    codigo_empresa_fk = Column(Integer)
     fecha = Column(Date)
     fecha_inicio = Column(Date)
     fecha_finalizacion = Column(Date, nullable=True)

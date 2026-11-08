@@ -20,7 +20,6 @@ class Movimiento(Base):
     codigo_cuenta_fk = Column(String(10), nullable=False)
     codigo_asesor_fk = Column(Integer, ForeignKey("gen_asesor.codigo_asesor_pk"), nullable=True)
     codigo_centro_costo_fk = Column(String(20), nullable=True)
-    codigo_empresa_fk = Column(Integer, nullable=False)
 
     fecha = Column(Date, nullable=False)
     fecha_documento = Column(Date, nullable=True)

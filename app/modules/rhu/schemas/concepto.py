@@ -5,7 +5,6 @@ from typing import Optional
 class ConceptoResponse(BaseModel):
     codigo_concepto_pk: str
     nombre: Optional[str]
-    codigo_empresa_fk: Optional[int]
     codigo_concepto_tipo_fk: Optional[str]
     codigo_tipo_electronico_fk: Optional[str]
     codigo_medio_concepto_fk: Optional[int]

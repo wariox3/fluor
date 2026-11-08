@@ -14,7 +14,6 @@ class AdicionalResponse(BaseModel):
     codigo_programacion_detalle_fk: Optional[int]
     codigo_contrato_fk: Optional[int]
     codigo_soporte_contrato_fk: Optional[int]
-    codigo_empresa_fk: int
     fecha: Optional[date]
     fecha_desde: Optional[date]
     fecha_hasta: Optional[date]

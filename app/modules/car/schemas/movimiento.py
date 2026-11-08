@@ -9,7 +9,6 @@ class MovimientoResponse(BaseModel):
     codigo_movimiento_clase_fk: str
     codigo_tercero_fk: Optional[int]
     codigo_cuenta_fk: str
-    codigo_empresa_fk: int
     numero: int
     fecha: date
     fecha_documento: Optional[date]

@@ -5,7 +5,6 @@ from typing import Optional
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 from io import BytesIO
-from app.core.config import DEFAULT_EMPRESA_ID
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.rhu.models.empleado import Empleado
@@ -42,7 +41,6 @@ def nuevo(data: ReclamoCreate, db: Session = Depends(get_tenant_db), current_use
         estado_atendido=False,
         cantidad_respuestas=0,
         usuario="empleado.co",
-        codigo_empresa_fk=DEFAULT_EMPRESA_ID,
     )
     db.add(reclamo)
     db.commit()

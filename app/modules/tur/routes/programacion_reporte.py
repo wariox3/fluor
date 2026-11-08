@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import Optional
 from datetime import datetime
-from app.core.config import DEFAULT_EMPRESA_ID
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.tur.models.programacion import Programacion
@@ -27,7 +26,6 @@ def nuevo(data: ProgramacionReporteCreate, db: Session = Depends(get_tenant_db),
         dia_hasta=data.dia_hasta,
         fecha=datetime.now(),
         reporta=data.reporta,
-        codigo_empresa_fk=DEFAULT_EMPRESA_ID,
     )
     db.add(reporte)
     db.commit()

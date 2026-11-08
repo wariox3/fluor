@@ -23,7 +23,6 @@ class Factura(Base):
     codigo_cliente_fk = Column(Integer, nullable=True)
     codigo_tercero_fk = Column(Integer, ForeignKey("gen_tercero.codigo_tercero_pk"), nullable=True)
     codigo_sucursal_fk = Column(Integer, ForeignKey("gen_sucursal.codigo_sucursal_pk"), nullable=True)
-    codigo_empresa_fk = Column(Integer, nullable=False)
 
     numero = Column(Integer, nullable=True, default=0)
     prefijo = Column(String(5), nullable=True)

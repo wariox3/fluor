@@ -80,7 +80,6 @@ class MovimientoResponse(BaseModel):
     codigo_impuesto_industria_comercio_fk: Optional[str] = None
     vr_base_impuesto_industria_comercio_propuesto: Optional[float] = 0.0
     vr_base_impuesto_industria_comercio: Optional[float] = 0.0
-    codigo_empresa_fk: int
     codigo_interface: Optional[str] = None
     detalles: Optional[list[MovimientoDetalleResponse]] = None
 

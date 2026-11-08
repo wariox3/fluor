@@ -12,7 +12,6 @@ class Programacion(Base):
     codigo_puesto_fk = Column(Integer, ForeignKey("tur_puesto.codigo_puesto_pk"), nullable=True)
     codigo_empleado_fk = Column(Integer, ForeignKey("rhu_empleado.codigo_empleado_pk"), index=True)
     codigo_contrato_fk = Column(Integer, ForeignKey("rhu_contrato.codigo_contrato_pk"), nullable=True)
-    codigo_empresa_fk = Column(Integer, nullable=True)
     anio = Column(Integer, default=0)
     mes = Column(Integer, default=0)
     dia_1 = Column(String(5), nullable=True)

@@ -14,7 +14,6 @@ class Tercero(Base):
 
     codigo_tercero_pk = Column(Integer, primary_key=True, index=True)
     codigo_identificacion_fk = Column(String(3), ForeignKey("gen_identificacion.codigo_identificacion_pk"))
-    codigo_empresa_fk = Column(Integer)
     nombre_corto = Column(String)
     numero_identificacion = Column(String)
     digito_verificacion = Column(String(1), nullable=True)

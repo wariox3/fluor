@@ -17,7 +17,6 @@ class Reclamo(Base):
     estado_cerrado = Column(Boolean, default=False)
     estado_atendido = Column(Boolean, default=False)
     cantidad_respuestas = Column(Integer, default=0)
-    codigo_empresa_fk = Column(Integer)
     usuario = Column(String(50), nullable=True)
 
     reclamo_concepto = relationship("ReclamoConcepto", foreign_keys=[codigo_reclamo_concepto_fk])

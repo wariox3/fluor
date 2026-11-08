@@ -15,7 +15,6 @@ class Destinatario(Base):
     codigo_identificacion_fk = Column(String(3), ForeignKey("gen_identificacion.codigo_identificacion_pk"), nullable=True)
     codigo_ciudad_fk = Column(String(20), ForeignKey("tte_ciudad.codigo_ciudad_pk"), nullable=True)
     codigo_tercero_fk = Column(Integer, ForeignKey("gen_tercero.codigo_tercero_pk"), nullable=True)
-    codigo_empresa_fk = Column(Integer, nullable=False)
 
     numero_identificacion = Column(String(20), nullable=True)
     digito_verificacion = Column(String(1), nullable=True)

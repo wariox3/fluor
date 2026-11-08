@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.config import DEFAULT_EMPRESA_ID
 from app.core.security import get_current_user
 from app.core.tenant_database import get_tenant_db
 from app.modules.gen.models.identificacion import Identificacion
@@ -32,7 +31,6 @@ def nuevo(payload: DestinatarioCreateRequest, db: Session = Depends(get_tenant_d
     existe = (
         db.query(Destinatario.codigo_destinatario_pk)
         .filter(
-            Destinatario.codigo_empresa_fk == DEFAULT_EMPRESA_ID,
             Destinatario.codigo_identificacion_fk == payload.codigo_identificacion_fk,
             Destinatario.numero_identificacion == payload.numero_identificacion,
         )
@@ -47,7 +45,7 @@ def nuevo(payload: DestinatarioCreateRequest, db: Session = Depends(get_tenant_d
         partes = [datos["nombre1"], datos["nombre2"], datos["apellido1"], datos["apellido2"]]
         datos["nombre_corto"] = " ".join(p.strip() for p in partes if p and p.strip()) or None
 
-    destinatario = Destinatario(**datos, codigo_empresa_fk=DEFAULT_EMPRESA_ID)
+    destinatario = Destinatario(**datos)
 
     db.add(destinatario)
     db.commit()

@@ -12,7 +12,6 @@ class CreditoResponse(BaseModel):
     empleado_nombre: Optional[str]
     codigo_contrato_fk: Optional[int]
     codigo_grupo_fk: Optional[str]
-    codigo_empresa_fk: int
     fecha: Optional[date]
     fecha_inicio: Optional[date]
     fecha_finalizacion: Optional[date]

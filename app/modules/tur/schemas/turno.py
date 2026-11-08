@@ -33,7 +33,6 @@ class TurnoResponse(BaseModel):
     vr_adicional: float
     adicional_dia: bool
     adicional_noche: bool
-    codigo_empresa_fk: int
     estado_inactivo: Optional[bool]
 
     model_config = {"from_attributes": True}

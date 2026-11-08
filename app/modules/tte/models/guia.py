@@ -29,7 +29,6 @@ class Guia(Base):
     codigo_asesor_fk = Column(Integer, ForeignKey("gen_asesor.codigo_asesor_pk"), nullable=True)
     codigo_ciudad_origen_fk = Column(String(20), ForeignKey("tte_ciudad.codigo_ciudad_pk"))
     codigo_ciudad_destino_fk = Column(String(20), ForeignKey("tte_ciudad.codigo_ciudad_pk"))
-    codigo_empresa_fk = Column(Integer)
 
     # Documento / cliente
     documento_cliente = Column(String(80), nullable=True)

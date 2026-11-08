@@ -13,4 +13,3 @@ class Sucursal(Base):
     contacto = Column(String(150), nullable=True)
     direccion = Column(String(150), nullable=True)
     codigo_ciudad_fk = Column(Integer, nullable=True)
-    codigo_empresa_fk = Column(Integer, nullable=False)

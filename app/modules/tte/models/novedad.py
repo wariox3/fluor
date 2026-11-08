@@ -24,4 +24,3 @@ class Novedad(Base):
     codigo_despacho_fk = Column(Integer, nullable=True)
     codigo_despacho_referencia_fk = Column(Integer, nullable=True)
     ingreso_api = Column(Boolean, nullable=False, default=False)
-    codigo_empresa_fk = Column(Integer, nullable=False)

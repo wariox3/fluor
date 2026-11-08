@@ -14,6 +14,5 @@ class Impuesto(Base):
     base = Column(Float, nullable=True, default=0.0)
     porcentaje_base = Column(Float, nullable=True, default=100)
     clase = Column(String(1), nullable=False, default="G")  # V=Venta, C=Compra, G=General
-    codigo_empresa_fk = Column(Integer)    
 
     impuesto_tipo = relationship(ImpuestoTipo, backref="impuestos_impuesto_tipo")

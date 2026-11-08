@@ -13,4 +13,3 @@ class Cierre(Base):
     estado_anulado = Column(Boolean, nullable=False, default=False)
     usuario = Column(String(50), nullable=True)
     comentario = Column(String(500), nullable=True)
-    codigo_empresa_fk = Column(Integer, nullable=False)
