@@ -363,7 +363,6 @@ def estado_documento_masivo(payload: GuiasDocumentoMasivoRequest, db: Session = 
 
 _IMPRESIONES = {"guia": formatos_guia, "rotulo": formatos_rotulo}
 
-
 @router.get("/formatos-impresion", response_model=list[GuiaFormatoImpresionResponse])
 def formatos_impresion(
     tipo: Literal["guia", "rotulo"] = "guia",
