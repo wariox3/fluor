@@ -13,3 +13,5 @@ from .cargo import Cargo
 from .entidad import Entidad
 from .grupo import Grupo
 from .zona import Zona
+from .aporte import Aporte
+from .aporte_contrato import AporteContrato
