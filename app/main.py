@@ -95,7 +95,7 @@ app.add_middleware(
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
-    allow_headers=["Content-Type", "Authorization", "Accept", "X-API-Key", "X-Tenant-ID"],
+    allow_headers=["Content-Type", "Authorization", "Accept", "X-API-Key", "X-Tenant-ID", "X-Tenant-Despacho-ID"],
     expose_headers=["Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"],
 )
 

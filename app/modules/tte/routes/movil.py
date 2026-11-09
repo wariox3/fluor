@@ -15,7 +15,7 @@ from app.modules.tte.services import guia as guia_service
 router = APIRouter()
 
 
-@router.get("/despacho/{tenant_despacho_id}/guias", response_model=MovilDespachoGuiasResponse)
+@router.get("/guias", response_model=MovilDespachoGuiasResponse)
 def despacho_guias(contexto: DespachoContexto = Depends(get_despacho_db)):
     """Todas las guías del despacho asignado, para guardarlas en el teléfono y trabajar sin señal."""
     db = contexto.db
@@ -69,7 +69,7 @@ def despacho_guias(contexto: DespachoContexto = Depends(get_despacho_db)):
     )
 
 
-@router.post("/despacho/{tenant_despacho_id}/guia/entrega", response_model=GuiaEntregaResponse)
+@router.post("/guia/entrega", response_model=GuiaEntregaResponse)
 def guia_entrega(
     datos: str = Form(..., description="JSON con los datos de la entrega (GuiaEntregaRequest); se ignora `usuario`"),
     imagenes: list[UploadFile] = File(default=[], description="Fotos de la entrega, JPEG, PNG o WebP"),

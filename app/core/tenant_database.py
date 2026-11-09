@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import sessionmaker, Session
 from decouple import config
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, Header, HTTPException, Request, status
 from app.core.security import get_current_user, get_current_user_from_token
 from app.core.master_database import get_master_db
 from sqlalchemy.orm import declarative_base
@@ -122,14 +122,32 @@ class DespachoContexto:
 
 
 def get_despacho_db(
-    tenant_despacho_id: int,
+    tenant_despacho_header: str | None = Header(
+        default=None,
+        alias="X-Tenant-Despacho-ID",
+        description="Id de la asignación en mas_tenant_despacho",
+    ),
     current_user: dict = Depends(get_current_user_from_token),
     master_db: Session = Depends(get_master_db),
 ):
     """Abre la base de la empresa a partir de una asignación de mas_tenant_despacho del usuario.
 
     Para la app móvil: el repartidor no tiene fila en user_tenant, su acceso es la asignación.
+    La asignación llega en el encabezado X-Tenant-Despacho-ID.
     """
+    tenant_despacho_header = (tenant_despacho_header or "").strip()
+    if not tenant_despacho_header:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Debe indicar el despacho en el encabezado X-Tenant-Despacho-ID",
+        )
+    if not tenant_despacho_header.isdigit():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El encabezado X-Tenant-Despacho-ID no es válido",
+        )
+    tenant_despacho_id = int(tenant_despacho_header)
+
     from app.modules.mas.models.tenant import Tenant
     from app.modules.mas.models.tenant_despacho import TenantDespacho
 
