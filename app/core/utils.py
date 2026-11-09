@@ -58,19 +58,25 @@ def frontend_url(origin: str | None) -> str:
     return APP_URL.rstrip("/")
 
 
-def comprimir_imagen(data: bytes, lado_maximo: int = 1600, calidad: int = 60) -> bytes:
-    """Convierte una foto a WebP liviano: corrige la rotación EXIF, limita el lado mayor y quita metadatos.
+def comprimir_imagen(data: bytes, lado_maximo: int = 1600, calidad: int = 75) -> bytes:
+    """Convierte una foto a JPEG liviano: corrige la rotación EXIF, limita el lado mayor y quita metadatos.
 
-    Con fotos de entrega reales, 1600 px y calidad 60 dejan ~180 KB por foto (-76%) manteniendo
-    legible el texto de los cumplidos. method=6 solo ahorra ~5% más y tarda el doble.
+    1600 px mantiene legible el texto de los cumplidos. Las transparencias quedan sobre fondo blanco.
     """
     with Image.open(BytesIO(data)) as original:
         # En JPEG decodifica ya reducido (escala DCT): mucho más rápido con fotos de 12+ MP
         original.draft("RGB", (lado_maximo, lado_maximo))
-        imagen = ImageOps.exif_transpose(original).convert("RGB")
+        imagen = ImageOps.exif_transpose(original)
+        if imagen.mode in ("RGBA", "LA") or (imagen.mode == "P" and "transparency" in imagen.info):
+            imagen = imagen.convert("RGBA")
+            fondo = Image.new("RGB", imagen.size, (255, 255, 255))
+            fondo.paste(imagen, mask=imagen.getchannel("A"))
+            imagen = fondo
+        else:
+            imagen = imagen.convert("RGB")
     imagen.thumbnail((lado_maximo, lado_maximo), Image.LANCZOS)
     salida = BytesIO()
-    imagen.save(salida, "WEBP", quality=calidad, method=4)
+    imagen.save(salida, "JPEG", quality=calidad, optimize=True)
     return salida.getvalue()
 
 

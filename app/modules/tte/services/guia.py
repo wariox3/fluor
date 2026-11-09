@@ -517,10 +517,10 @@ def registrar_entrega(db: Session, payload: GuiaEntregaRequest, archivos_imagene
         mime = magic.from_buffer(data[:2048], mime=True)
         comprimido = False
         try:
-            webp = comprimir_imagen(data)
-            # Una imagen ya pequeña puede crecer al recomprimir: se deja la original
-            if len(webp) < len(data):
-                data, mime, comprimido = webp, "image/webp", True
+            jpg = comprimir_imagen(data)
+            # Las fotos quedan en JPG; un JPG original más liviano que el recomprimido se deja tal cual
+            if not (mime == "image/jpeg" and len(data) <= len(jpg)):
+                data, mime, comprimido = jpg, "image/jpeg", True
         except Exception:
             logger.exception("Error comprimiendo imagen de la guía %s; se sube la original", guia.codigo_guia_pk)
         extension = _EXTENSIONES_IMAGEN[mime]
