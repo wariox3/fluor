@@ -4,3 +4,4 @@ from .asesor import Asesor
 from .identificacion import Identificacion
 from .tipo_persona import TipoPersona
 from .regimen import Regimen
+from .forma_pago import FormaPago

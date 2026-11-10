@@ -7,6 +7,7 @@ from .routes import turno
 from .routes import pedido
 from .routes import pedido_detalle
 from .routes import consigna
+from .routes import consigna_cliente
 from .routes import factura
 from .routes import zona
 from .routes import subzona
@@ -26,6 +27,7 @@ router.include_router(turno.router,prefix="/turno",tags=["Turno / Turno"])
 router.include_router(pedido.router,prefix="/pedido",tags=["Turno / Pedido"])
 router.include_router(pedido_detalle.router,prefix="/pedido_detalle",tags=["Turno / Pedido Detalle"])
 router.include_router(consigna.router, prefix="/consigna", tags=["Turno / Consigna"])
+router.include_router(consigna_cliente.router, prefix="/consigna", tags=["Turno / Consigna"])
 router.include_router(factura.router, prefix="/factura", tags=["Turno / Factura"])
 router.include_router(zona.router, prefix="/zona", tags=["Turno / Zona"])
 router.include_router(subzona.router, prefix="/subzona", tags=["Turno / Subzona"])
