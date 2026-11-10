@@ -17,6 +17,7 @@ from .routes import capacitacion_detalle
 from .routes import empleado_actualizacion
 from .routes import zona
 from .routes import aporte_contrato
+from .routes import autorizacion_arma
 
 router = APIRouter(
     prefix="/rhu"
@@ -40,3 +41,4 @@ router.include_router(capacitacion_detalle.router, prefix="/capacitacion_detalle
 router.include_router(empleado_actualizacion.router, prefix="/empleado_actualizacion", tags=["Recurso Humano / Empleado Actualizacion"])
 router.include_router(zona.router, prefix="/zona", tags=["Recurso Humano / Zona"])
 router.include_router(aporte_contrato.router, prefix="/aporte_contrato", tags=["Recurso Humano / Aporte Contrato"])
+router.include_router(autorizacion_arma.router, prefix="/autorizacion_arma", tags=["Recurso Humano / Autorización Arma"])

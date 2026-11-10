@@ -15,3 +15,6 @@ from .grupo import Grupo
 from .zona import Zona
 from .aporte import Aporte
 from .aporte_contrato import AporteContrato
+from .arma import Arma
+from .poligono_detalle import PoligonoDetalle
+from .poligono import Poligono
