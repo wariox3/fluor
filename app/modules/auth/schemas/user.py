@@ -112,3 +112,6 @@ class UserSeleccionarListResponse(BaseModel):
     page: int
     size: int
     items: list[UserSeleccionarResponse]
+
+class EliminarCuentaRequest(BaseModel):
+    clave: str

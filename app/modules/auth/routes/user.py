@@ -1,13 +1,13 @@
 import logging
 from app.core.rate_limit import limiter
 from fastapi import APIRouter, HTTPException, status, Depends, Request, Response
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 from typing import Optional
-from app.core.security import require_admin, get_current_user
+from app.core.security import require_admin, get_current_user, get_current_user_from_token, verify_password
 from app.core.master_database import get_master_db
 from app.modules.auth.models.user import User, UserRole
 from app.modules.auth.models.verificacion import Verificacion, TipoVerificacion, EstadoVerificacion
-from app.modules.auth.schemas.user import UserResponse, RegisterRequest, RegisterResponse, RecuperarClaveRequest, RestablecerClaveRequest, ReenviarVerificacionRequest, ActualizarPerfilRequest, PerfilResponse
+from app.modules.auth.schemas.user import UserResponse, RegisterRequest, RegisterResponse, RecuperarClaveRequest, RestablecerClaveRequest, ReenviarVerificacionRequest, ActualizarPerfilRequest, PerfilResponse, EliminarCuentaRequest
 from app.core.security import hash_password, generate_verification_token
 from app.core.config import DEBUG
 from app.core.utils import frontend_url
@@ -15,6 +15,8 @@ from app.core.zinc import Zinc
 from app.core.turnstile import verify_turnstile
 from sqlalchemy import func, or_
 from app.modules.auth.schemas.user import UserListResponse, UserSeleccionarListResponse
+from app.modules.mas.models.user_tenant import UserTenant
+from app.modules.mas.models.tenant import Tenant
 
 logger = logging.getLogger(__name__)
 
@@ -242,3 +244,46 @@ def actualizar(data: ActualizarPerfilRequest, db: Session = Depends(get_master_d
     db.commit()
     db.refresh(user)
     return user
+
+
+@router.delete("/eliminar", include_in_schema=False)
+@limiter.limit("3/minute")
+def eliminar(request: Request, response: Response, data: EliminarCuentaRequest, db: Session = Depends(get_master_db), current_user: dict = Depends(get_current_user_from_token)):
+    """Elimina de forma permanente la cuenta del usuario autenticado. Lo relacionado en master se borra en cascada."""
+    user = db.query(User).filter(User.id == int(current_user.get("sub"))).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+    if not verify_password(data.clave, user.password_hash):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Clave incorrecta")
+
+    # No dejar empresas sin ningún control activo
+    otros = aliased(UserTenant)
+    otro_control = db.query(otros.id).filter(
+        otros.tenant_id == UserTenant.tenant_id,
+        otros.usuario_id != user.id,
+        otros.activo == True,
+        otros.control == True,
+    ).exists()
+    empresas_sin_control = db.query(Tenant.nombre).join(UserTenant, UserTenant.tenant_id == Tenant.id).filter(
+        UserTenant.usuario_id == user.id,
+        UserTenant.activo == True,
+        UserTenant.control == True,
+        ~otro_control,
+    ).all()
+    if empresas_sin_control:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "message": "Eres el único control de estas empresas; asigna otro control antes de eliminar tu cuenta",
+                "empresas": [e.nombre for e in empresas_sin_control],
+            },
+        )
+
+    # Borrado directo en la base para que actúen los ON DELETE CASCADE
+    db.query(User).filter(User.id == user.id).delete(synchronize_session=False)
+    db.commit()
+    logger.info(f"Cuenta eliminada por el propio usuario: id={user.id}")
+
+    response.delete_cookie(key="access_token", httponly=True, secure=True, samesite="none")
+    response.delete_cookie(key="refresh_token", httponly=True, secure=True, samesite="none", path="/")
+    return {"detail": "Cuenta eliminada correctamente"}

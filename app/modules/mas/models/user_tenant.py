@@ -10,7 +10,7 @@ class UserTenant(Base):
     __table_args__ = (UniqueConstraint("usuario_id", "tenant_id", name="uq_user_tenant_usuario_tenant"),)
 
     id = Column(Integer, primary_key=True)
-    usuario_id = Column(Integer, ForeignKey("auth_user.id"), nullable=False, index=True)
+    usuario_id = Column(Integer, ForeignKey("auth_user.id", ondelete="CASCADE"), nullable=False, index=True)
     tenant_id = Column(Integer, ForeignKey("mas_tenant.id"), nullable=False, index=True)
     empleado_id = Column(Integer, nullable=True)
     codigo_usuario_fk = Column(String(25), nullable=True)

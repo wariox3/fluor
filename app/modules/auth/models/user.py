@@ -26,5 +26,5 @@ class User(Base):
     is_active = Column(Boolean, nullable=False, default=True, server_default=true())
     fecha_creacion = Column(DateTime, server_default=func.now(), nullable=False)
 
-    users_tenants = relationship("UserTenant", back_populates="usuario")
+    users_tenants = relationship("UserTenant", back_populates="usuario", passive_deletes=True)
 
