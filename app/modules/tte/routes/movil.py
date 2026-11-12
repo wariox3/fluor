@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
@@ -8,8 +9,14 @@ from app.modules.tte.models.ciudad import Ciudad
 from app.modules.tte.models.despacho import Despacho
 from app.modules.tte.models.despacho_detalle import DespachoDetalle
 from app.modules.tte.models.guia import Guia
+from app.modules.tte.models.ubicacion import Ubicacion
 from app.modules.tte.schemas.guia import GuiaEntregaResponse
-from app.modules.tte.schemas.movil import MovilDespachoGuiasResponse, MovilGuiaResponse
+from app.modules.tte.schemas.movil import (
+    MovilDespachoGuiasResponse,
+    MovilGuiaResponse,
+    MovilUbicacionRequest,
+    MovilUbicacionResponse,
+)
 from app.modules.tte.services import guia as guia_service
 
 router = APIRouter()
@@ -104,3 +111,46 @@ def guia_entrega(
     archivos_imagenes, archivo_firma = guia_service.leer_archivos_entrega(imagenes, firma)
     usuario = guia_service.usuario_autenticado(master_db, current_user)
     return guia_service.registrar_entrega(db, payload, archivos_imagenes, archivo_firma, usuario)
+
+
+@router.post("/despacho/ubicacion", response_model=MovilUbicacionResponse)
+def despacho_ubicacion(
+    payload: MovilUbicacionRequest,
+    contexto: DespachoContexto = Depends(get_despacho_db),
+    master_db: Session = Depends(get_master_db),
+    current_user: dict = Depends(get_current_user_from_token),
+):
+    """Registra la ubicación actual del repartidor en el despacho asignado
+    y la deja como última ubicación del despacho."""
+    db = contexto.db
+    despacho = db.query(Despacho).filter(Despacho.codigo_despacho_pk == contexto.codigo_despacho).first()
+    if not despacho or despacho.estado_anulado:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Despacho no encontrado")
+    if despacho.estado_cerrado:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El despacho está cerrado")
+
+    ahora = datetime.now()
+    ubicacion = Ubicacion(
+        codigo_despacho_fk=despacho.codigo_despacho_pk,
+        fecha=ahora,
+        usuario=guia_service.usuario_autenticado(master_db, current_user),
+        latitud=payload.latitud,
+        longitud=payload.longitud,
+        velocidad=payload.velocidad or 0,
+        altitud=payload.altitud or 0,
+        exactitud=payload.exactitud or 0,
+        exactitud_altitud=payload.exactitud_altitud or 0,
+    )
+    db.add(ubicacion)
+    despacho.ultima_latitud = payload.latitud
+    despacho.ultima_longitud = payload.longitud
+    despacho.fecha_ultimo_reporte = ahora
+    db.commit()
+    db.refresh(ubicacion)
+    return MovilUbicacionResponse(
+        codigo_ubicacion=ubicacion.codigo_ubicacion_pk,
+        codigo_despacho=despacho.codigo_despacho_pk,
+        fecha=ubicacion.fecha,
+        latitud=ubicacion.latitud,
+        longitud=ubicacion.longitud,
+    )

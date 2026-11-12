@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class MovilGuiaResponse(BaseModel):
@@ -34,3 +34,20 @@ class MovilDespachoGuiasResponse(BaseModel):
     fecha_salida: datetime | None
     total: int
     guias: list[MovilGuiaResponse]
+
+
+class MovilUbicacionRequest(BaseModel):
+    latitud: float = Field(ge=-90, le=90)
+    longitud: float = Field(ge=-180, le=180)
+    velocidad: float | None = None
+    altitud: float | None = None
+    exactitud: float | None = None
+    exactitud_altitud: float | None = None
+
+
+class MovilUbicacionResponse(BaseModel):
+    codigo_ubicacion: int
+    codigo_despacho: int
+    fecha: datetime
+    latitud: float
+    longitud: float
