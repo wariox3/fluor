@@ -45,6 +45,22 @@ class MovilUbicacionRequest(BaseModel):
     exactitud_altitud: float | None = None
 
 
+class MovilUbicacionLoteItem(MovilUbicacionRequest):
+    fecha: datetime = Field(description="Momento de captura en el teléfono; con zona horaria o en hora del negocio")
+
+
+class MovilUbicacionLoteRequest(BaseModel):
+    ubicaciones: list[MovilUbicacionLoteItem] = Field(min_length=1, max_length=500)
+
+
+class MovilUbicacionLoteResponse(BaseModel):
+    codigo_despacho: int
+    recibidas: int
+    registradas: int
+    duplicadas: int
+    fecha_ultimo_reporte: datetime | None
+
+
 class MovilUbicacionResponse(BaseModel):
     codigo_ubicacion: int
     codigo_despacho: int

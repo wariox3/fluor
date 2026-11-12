@@ -1,10 +1,10 @@
-from datetime import datetime
 from typing import Optional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 from app.core.master_database import get_master_db
 from app.core.security import get_current_user_from_token
 from app.core.tenant_database import DespachoContexto, get_despacho_db
+from app.core.utils import a_hora_local, ahora_local
 from app.modules.tte.models.ciudad import Ciudad
 from app.modules.tte.models.despacho import Despacho
 from app.modules.tte.models.despacho_detalle import DespachoDetalle
@@ -14,6 +14,8 @@ from app.modules.tte.schemas.guia import GuiaEntregaResponse
 from app.modules.tte.schemas.movil import (
     MovilDespachoGuiasResponse,
     MovilGuiaResponse,
+    MovilUbicacionLoteRequest,
+    MovilUbicacionLoteResponse,
     MovilUbicacionRequest,
     MovilUbicacionResponse,
 )
@@ -129,7 +131,7 @@ def despacho_ubicacion(
     if despacho.estado_cerrado:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El despacho está cerrado")
 
-    ahora = datetime.now()
+    ahora = ahora_local()
     ubicacion = Ubicacion(
         codigo_despacho_fk=despacho.codigo_despacho_pk,
         fecha=ahora,
@@ -153,4 +155,77 @@ def despacho_ubicacion(
         fecha=ubicacion.fecha,
         latitud=ubicacion.latitud,
         longitud=ubicacion.longitud,
+    )
+
+
+@router.post("/despacho/ubicacion-lote", response_model=MovilUbicacionLoteResponse)
+def despacho_ubicacion_lote(
+    payload: MovilUbicacionLoteRequest,
+    contexto: DespachoContexto = Depends(get_despacho_db),
+    master_db: Session = Depends(get_master_db),
+    current_user: dict = Depends(get_current_user_from_token),
+):
+    """Registra varias ubicaciones capturadas en el teléfono (p. ej. sin señal) con su fecha de captura.
+    Es idempotente: un punto con la misma fecha (al segundo) que uno ya guardado del despacho se omite.
+    La última ubicación del despacho solo se actualiza si el lote trae un punto más reciente."""
+    db = contexto.db
+    despacho = db.query(Despacho).filter(Despacho.codigo_despacho_pk == contexto.codigo_despacho).first()
+    if not despacho or despacho.estado_anulado:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Despacho no encontrado")
+    if despacho.estado_cerrado:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El despacho está cerrado")
+
+    ahora = ahora_local()
+    # Fecha del teléfono en hora del negocio; sin segundos fraccionarios porque DateTime de MySQL los descarta.
+    # Una fecha futura (reloj del teléfono adelantado) se recorta a la hora del servidor.
+    puntos = [
+        (min(a_hora_local(item.fecha).replace(microsecond=0), ahora), item)
+        for item in payload.ubicaciones
+    ]
+    puntos.sort(key=lambda p: p[0])
+
+    # Dedupe por fecha (al segundo): latitud/longitud son FLOAT simple en MySQL y no vuelven idénticas
+    existentes = {
+        fecha
+        for (fecha,) in db.query(Ubicacion.fecha).filter(
+            Ubicacion.codigo_despacho_fk == despacho.codigo_despacho_pk,
+            Ubicacion.fecha >= puntos[0][0],
+            Ubicacion.fecha <= puntos[-1][0],
+        )
+    }
+
+    usuario = guia_service.usuario_autenticado(master_db, current_user)
+    nuevas = []
+    for fecha, item in puntos:
+        if fecha in existentes:
+            continue
+        existentes.add(fecha)
+        nuevas.append(
+            Ubicacion(
+                codigo_despacho_fk=despacho.codigo_despacho_pk,
+                fecha=fecha,
+                usuario=usuario,
+                latitud=item.latitud,
+                longitud=item.longitud,
+                velocidad=item.velocidad or 0,
+                altitud=item.altitud or 0,
+                exactitud=item.exactitud or 0,
+                exactitud_altitud=item.exactitud_altitud or 0,
+            )
+        )
+    db.add_all(nuevas)
+
+    ultima_fecha, ultimo = puntos[-1]
+    if despacho.fecha_ultimo_reporte is None or ultima_fecha >= despacho.fecha_ultimo_reporte:
+        despacho.ultima_latitud = ultimo.latitud
+        despacho.ultima_longitud = ultimo.longitud
+        despacho.fecha_ultimo_reporte = ultima_fecha
+    db.commit()
+
+    return MovilUbicacionLoteResponse(
+        codigo_despacho=despacho.codigo_despacho_pk,
+        recibidas=len(puntos),
+        registradas=len(nuevas),
+        duplicadas=len(puntos) - len(nuevas),
+        fecha_ultimo_reporte=despacho.fecha_ultimo_reporte,
     )

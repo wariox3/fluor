@@ -23,12 +23,23 @@ _MESES = [
 ]
 
 
-def ahora_local() -> datetime:
-    """Fecha y hora actual en la zona horaria del negocio (DB_TIME_ZONE, ej. "-05:00")."""
+def _zona_local() -> timezone:
     signo = -1 if DB_TIME_ZONE.startswith("-") else 1
     horas, minutos = DB_TIME_ZONE.lstrip("+-").split(":")
-    zona = timezone(signo * timedelta(hours=int(horas), minutes=int(minutos)))
-    return datetime.now(zona).replace(tzinfo=None)
+    return timezone(signo * timedelta(hours=int(horas), minutes=int(minutos)))
+
+
+def ahora_local() -> datetime:
+    """Fecha y hora actual en la zona horaria del negocio (DB_TIME_ZONE, ej. "-05:00")."""
+    return datetime.now(_zona_local()).replace(tzinfo=None)
+
+
+def a_hora_local(d: datetime) -> datetime:
+    """Convierte una fecha con zona horaria a la hora del negocio, sin tzinfo.
+    Si viene sin zona se asume que ya está en hora del negocio."""
+    if d.tzinfo is None:
+        return d
+    return d.astimezone(_zona_local()).replace(tzinfo=None)
 
 
 def fecha_larga(d: date) -> str:
