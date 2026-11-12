@@ -111,6 +111,29 @@ def get_rate_limit_key(request: Request) -> str:
     return f"ip:{_ip_para_limite(get_client_ip(request))}"
 
 
+def identidad_refresh_token(token: str) -> str | None:
+    """Identidad "user:<sub>" de un refresh token con firma válida, vigente y de tipo refresh; si no, None."""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        return None
+    sub = payload.get("sub")
+    if payload.get("type") != "refresh" or not sub:
+        return None
+    return f"user:{sub}"
+
+
+def clave_refresh(request: Request) -> str:
+    """Identidad para el rate limit de /refresh.
+
+    Quien renueva suele llegar con el access token vencido (p. ej. el plugin de rastreo con la
+    app cerrada), así que get_rate_limit_key caería a la IP y los teléfonos detrás de la misma
+    IP del operador (CGNAT) compartirían el contador. Se usa el sub del refresh token, que la
+    dependencia del endpoint deja en request.state solo si el token es válido.
+    """
+    return getattr(request.state, "refresh_rate_key", None) or get_rate_limit_key(request)
+
+
 # Límite por defecto según la identidad: las peticiones anónimas cuentan por IP y se
 # frenan más; los usuarios y API keys verificados necesitan margen para integraciones
 # que consultan en lote (p. ej. estado de guías desde Apps Script o PHP).

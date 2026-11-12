@@ -1,10 +1,18 @@
-from app.core.rate_limit import limiter, login_bloqueado, registrar_login_fallido, reiniciar_login_fallido
+from dataclasses import dataclass
+from app.core.rate_limit import (
+    clave_refresh,
+    identidad_refresh_token,
+    limiter,
+    login_bloqueado,
+    registrar_login_fallido,
+    reiniciar_login_fallido,
+)
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from sqlalchemy.orm import Session
 from app.core.config import REFRESH_TOKEN_MOBILE_EXPIRE_DAYS
 from app.core.security import verify_password, create_access_token, create_refresh_token, decode_refresh_token, get_current_user_from_token
 from app.core.turnstile import verify_turnstile
-from app.modules.auth.schemas.user import LoginRequest, LoginResponse, RefreshRequest, UserInfo
+from app.modules.auth.schemas.user import LoginRequest, LoginResponse, UserInfo
 from app.core.master_database import get_master_db
 from app.modules.auth.models.user import User
 
@@ -91,11 +99,46 @@ def login(request: Request, data: LoginRequest, response: Response, db: Session 
         "user": user_data
     }
 
+@dataclass
+class RefreshEntrante:
+    token: str | None
+    desde_cookie: bool
+
+
+async def leer_refresh_token(request: Request) -> RefreshEntrante:
+    """El refresh token llega en JSON (app), en formulario (plugin nativo de rastreo, con la app
+    cerrada) o en cookie (web). Un cuerpo JSON o de formulario sin el campo no cae a la cookie.
+    Si el token es válido deja su identidad para el rate limit (clave_refresh)."""
+    tipo = request.headers.get("content-type", "").lower()
+    if tipo.startswith("application/json"):
+        try:
+            datos = await request.json()
+        except ValueError:
+            datos = None
+        valor = datos.get("refresh_token") if isinstance(datos, dict) else None
+        entrante = RefreshEntrante(valor if isinstance(valor, str) else None, desde_cookie=False)
+    elif tipo.startswith(("multipart/form-data", "application/x-www-form-urlencoded")):
+        valor = (await request.form()).get("refresh_token")
+        entrante = RefreshEntrante(valor if isinstance(valor, str) else None, desde_cookie=False)
+    else:
+        entrante = RefreshEntrante(request.cookies.get("refresh_token"), desde_cookie=True)
+
+    if entrante.token:
+        identidad = identidad_refresh_token(entrante.token)
+        if identidad:
+            request.state.refresh_rate_key = identidad
+    return entrante
+
+
 @router.post("/refresh", include_in_schema=False)
-@limiter.limit("10/minute")
-def refresh(request: Request, response: Response, data: RefreshRequest | None = None, db: Session = Depends(get_master_db)):
-    # Web manda el refresh token en cookie; móvil lo manda en el cuerpo
-    token = data.refresh_token if data else request.cookies.get("refresh_token")
+@limiter.limit("10/minute", key_func=clave_refresh)
+def refresh(
+    request: Request,
+    response: Response,
+    entrante: RefreshEntrante = Depends(leer_refresh_token),
+    db: Session = Depends(get_master_db),
+):
+    token = entrante.token
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -118,7 +161,8 @@ def refresh(request: Request, response: Response, data: RefreshRequest | None = 
     }
 
     new_access_token = create_access_token(token_data)
-    if data:
+    # App y plugin leen el token del JSON; solo la web (cookie) lo recibe en cookie
+    if not entrante.desde_cookie:
         return {"access_token": new_access_token, "token_type": "bearer"}
 
     response.set_cookie(
