@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Integer, String, LargeBinary, ForeignKey, Numeric
+from sqlalchemy import Boolean, Column, Float, Integer, String, LargeBinary, ForeignKey, Numeric
 from sqlalchemy.orm import relationship
 from app.core.tenant_database import Base
 from app.modules.gen.models.ciudad import Ciudad
@@ -31,5 +31,8 @@ class Configuracion(Base):
     codigo_formato_rotulo = Column(String(2), nullable=True)
     mostrar_valor_declarado_guia = Column(Boolean, nullable=True, default=False)
     ocultar_valores_formato_corriente = Column(Boolean, nullable=False, default=False)
+    # Cotizaciones de servicios
+    vr_salario_minimo_turno = Column(Float, nullable=True)
+    liquidar_especial_cotizacion = Column(Boolean, nullable=True, default=False)
 
     ciudad_rel = relationship(Ciudad, foreign_keys=[codigo_ciudad_fk])

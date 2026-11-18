@@ -40,6 +40,7 @@ def _respuesta(ut: UserTenant) -> UserTenantConfiguracionResponse:
         codigo_operacion_fk=c.codigo_operacion_fk if c else None,
         codigo_tercero_operacion_fk=c.codigo_tercero_operacion_fk if c else None,
         codigo_ciudad_origen_fk=c.codigo_ciudad_origen_fk if c else None,
+        codigo_item_cotizacion_fk=c.codigo_item_cotizacion_fk if c else None,
         **{campo: getattr(c, campo) if c else defecto for campo, defecto in _POR_DEFECTO.items()},
     )
 

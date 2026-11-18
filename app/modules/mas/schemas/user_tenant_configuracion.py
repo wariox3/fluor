@@ -9,6 +9,7 @@ class UserTenantConfiguracionActualizarRequest(BaseModel):
     codigo_operacion_fk: str | None = Field(default=None, max_length=20)
     codigo_tercero_operacion_fk: int | None = None
     codigo_ciudad_origen_fk: str | None = Field(default=None, max_length=20)
+    codigo_item_cotizacion_fk: int | None = Field(default=None, ge=1)
     cambiar_valores_guia: bool = False
     permite_cambiar_adquiriente: bool = False
     estado_recogido: bool = True
@@ -38,6 +39,7 @@ class UserTenantConfiguracionResponse(BaseModel):
     codigo_operacion_fk: str | None
     codigo_tercero_operacion_fk: int | None
     codigo_ciudad_origen_fk: str | None
+    codigo_item_cotizacion_fk: int | None
     cambiar_valores_guia: bool
     permite_cambiar_adquiriente: bool
     estado_recogido: bool

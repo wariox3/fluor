@@ -12,6 +12,8 @@ class UserTenantConfiguracion(Base):
     codigo_operacion_fk = Column(String(20), nullable=True)
     codigo_tercero_operacion_fk = Column(Integer, nullable=True)
     codigo_ciudad_origen_fk = Column(String(20), nullable=True)
+    # Ítem de `gen_item` con el que el usuario cotiza servicios desde el portal cliente
+    codigo_item_cotizacion_fk = Column(Integer, nullable=True)
     # Permisos y valores por defecto del usuario al crear guías
     cambiar_valores_guia = Column(Boolean, nullable=False, default=False, server_default=false())
     permite_cambiar_adquiriente = Column(Boolean, nullable=False, default=False, server_default=false())

@@ -9,3 +9,4 @@ from .visita_compromiso import VisitaCompromiso
 from .visita_motivo import VisitaMotivo
 from .visita_reporte import VisitaReporte
 from .visita_tipo import VisitaTipo
+from .cotizacion_detalle import CotizacionDetalle
