@@ -23,7 +23,11 @@ APP_URL = config("APP_URL", default="http://localhost:4200")
 # Origin de la petición si está en esta lista; si no, cae en APP_URL.
 FRONTEND_URLS = config(
     "FRONTEND_URLS",
-    default="https://empleado.co,https://www.empleado.co,https://semanticaerp.com,https://www.semanticaerp.com",
+    default=(
+        "https://empleado.co,https://www.empleado.co,https://semanticaerp.com,"
+        "https://www.semanticaerp.com,https://cliente.semanticaerp.com,"
+        "https://cliente.semanticaerp.uk"
+    ),
     cast=lambda v: [u.strip().rstrip("/") for u in v.split(",") if u.strip()],
 )
 

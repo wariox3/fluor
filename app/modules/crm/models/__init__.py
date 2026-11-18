@@ -10,3 +10,7 @@ from .visita_motivo import VisitaMotivo
 from .visita_reporte import VisitaReporte
 from .visita_tipo import VisitaTipo
 from .cotizacion_detalle import CotizacionDetalle
+from .solicitud_analisis import SolicitudAnalisis
+from .solicitud_respuesta import SolicitudRespuesta
+from .solicitud_seguimiento import SolicitudSeguimiento
+from .solicitud_tema import SolicitudTema
