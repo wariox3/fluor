@@ -55,10 +55,13 @@ def lista(
 @router.post("/{invitacion_id}/aceptar", response_model=InvitacionResponse, include_in_schema=False)
 def aceptar(
     invitacion_id: int,
+    cliente: bool = False,
     db: Session = Depends(get_master_db),
     current_user: dict = Depends(get_current_user_from_token),
 ):
-    return invitacion_service.aceptar(db, invitacion_id, int(current_user["sub"]))
+    """Acepta la invitación. Con `cliente=true` (desde el portal de clientes) el acceso además queda
+    como cliente; el administrador le asigna después el `cliente_id`."""
+    return invitacion_service.aceptar(db, invitacion_id, int(current_user["sub"]), cliente=cliente)
 
 
 @router.post("/{invitacion_id}/rechazar", response_model=InvitacionResponse, include_in_schema=False)

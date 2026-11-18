@@ -114,14 +114,18 @@ def listar_tenant(
     return total, items
 
 
-def aceptar(db: Session, invitacion_id: int, usuario_id: int) -> Invitacion:
-    """Acepta la invitación: crea el acceso en user_tenant y la marca como aceptada."""
+def aceptar(db: Session, invitacion_id: int, usuario_id: int, cliente: bool = False) -> Invitacion:
+    """Acepta la invitación: crea el acceso en user_tenant y la marca como aceptada.
+
+    El acceso siempre incluye el ERP. Con `cliente` (aceptada desde el portal de clientes) además queda
+    como cliente; el `cliente_id` lo asigna después el administrador.
+    """
     invitacion = _pendiente_del_usuario(db, invitacion_id, usuario_id)
     if _pertenece(db, usuario_id, invitacion.tenant_id):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ya perteneces a esta empresa")
 
     # Acceso y cambio de estado en una sola transacción
-    db.add(UserTenant(usuario_id=usuario_id, tenant_id=invitacion.tenant_id, erp=True))
+    db.add(UserTenant(usuario_id=usuario_id, tenant_id=invitacion.tenant_id, erp=True, cliente=cliente))
     invitacion.estado = EstadoInvitacion.aceptada
     try:
         db.commit()
