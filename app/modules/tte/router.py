@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from .routes import guia, ciudad, novedad, monitoreo, monitoreo_detalle, seguimiento, producto, empaque, servicio, cliente_condicion, guia_tipo, operacion, zona, despacho, despacho_detalle, tercero_producto, tercero_operacion, destinatario, condicion, precio_detalle, condicion_flete, condicion_manejo, recibo, movil
+from .routes import guia, ciudad, novedad, novedad_tipo, monitoreo, monitoreo_detalle, seguimiento, producto, empaque, servicio, cliente_condicion, guia_tipo, operacion, zona, despacho, despacho_detalle, tercero_producto, tercero_operacion, destinatario, condicion, precio_detalle, condicion_flete, condicion_manejo, recibo, movil
 
 router = APIRouter(
     prefix="/tte"
@@ -8,6 +8,7 @@ router = APIRouter(
 router.include_router(guia.router,prefix="/guia",tags=["Transporte y Logística / Guía"])
 router.include_router(ciudad.router,prefix="/ciudad",tags=["Transporte y Logística / Ciudad"])
 router.include_router(novedad.router,prefix="/novedad",tags=["Transporte y Logística / Novedad"])
+router.include_router(novedad_tipo.router,prefix="/novedad-tipo",tags=["Transporte y Logística / Novedad Tipo"])
 router.include_router(monitoreo.router,prefix="/monitoreo",tags=["Transporte y Logística / Monitoreo"])
 router.include_router(monitoreo_detalle.router,prefix="/monitoreo-detalle",tags=["Transporte y Logística / Monitoreo Detalle"])
 router.include_router(seguimiento.router,prefix="/seguimiento",tags=["Transporte y Logística / Seguimiento"])

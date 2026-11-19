@@ -10,7 +10,7 @@ from app.modules.tte.models.despacho import Despacho
 from app.modules.tte.models.despacho_detalle import DespachoDetalle
 from app.modules.tte.models.guia import Guia
 from app.modules.tte.models.ubicacion import Ubicacion
-from app.modules.tte.schemas.guia import GuiaEntregaResponse
+from app.modules.tte.schemas.guia import GuiaEntregaRequest, GuiaEntregaResponse
 from app.modules.tte.schemas.movil import (
     MovilDespachoGuiasResponse,
     MovilGuiaResponse,
@@ -19,7 +19,9 @@ from app.modules.tte.schemas.movil import (
     MovilUbicacionRequest,
     MovilUbicacionResponse,
 )
+from app.modules.tte.schemas.novedad import NovedadCreateRequest, NovedadCreateResponse
 from app.modules.tte.services import guia as guia_service
+from app.modules.tte.services import novedad as novedad_service
 
 router = APIRouter()
 
@@ -90,7 +92,7 @@ def guia_entrega(
     """Entrega de una guía del despacho asignado al repartidor.
     Solo guías de ese despacho; el usuario de la entrega es siempre el autenticado."""
     db = contexto.db
-    payload = guia_service.parsear_datos_entrega(datos)
+    payload = guia_service.parsear_datos(datos, GuiaEntregaRequest)
 
     despacho = db.query(Despacho).filter(Despacho.codigo_despacho_pk == contexto.codigo_despacho).first()
     if not despacho or despacho.estado_anulado:
@@ -113,6 +115,41 @@ def guia_entrega(
     archivos_imagenes, archivo_firma = guia_service.leer_archivos_entrega(imagenes, firma)
     usuario = guia_service.usuario_autenticado(master_db, current_user)
     return guia_service.registrar_entrega(db, payload, archivos_imagenes, archivo_firma, usuario)
+
+
+@router.post("/guia/novedad", response_model=NovedadCreateResponse)
+def guia_novedad(
+    datos: str = Form(..., description="JSON con los datos de la novedad (NovedadCreateRequest)"),
+    imagenes: list[UploadFile] = File(default=[], description="Fotos de la novedad, JPEG, PNG o WebP"),
+    contexto: DespachoContexto = Depends(get_despacho_db),
+    master_db: Session = Depends(get_master_db),
+    current_user: dict = Depends(get_current_user_from_token),
+):
+    """Novedad de una guía del despacho asignado al repartidor.
+    Solo guías de ese despacho y tipos con aplica_movil; el usuario es siempre el autenticado."""
+    db = contexto.db
+    payload = guia_service.parsear_datos(datos, NovedadCreateRequest)
+
+    despacho = db.query(Despacho).filter(Despacho.codigo_despacho_pk == contexto.codigo_despacho).first()
+    if not despacho or despacho.estado_anulado:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Despacho no encontrado")
+    if despacho.estado_cerrado:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El despacho está cerrado")
+
+    en_despacho = (
+        db.query(DespachoDetalle.codigo_despacho_detalle_pk)
+        .filter(
+            DespachoDetalle.codigo_despacho_fk == contexto.codigo_despacho,
+            DespachoDetalle.codigo_guia_fk == payload.codigo_guia_fk,
+        )
+        .first()
+    )
+    if not en_despacho:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Guía no encontrada")
+
+    archivos_imagenes, _ = guia_service.leer_archivos_entrega(imagenes, None)
+    usuario = guia_service.usuario_autenticado(master_db, current_user)
+    return novedad_service.registrar_novedad(db, payload, archivos_imagenes, usuario, solo_movil=True)
 
 
 @router.post("/despacho/ubicacion", response_model=MovilUbicacionResponse)

@@ -6,7 +6,7 @@ from datetime import datetime
 import magic
 from fastapi import HTTPException, UploadFile
 from fastapi.exceptions import RequestValidationError
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -346,10 +346,10 @@ def usuario_autenticado(master_db: Session, current_user: dict) -> str:
     return (user.email if user else sub)[:25]
 
 
-def parsear_datos_entrega(datos: str) -> GuiaEntregaRequest:
-    """Valida el campo `datos` (JSON) del multipart de entrega."""
+def parsear_datos(datos: str, modelo: type[BaseModel]):
+    """Valida el campo `datos` (JSON) de un multipart con archivos."""
     try:
-        return GuiaEntregaRequest.model_validate_json(datos)
+        return modelo.model_validate_json(datos)
     except ValidationError as e:
         # Mismo formato que un body normal: ubicacion "datos" y el campo con error
         raise RequestValidationError([{**err, "loc": ("datos", *err["loc"])} for err in e.errors(include_url=False)])
@@ -366,14 +366,14 @@ def _leer_archivo(archivo: UploadFile, campo: str, tipos: set[str]) -> bytes:
 
 
 def leer_archivos_entrega(imagenes: list[UploadFile], firma: UploadFile | None) -> tuple[list[bytes], bytes | None]:
-    """Lee y valida fotos y firma antes de tocar la guía: uno inválido no deja la entrega a medias."""
+    """Lee y valida fotos y firma antes de tocar la guía: uno inválido no deja la operación a medias."""
     if len(imagenes) > MAX_IMAGENES_ENTREGA:
-        raise HTTPException(status_code=400, detail=f"Máximo {MAX_IMAGENES_ENTREGA} imágenes por entrega")
+        raise HTTPException(status_code=400, detail=f"Máximo {MAX_IMAGENES_ENTREGA} imágenes")
 
     # Con el tamaño que registró el parser se rechaza el exceso antes de cargar archivos en memoria
     total = sum(archivo.size or 0 for archivo in [*imagenes, firma] if archivo)
     if total > MAX_TOTAL_ENTREGA:
-        raise HTTPException(status_code=400, detail="Los archivos de la entrega superan el tamaño máximo total de 30MB")
+        raise HTTPException(status_code=400, detail="Los archivos superan el tamaño máximo total de 30MB")
 
     archivos_imagenes = [
         _leer_archivo(img, f"imagenes[{i}]", set(_EXTENSIONES_IMAGEN)) for i, img in enumerate(imagenes)
@@ -382,15 +382,15 @@ def leer_archivos_entrega(imagenes: list[UploadFile], firma: UploadFile | None) 
     return archivos_imagenes, archivo_firma
 
 
-def _subir_fichero(db: Session, guia: int, data: bytes, nombre: str, extension: str, mime: str,
-                   directorio_base: str, carpeta: str, usuario: str, tipo: str = "G",
-                   comprimido: bool = False) -> bool:
-    """Registra el fichero de la guía y lo sube a Backblaze. Si la subida falla queda con error_carga.
-    Tipo G (general) se descarga de la carpeta fichero/; F (firma) de firma/."""
+def subir_fichero(db: Session, modelo: str, codigo: int, data: bytes, nombre: str, extension: str, mime: str,
+                  directorio_base: str, carpeta: str, usuario: str, tipo: str = "G",
+                  comprimido: bool = False) -> bool:
+    """Registra el fichero del documento (modelo + código) y lo sube a Backblaze. Si la subida falla
+    queda con error_carga. Tipo G (general) se descarga de la carpeta fichero/; F (firma) de firma/."""
     fichero = Fichero(
         codigo_fichero_tipo_fk=tipo,
-        codigo_modelo_fk="TteGuia",
-        codigo=str(guia),
+        codigo_modelo_fk=modelo,
+        codigo=str(codigo),
         fecha=datetime.now(),
         nombre=nombre,
         extension=extension,
@@ -405,31 +405,49 @@ def _subir_fichero(db: Session, guia: int, data: bytes, nombre: str, extension: 
     try:
         db.flush()
     except SQLAlchemyError:
-        # La entrega ya está confirmada: un fallo al registrar el fichero no la revierte
+        # El documento ya está confirmado: un fallo al registrar el fichero no lo revierte
         db.rollback()
-        logger.exception("Error registrando el fichero %s de la guía %s", nombre, guia)
+        logger.exception("Error registrando el fichero %s de %s %s", nombre, modelo, codigo)
         return False
     try:
         b2_client.upload_file(f"{directorio_base}/{carpeta}/{fichero.codigo_fichero_pk}.{extension}", data, mime)
         ok = True
     except Exception:
-        logger.exception("Error subiendo a Backblaze el fichero %s de la guía %s", fichero.codigo_fichero_pk, guia)
+        logger.exception("Error subiendo a Backblaze el fichero %s de %s %s", fichero.codigo_fichero_pk, modelo, codigo)
         fichero.error_carga = True
         ok = False
     db.commit()
     return ok
 
 
+def directorio_documental(db: Session) -> str:
+    """Ruta base del servicio documental; sin ella no se pueden subir archivos."""
+    configuracion = db.query(Configuracion).first()
+    directorio_base = configuracion.ruta_almacenamiento_servicio if configuracion else None
+    if not directorio_base:
+        raise HTTPException(status_code=400, detail="No está configurada la ruta del servicio documental")
+    return directorio_base
+
+
+def preparar_imagen(data: bytes, referencia: str) -> tuple[bytes, str, str, bool]:
+    """Comprime la foto a JPG; si el JPG original es más liviano que el recomprimido se deja tal cual.
+    Devuelve (data, mime, extensión, comprimido)."""
+    mime = magic.from_buffer(data[:2048], mime=True)
+    comprimido = False
+    try:
+        jpg = comprimir_imagen(data)
+        if not (mime == "image/jpeg" and len(data) <= len(jpg)):
+            data, mime, comprimido = jpg, "image/jpeg", True
+    except Exception:
+        logger.exception("Error comprimiendo imagen de %s; se sube la original", referencia)
+    return data, mime, _EXTENSIONES_IMAGEN[mime], comprimido
+
+
 def registrar_entrega(db: Session, payload: GuiaEntregaRequest, archivos_imagenes: list[bytes],
                       archivo_firma: bytes | None, usuario: str) -> GuiaEntregaResponse:
     """Marca la guía como entregada, registra seguimientos, ubicación y despacho, y sube los archivos.
     Los archivos ya deben venir validados (leer_archivos_entrega); `usuario` es quien registra la entrega."""
-    directorio_base = None
-    if archivos_imagenes or archivo_firma:
-        configuracion = db.query(Configuracion).first()
-        directorio_base = configuracion.ruta_almacenamiento_servicio if configuracion else None
-        if not directorio_base:
-            raise HTTPException(status_code=400, detail="No está configurada la ruta del servicio documental")
+    directorio_base = directorio_documental(db) if archivos_imagenes or archivo_firma else None
 
     # Se bloquea la fila para que dos entregas simultáneas no cuenten doble en el despacho
     guia = db.query(Guia).filter(Guia.codigo_guia_pk == payload.guia).with_for_update().first()
@@ -514,23 +532,14 @@ def registrar_entrega(db: Session, payload: GuiaEntregaRequest, archivos_imagene
     # Los archivos se suben después de confirmar la entrega; si fallan, la entrega se mantiene
     errores = 0
     for data in archivos_imagenes:
-        mime = magic.from_buffer(data[:2048], mime=True)
-        comprimido = False
-        try:
-            jpg = comprimir_imagen(data)
-            # Las fotos quedan en JPG; un JPG original más liviano que el recomprimido se deja tal cual
-            if not (mime == "image/jpeg" and len(data) <= len(jpg)):
-                data, mime, comprimido = jpg, "image/jpeg", True
-        except Exception:
-            logger.exception("Error comprimiendo imagen de la guía %s; se sube la original", guia.codigo_guia_pk)
-        extension = _EXTENSIONES_IMAGEN[mime]
-        if not _subir_fichero(db, guia.codigo_guia_pk, data, f"{guia.codigo_guia_pk}.{extension}", extension,
-                              mime, directorio_base, "fichero", usuario, comprimido=comprimido):
+        data, mime, extension, comprimido = preparar_imagen(data, f"la guía {guia.codigo_guia_pk}")
+        if not subir_fichero(db, "TteGuia", guia.codigo_guia_pk, data, f"{guia.codigo_guia_pk}.{extension}",
+                             extension, mime, directorio_base, "fichero", usuario, comprimido=comprimido):
             errores += 1
     if archivo_firma:
         nombre = f"{random.randint(100000, 999999)}_{guia.codigo_guia_pk}.png"
-        if not _subir_fichero(db, guia.codigo_guia_pk, archivo_firma, nombre, "png", "image/png",
-                              directorio_base, "firma", usuario, tipo="F"):
+        if not subir_fichero(db, "TteGuia", guia.codigo_guia_pk, archivo_firma, nombre, "png", "image/png",
+                             directorio_base, "firma", usuario, tipo="F"):
             errores += 1
 
     db.refresh(guia)

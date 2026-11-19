@@ -6,12 +6,26 @@ from typing import Optional
 
 from app.core.rate_limit import limiter
 from app.core.tenant_database import get_tenant_db
+from app.core.master_database import get_master_db
 from app.core.security import get_current_user
 from app.modules.tte.models.novedad import Novedad
 from app.modules.tte.models.guia import Guia
-from app.modules.tte.schemas.novedad import NovedadListResponse
+from app.modules.tte.schemas.novedad import NovedadCreateRequest, NovedadCreateResponse, NovedadListResponse
+from app.modules.tte.services import guia as guia_service
+from app.modules.tte.services import novedad as novedad_service
 
 router = APIRouter()
+
+
+@router.post("/nuevo", response_model=NovedadCreateResponse)
+def nuevo(
+    payload: NovedadCreateRequest,
+    db: Session = Depends(get_tenant_db),
+    master_db: Session = Depends(get_master_db),
+    current_user: dict = Depends(get_current_user),
+):
+    usuario = guia_service.usuario_autenticado(master_db, current_user)
+    return novedad_service.registrar_novedad(db, payload, [], usuario)
 
 
 @router.get("/lista", response_model=NovedadListResponse)

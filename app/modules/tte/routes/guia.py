@@ -567,7 +567,7 @@ def entrega(
     master_db: Session = Depends(get_master_db),
     current_user: dict = Depends(get_current_user),
 ):
-    payload = guia_service.parsear_datos_entrega(datos)
+    payload = guia_service.parsear_datos(datos, GuiaEntregaRequest)
     archivos_imagenes, archivo_firma = guia_service.leer_archivos_entrega(imagenes, firma)
     usuario = payload.usuario or guia_service.usuario_autenticado(master_db, current_user)
     return guia_service.registrar_entrega(db, payload, archivos_imagenes, archivo_firma, usuario)

@@ -1,7 +1,16 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+class NovedadCreateRequest(BaseModel):
+    codigo_guia_fk: int
+    codigo_novedad_tipo_fk: str = Field(max_length=20)
+    descripcion: Optional[str] = Field(default=None, max_length=2000)
+    fecha: Optional[datetime] = None
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
 
 
 class NovedadResponse(BaseModel):
@@ -33,3 +42,7 @@ class NovedadListResponse(BaseModel):
     page: int
     size: int
     items: list[NovedadResponse]
+
+
+class NovedadCreateResponse(NovedadResponse):
+    ficheros_con_error: int = 0
