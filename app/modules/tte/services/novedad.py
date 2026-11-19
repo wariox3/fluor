@@ -26,7 +26,10 @@ def registrar_novedad(db: Session, payload: NovedadCreateRequest, archivos_image
     if guia.estado_anulado:
         raise HTTPException(status_code=409, detail="La guía está anulada")
     if guia.estado_novedad and not guia.estado_novedad_solucion:
-        raise HTTPException(status_code=409, detail="La guía ya tiene una novedad abierta")
+        # novedad=true le indica a la app que la guía ya tiene la novedad (p. ej. en un reintento)
+        raise HTTPException(
+            status_code=409, detail={"message": "La guía ya tiene una novedad abierta", "novedad": True}
+        )
 
     tipo = db.query(NovedadTipo).filter(NovedadTipo.codigo_novedad_tipo_pk == payload.codigo_novedad_tipo_fk).first()
     if not tipo:
