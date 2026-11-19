@@ -9,6 +9,7 @@ from app.modules.tte.models.ciudad import Ciudad
 from app.modules.tte.models.despacho import Despacho
 from app.modules.tte.models.despacho_detalle import DespachoDetalle
 from app.modules.tte.models.guia import Guia
+from app.modules.tte.models.novedad_tipo import NovedadTipo
 from app.modules.tte.models.ubicacion import Ubicacion
 from app.modules.tte.schemas.guia import GuiaEntregaRequest, GuiaEntregaResponse
 from app.modules.tte.schemas.movil import (
@@ -20,6 +21,7 @@ from app.modules.tte.schemas.movil import (
     MovilUbicacionResponse,
 )
 from app.modules.tte.schemas.novedad import NovedadCreateRequest, NovedadCreateResponse
+from app.modules.tte.schemas.novedad_tipo import NovedadTipoResponse
 from app.modules.tte.services import guia as guia_service
 from app.modules.tte.services import novedad as novedad_service
 
@@ -115,6 +117,17 @@ def guia_entrega(
     archivos_imagenes, archivo_firma = guia_service.leer_archivos_entrega(imagenes, firma)
     usuario = guia_service.usuario_autenticado(master_db, current_user)
     return guia_service.registrar_entrega(db, payload, archivos_imagenes, archivo_firma, usuario)
+
+
+@router.get("/novedad-tipo", response_model=list[NovedadTipoResponse])
+def novedad_tipo(contexto: DespachoContexto = Depends(get_despacho_db)):
+    """Tipos de novedad que aplican para la aplicación móvil, sin paginar, para guardarlos en el teléfono."""
+    return (
+        contexto.db.query(NovedadTipo)
+        .filter(NovedadTipo.aplica_movil.is_(True))
+        .order_by(NovedadTipo.nombre.asc())
+        .all()
+    )
 
 
 @router.post("/guia/novedad", response_model=NovedadCreateResponse)

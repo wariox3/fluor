@@ -7,7 +7,7 @@ from app.core.rate_limit import limiter
 from app.core.tenant_database import get_tenant_db
 from app.core.security import get_current_user
 from app.modules.tte.models.novedad_tipo import NovedadTipo
-from app.modules.tte.schemas.novedad_tipo import NovedadTipoListResponse, NovedadTipoResponse
+from app.modules.tte.schemas.novedad_tipo import NovedadTipoListResponse
 
 router = APIRouter()
 
@@ -41,16 +41,3 @@ def lista(
     items = query.order_by(NovedadTipo.nombre.asc()).offset(offset).limit(size).all()
     return NovedadTipoListResponse(total=total, page=page, size=size, items=items)
 
-
-@router.get(
-    "/lista-movil",
-    response_model=list[NovedadTipoResponse],
-    description="Tipos de novedad que aplican para la aplicación móvil, sin paginar.",
-)
-def lista_movil(db: Session = Depends(get_tenant_db), current_user: dict = Depends(get_current_user)):
-    return (
-        db.query(NovedadTipo)
-        .filter(NovedadTipo.aplica_movil.is_(True))
-        .order_by(NovedadTipo.nombre.asc())
-        .all()
-    )

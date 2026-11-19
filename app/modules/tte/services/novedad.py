@@ -83,3 +83,4 @@ def registrar_novedad(db: Session, payload: NovedadCreateRequest, archivos_image
 
     db.refresh(novedad)
     return NovedadCreateResponse.model_validate(novedad).model_copy(update={"ficheros_con_error": errores})
+
