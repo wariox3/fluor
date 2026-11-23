@@ -17,6 +17,7 @@ class LogAccion(Base):
     codigo_registro = Column(Integer, nullable=False)
     accion = Column(String(8), nullable=False)  # crear, editar, eliminar
     usuario = Column(String(200), nullable=False)
-    campos = Column(JSON, nullable=True)  # {"campo": {"anterior": valor, "nuevo": valor}}
+    ruta = Column(String(50), nullable=True)  # patrón de la ruta HTTP, ej. /tte/guia/{codigo_guia_pk}
+    campos = Column(JSON, nullable=True)  # {"campo": valor}
 
     modelo_rel = relationship("Modelo", back_populates="logs_acciones_modelo_rel")

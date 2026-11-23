@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 import pytest
 from fastapi import HTTPException
 from sqlalchemy import create_engine
@@ -23,6 +24,8 @@ def schemas_abiertos(monkeypatch):
 class RequestFalso:
     def __init__(self, tenant_id=None):
         self.headers = {"X-Tenant-ID": str(tenant_id)} if tenant_id is not None else {}
+        self.scope = {}
+        self.url = SimpleNamespace(path="/prueba")
 
 
 def abrir_tenant_db(current_user, master_db, tenant_id=None):

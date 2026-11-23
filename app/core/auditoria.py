@@ -10,18 +10,24 @@ Un modelo se audita declarando el código de gen_modelo y marcando las columnas 
 
 Al crear, editar o eliminar un registro por la sesión (no con query().update()/delete()
 ni SQL directo) se inserta una fila en gen_log_accion en la misma transacción.
-El usuario se toma de session.info["usuario"] (ver asignar_usuario).
+El usuario y la ruta se toman de session.info (ver asignar_contexto).
+
+campos guarda {"campo": valor}: al crear, los valores iniciales; al editar, el valor nuevo
+de los campos que cambiaron; al eliminar, el último valor. El valor anterior de una edición
+se obtiene del log previo del mismo registro.
 """
 import enum
 from datetime import date, datetime, time
 from decimal import Decimal
 
+from fastapi import Request
 from sqlalchemy import Integer, event, insert, inspect
 from sqlalchemy.orm import Mapper, Session, object_session
 
 from app.core.utils import ahora_local
 
 USUARIO_SISTEMA = "sistema"
+LARGO_RUTA = 50  # gen_log_accion.ruta
 ACCION_CREAR = "crear"
 ACCION_EDITAR = "editar"
 ACCION_ELIMINAR = "eliminar"
@@ -34,10 +40,20 @@ class AuditoriaConfigError(Exception):
     """Un modelo declara __auditoria__ de forma inválida."""
 
 
-def asignar_usuario(db: Session, current_user: dict | None) -> None:
-    """Guarda en la sesión quién hace los cambios: el correo, o el prefijo si es API key."""
+def asignar_contexto(db: Session, current_user: dict | None, request: Request | None = None) -> None:
+    """Guarda en la sesión quién hace los cambios y desde qué ruta.
+
+    usuario: el correo, o el prefijo si es API key.
+    ruta: el patrón de la ruta (/tte/guia/{codigo_guia_pk}), no la URL con valores.
+    """
     usuario = (current_user or {}).get("email") or (current_user or {}).get("sub")
     db.info["usuario"] = str(usuario)[:200] if usuario else USUARIO_SISTEMA
+
+    ruta = None
+    if request is not None:
+        ruta_fastapi = request.scope.get("route")
+        ruta = getattr(ruta_fastapi, "path", None) or request.url.path
+    db.info["ruta"] = ruta[:LARGO_RUTA] if ruta else None
 
 
 def activar(base) -> None:
@@ -100,15 +116,15 @@ def _registrar(mapper: Mapper, connection, target, accion: str, campos: dict | N
     from app.modules.gen.models.log_accion import LogAccion
 
     codigo_modelo, _, clave_pk = _auditados[mapper]
-    sesion = object_session(target)
-    usuario = sesion.info.get("usuario", USUARIO_SISTEMA) if sesion else USUARIO_SISTEMA
+    info = sesion.info if (sesion := object_session(target)) else {}
     connection.execute(
         insert(LogAccion.__table__).values(
             fecha=ahora_local(),
             codigo_modelo_fk=codigo_modelo,
             codigo_registro=getattr(target, clave_pk),
             accion=accion,
-            usuario=usuario,
+            usuario=info.get("usuario", USUARIO_SISTEMA),
+            ruta=info.get("ruta"),
             campos=campos or None,
         )
     )
@@ -120,9 +136,9 @@ def _despues_insertar(mapper: Mapper, connection, target) -> None:
     _, columnas, _ = _auditados[mapper]
     campos = {}
     for clave, nombre in columnas:
-        nuevo = _valor(getattr(target, clave))
-        if nuevo is not None:
-            campos[nombre] = {"anterior": None, "nuevo": nuevo}
+        valor = _valor(getattr(target, clave))
+        if valor is not None:
+            campos[nombre] = valor
     _registrar(mapper, connection, target, ACCION_CREAR, campos)
 
 
@@ -139,7 +155,7 @@ def _despues_actualizar(mapper: Mapper, connection, target) -> None:
         anterior = _valor(historial.deleted[0]) if historial.deleted else None
         nuevo = _valor(historial.added[0]) if historial.added else None
         if anterior != nuevo:
-            campos[nombre] = {"anterior": anterior, "nuevo": nuevo}
+            campos[nombre] = nuevo
     # Una edición que no toca campos auditados no deja rastro
     if campos:
         _registrar(mapper, connection, target, ACCION_EDITAR, campos)
@@ -151,7 +167,7 @@ def _antes_eliminar(mapper: Mapper, connection, target) -> None:
     _, columnas, _ = _auditados[mapper]
     campos = {}
     for clave, nombre in columnas:
-        anterior = _valor(getattr(target, clave))
-        if anterior is not None:
-            campos[nombre] = {"anterior": anterior, "nuevo": None}
+        valor = _valor(getattr(target, clave))
+        if valor is not None:
+            campos[nombre] = valor
     _registrar(mapper, connection, target, ACCION_ELIMINAR, campos)

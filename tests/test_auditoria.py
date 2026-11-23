@@ -44,7 +44,7 @@ def db():
     sesion = sessionmaker(autoflush=False, bind=engine)()
     sesion.add(Modelo(codigo_modelo_pk="PruebaProducto"))
     sesion.commit()
-    auditoria.asignar_usuario(sesion, {"sub": "7", "email": "ana@empresa.com"})
+    auditoria.asignar_contexto(sesion, {"sub": "7", "email": "ana@empresa.com"})
     yield sesion
     sesion.close()
 
@@ -64,10 +64,11 @@ def test_crear_guarda_valores_iniciales_solo_de_campos_auditados(db):
     assert log.codigo_registro == p.codigo_producto_pk
     assert log.usuario == "ana@empresa.com"
     assert log.campos == {
-        "nombre": {"anterior": None, "nuevo": "Caja"},
-        "precio": {"anterior": None, "nuevo": 10.5},
-        "vence": {"anterior": None, "nuevo": "2026-12-01"},
+        "nombre": "Caja",
+        "precio": 10.5,
+        "vence": "2026-12-01",
     }
+    assert log.ruta is None  # sin petición HTTP
 
 
 def test_editar_registra_solo_cambios_reales(db):
@@ -82,7 +83,18 @@ def test_editar_registra_solo_cambios_reales(db):
 
     log = _logs(db)[-1]
     assert log.accion == "editar"
-    assert log.campos == {"nombre": {"anterior": "Caja", "nuevo": "Caja grande"}}
+    assert log.campos == {"nombre": "Caja grande"}
+
+
+def test_editar_a_nulo_registra_el_nulo(db):
+    p = ProductoPrueba(nombre="Caja", precio=Decimal("10"))
+    db.add(p)
+    db.commit()
+
+    p.precio = None
+    db.commit()
+
+    assert _logs(db)[-1].campos == {"precio": None}
 
 
 def test_editar_campo_no_auditado_no_genera_log(db):
@@ -109,8 +121,8 @@ def test_eliminar_guarda_valores_anteriores(db):
     assert log.accion == "eliminar"
     assert log.codigo_registro == pk
     assert log.campos == {
-        "nombre": {"anterior": "Caja", "nuevo": None},
-        "precio": {"anterior": 3.0, "nuevo": None},
+        "nombre": "Caja",
+        "precio": 3.0,
     }
 
 
@@ -129,10 +141,29 @@ def test_modelo_sin_auditoria_no_genera_log(db):
     assert _logs(db) == []
 
 
+def _request(path, route_path=None):
+    from starlette.requests import Request
+    scope = {"type": "http", "method": "PUT", "path": path, "headers": [], "query_string": b""}
+    if route_path:
+        scope["route"] = type("Ruta", (), {"path": route_path})()
+    return Request(scope)
+
+
+def test_ruta_guarda_el_patron_y_se_corta_a_50(db):
+    auditoria.asignar_contexto(db, {"email": "ana@empresa.com"}, _request("/tte/guia/123", "/tte/guia/{codigo_guia_pk}"))
+    db.add(ProductoPrueba(nombre="Caja"))
+    db.commit()
+    assert _logs(db)[-1].ruta == "/tte/guia/{codigo_guia_pk}"
+
+    larga = "/tte/" + "a" * 80
+    auditoria.asignar_contexto(db, {"email": "ana@empresa.com"}, _request(larga, larga))
+    assert db.info["ruta"] == larga[:50]
+
+
 def test_usuario_api_key_y_sistema(db):
-    auditoria.asignar_usuario(db, {"sub": "erp_abc123", "tenant_id": 1})
+    auditoria.asignar_contexto(db, {"sub": "erp_abc123", "tenant_id": 1})
     assert db.info["usuario"] == "erp_abc123"
-    auditoria.asignar_usuario(db, None)
+    auditoria.asignar_contexto(db, None)
     assert db.info["usuario"] == "sistema"
 
 
@@ -179,7 +210,7 @@ def test_endpoint_lista_historial_de_un_registro(db, client):
     assert cuerpo["total"] == 2
     # Lo más reciente primero
     assert [i["accion"] for i in cuerpo["items"]] == ["editar", "crear"]
-    assert cuerpo["items"][0]["campos"] == {"precio": {"anterior": 1.0, "nuevo": 2.0}}
+    assert cuerpo["items"][0]["campos"] == {"precio": 2.0}
     assert cuerpo["items"][0]["usuario"] == "ana@empresa.com"
 
 

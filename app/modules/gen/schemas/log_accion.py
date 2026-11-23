@@ -11,6 +11,7 @@ class LogAccionResponse(BaseModel):
     codigo_registro: int
     accion: str
     usuario: str
+    ruta: Optional[str] = None
     campos: Optional[dict[str, Any]] = None
 
     model_config = {"from_attributes": True}

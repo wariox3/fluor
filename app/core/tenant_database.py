@@ -106,7 +106,7 @@ def get_tenant_db(request: Request, current_user: dict = Depends(get_current_use
     engine = get_tenant_engine(schema)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     db = SessionLocal()
-    auditoria.asignar_usuario(db, current_user)
+    auditoria.asignar_contexto(db, current_user, request)
 
     try:
         yield db
@@ -125,6 +125,7 @@ class DespachoContexto:
 
 
 def get_despacho_db(
+    request: Request,
     tenant_despacho_header: str | None = Header(
         default=None,
         alias="X-Tenant-Despacho-ID",
@@ -171,7 +172,7 @@ def get_despacho_db(
     asignacion, tenant = fila
 
     db = sessionmaker(autocommit=False, autoflush=False, bind=get_tenant_engine(tenant.schema))()
-    auditoria.asignar_usuario(db, current_user)
+    auditoria.asignar_contexto(db, current_user, request)
     try:
         yield DespachoContexto(
             db=db,
