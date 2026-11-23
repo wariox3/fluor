@@ -14,6 +14,7 @@ from .routes import identificacion
 from .routes import configuracion
 from .routes import tipo_persona
 from .routes import regimen
+from .routes import log_accion
 
 router = APIRouter(
     prefix="/gen"
@@ -34,3 +35,4 @@ router.include_router(identificacion.router,prefix="/identificacion", tags=["Gen
 router.include_router(configuracion.router,prefix="/configuracion", tags=["General / Configuracion"])
 router.include_router(tipo_persona.router,prefix="/tipo-persona", tags=["General / Tipo Persona"])
 router.include_router(regimen.router,prefix="/regimen", tags=["General / Regimen"])
+router.include_router(log_accion.router,prefix="/log-accion", tags=["General / Log Accion"])

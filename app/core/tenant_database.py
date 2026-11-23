@@ -7,12 +7,14 @@ from decouple import config
 from fastapi import Depends, Header, HTTPException, Request, status
 from app.core.security import get_current_user, get_current_user_from_token
 from app.core.master_database import get_master_db
+from app.core import auditoria
 from sqlalchemy.orm import declarative_base
 from threading import Lock
 
 VALID_DB_NAME = re.compile(r"^[a-zA-Z0-9_]+$")
 
 Base = declarative_base()
+auditoria.activar(Base)
 tenant_engines = {}
 tenant_lock = Lock()
 
@@ -104,6 +106,7 @@ def get_tenant_db(request: Request, current_user: dict = Depends(get_current_use
     engine = get_tenant_engine(schema)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     db = SessionLocal()
+    auditoria.asignar_usuario(db, current_user)
 
     try:
         yield db
@@ -168,6 +171,7 @@ def get_despacho_db(
     asignacion, tenant = fila
 
     db = sessionmaker(autocommit=False, autoflush=False, bind=get_tenant_engine(tenant.schema))()
+    auditoria.asignar_usuario(db, current_user)
     try:
         yield DespachoContexto(
             db=db,

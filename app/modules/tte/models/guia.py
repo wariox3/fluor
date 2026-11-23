@@ -19,6 +19,7 @@ class Guia(Base):
         Index("IDX_FECHA_INGRESO", "fecha_ingreso"),
         Index("IDX_DOCUMENTO_CLIENTE", "documento_cliente"),
     )
+    __auditoria__ = {"modelo": "TteGuia"}
 
     codigo_guia_pk = Column(Integer, primary_key=True, index=True)
     codigo_guia_tipo_fk = Column(String(20), ForeignKey("tte_guia_tipo.codigo_guia_tipo_pk"))
@@ -70,8 +71,8 @@ class Guia(Base):
     peso_volumen = Column(Float, nullable=False, default=0.0)
     peso_facturado = Column(Float, nullable=False, default=0.0)
     vr_declara = Column(Float, nullable=False, default=0.0)
-    vr_flete = Column(Float, nullable=False, default=0.0)
-    vr_manejo = Column(Float, nullable=False, default=0.0)
+    vr_flete = Column(Float, nullable=False, default=0.0, info={"auditar": True})
+    vr_manejo = Column(Float, nullable=False, default=0.0, info={"auditar": True})
     vr_recaudo = Column(Float, nullable=False, default=0.0)
     vr_abono = Column(Float, nullable=False, default=0.0)
     vr_cobro_entrega = Column(Float, nullable=False, default=0.0)
