@@ -5,3 +5,5 @@ from .identificacion import Identificacion
 from .tipo_persona import TipoPersona
 from .regimen import Regimen
 from .forma_pago import FormaPago
+from .modelo import Modelo
+from .log_accion import LogAccion

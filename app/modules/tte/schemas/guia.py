@@ -39,7 +39,7 @@ class GuiaCreateRequest(BaseModel):
     precio: Optional[int] = None
     zona: Optional[str] = None
     tipo_liquidacion: str = "K"
-    comentario: str
+    comentario: Optional[str] = Field(None, max_length=2000)
     # Opcionales: si no llegan se usan los valores calculados (ver /tte/guia/nuevo)
     codigo_operacion_cargo_fk: Optional[str] = Field(None, max_length=20)
     relacion_cliente: Optional[str] = Field(None, max_length=100)
